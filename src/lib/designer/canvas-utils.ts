@@ -137,9 +137,8 @@ export function initializeCanvas(
 ): CanvasZones {
   const zones = computeZones(template)
 
-  // Set canvas dimensions to the bleed area
-  canvas.setWidth(zones.bleedPx.width)
-  canvas.setHeight(zones.bleedPx.height)
+  // Set canvas dimensions to the bleed area (Fabric v7 API)
+  canvas.setDimensions({ width: zones.bleedPx.width, height: zones.bleedPx.height })
 
   // White background for the entire canvas
   canvas.backgroundColor = '#f0f0f0'
@@ -252,8 +251,8 @@ export function loadCanvasJSON(
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function generateThumbnail(canvas: any, maxSize: number = 400): string {
-  const width = canvas.getWidth()
-  const height = canvas.getHeight()
+  const width = canvas.width
+  const height = canvas.height
   const scale = Math.min(maxSize / width, maxSize / height, 1)
 
   return canvas.toDataURL({

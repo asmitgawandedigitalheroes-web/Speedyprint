@@ -63,8 +63,8 @@ export function drawAlignmentGuides(
   snappedLines.forEach((line) => {
     const coords =
       line.orientation === 'vertical'
-        ? [line.position, 0, line.position, canvas.getHeight()]
-        : [0, line.position, canvas.getWidth(), line.position]
+        ? [line.position, 0, line.position, canvas.height]
+        : [0, line.position, canvas.width, line.position]
 
     const guideLine = new fabric.Line(coords, {
       stroke: '#3b82f6',

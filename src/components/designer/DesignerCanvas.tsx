@@ -152,8 +152,9 @@ const DesignerCanvasInner = forwardRef<DesignerCanvasRef, DesignerCanvasProps>(
       let mounted = true
 
       async function initFabric() {
-        const fabric = await import('fabric')
-        if (!mounted || !canvasElRef.current) return
+        try {
+          const fabric = await import('fabric')
+          if (!mounted || !canvasElRef.current) return
 
         fabricRef.current = fabric
 
@@ -233,7 +234,7 @@ const DesignerCanvasInner = forwardRef<DesignerCanvasRef, DesignerCanvasProps>(
             isPanning.current = true
             lastPanPoint.current = { x: evt.clientX, y: evt.clientY }
             canvas.selection = false
-            canvas.setCursor('grab')
+            canvas.defaultCursor = 'grab'
             evt.preventDefault()
             evt.stopPropagation()
           }
@@ -262,7 +263,7 @@ const DesignerCanvasInner = forwardRef<DesignerCanvasRef, DesignerCanvasProps>(
             isPanning.current = false
             lastPanPoint.current = null
             canvas.selection = true
-            canvas.setCursor('default')
+            canvas.defaultCursor = 'default'
             canvas.setViewportTransform(canvas.viewportTransform!)
           }
         })
@@ -295,6 +296,9 @@ const DesignerCanvasInner = forwardRef<DesignerCanvasRef, DesignerCanvasProps>(
         }
 
         setIsReady(true)
+        } catch (err) {
+          console.error('[DesignerCanvas] initFabric failed:', err)
+        }
       }
 
       initFabric()
@@ -317,7 +321,7 @@ const DesignerCanvasInner = forwardRef<DesignerCanvasRef, DesignerCanvasProps>(
         if (e.code === 'Space' && !e.repeat) {
           spaceHeld.current = true
           if (canvasRef.current) {
-            canvasRef.current.setCursor('grab')
+            canvasRef.current.defaultCursor = 'grab'
           }
           // Don't prevent default if user is typing in an input
           const target = e.target as HTMLElement
@@ -352,7 +356,7 @@ const DesignerCanvasInner = forwardRef<DesignerCanvasRef, DesignerCanvasProps>(
         if (e.code === 'Space') {
           spaceHeld.current = false
           if (canvasRef.current && !isPanning.current) {
-            canvasRef.current.setCursor('default')
+            canvasRef.current.defaultCursor = 'default'
           }
         }
       }

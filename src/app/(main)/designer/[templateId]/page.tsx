@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback, use } from 'react'
+import { useEffect, useState, useCallback, useRef, use } from 'react'
 import dynamic from 'next/dynamic'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
@@ -57,45 +57,55 @@ export default function DesignerPage({ params }: DesignerPageProps) {
   const { user, isAuthenticated } = useAuth()
   const { addItem } = useCart()
   const { state, canvasRef, actions } = useDesigner()
+  const {
+    fetchTemplate,
+    restoreFromLocalStorage,
+    setSelectedObject,
+    markDirty,
+    setDesignName,
+    saveDesign,
+  } = actions
 
   const [showLayers, setShowLayers] = useState(false)
   const [showPreview, setShowPreview] = useState(false)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [initialJson, setInitialJson] = useState<Record<string, unknown> | null>(null)
-  const [hasRestoredBackup, setHasRestoredBackup] = useState(false)
+  const hasFetchedRef = useRef(false)
+  const hasRestoredRef = useRef(false)
 
   // --- Fetch template on mount ---
 
   useEffect(() => {
-    if (templateId) {
-      actions.fetchTemplate(templateId)
+    if (templateId && !hasFetchedRef.current) {
+      hasFetchedRef.current = true
+      fetchTemplate(templateId)
     }
-  }, [templateId, actions])
+  }, [templateId, fetchTemplate])
 
   // --- Try to restore from localStorage after template loads ---
 
   useEffect(() => {
-    if (state.template && !hasRestoredBackup) {
-      const backup = actions.restoreFromLocalStorage(state.template.id)
+    if (state.template && !hasRestoredRef.current) {
+      hasRestoredRef.current = true
+      const backup = restoreFromLocalStorage(state.template.id)
       if (backup) {
         setInitialJson(backup)
       }
-      setHasRestoredBackup(true)
     }
-  }, [state.template, hasRestoredBackup, actions])
+  }, [state.template, restoreFromLocalStorage])
 
   // --- Handlers ---
 
   const handleSelectionChange = useCallback(
     (obj: unknown | null) => {
-      actions.setSelectedObject(obj)
+      setSelectedObject(obj)
     },
-    [actions]
+    [setSelectedObject]
   )
 
   const handleCanvasModified = useCallback(() => {
-    actions.markDirty()
-  }, [actions])
+    markDirty()
+  }, [markDirty])
 
   const handleUndo = useCallback(() => {
     canvasRef.current?.undo()
@@ -110,8 +120,8 @@ export default function DesignerPage({ params }: DesignerPageProps) {
       router.push('/login')
       return
     }
-    await actions.saveDesign()
-  }, [isAuthenticated, actions, router])
+    await saveDesign()
+  }, [isAuthenticated, saveDesign, router])
 
   const handlePreview = useCallback(() => {
     const canvas = canvasRef.current?.getCanvas()
@@ -131,7 +141,7 @@ export default function DesignerPage({ params }: DesignerPageProps) {
     if (!state.template) return
 
     // Save the design first
-    const design = await actions.saveDesign()
+    const design = await saveDesign()
     if (!design) return
 
     // Add to cart
@@ -148,7 +158,7 @@ export default function DesignerPage({ params }: DesignerPageProps) {
     })
 
     router.push('/cart')
-  }, [isAuthenticated, state.template, actions, addItem, router])
+  }, [isAuthenticated, state.template, saveDesign, addItem, router])
 
   // --- Loading state ---
 
@@ -215,7 +225,7 @@ export default function DesignerPage({ params }: DesignerPageProps) {
             <span className="text-xs text-muted-foreground">/</span>
             <Input
               value={state.designName}
-              onChange={(e) => actions.setDesignName(e.target.value)}
+              onChange={(e) => setDesignName(e.target.value)}
               className="h-7 w-48 border-none bg-transparent text-sm font-medium shadow-none focus-visible:ring-1"
               placeholder="Design name"
             />
