@@ -8,25 +8,25 @@
 INSERT INTO product_groups (id, name, slug, division, description, image_url, is_active, display_order)
 VALUES
   ('11111111-1111-1111-1111-111111111101', 'Custom Labels', 'custom-labels', 'labels',
-   'High-quality custom labels and stickers for any application. Available in various materials and finishes.', NULL, true, 1),
+   'High-quality custom labels and stickers for any application. Available in various materials and finishes.', '/images/products/custom-labels.png', true, 1),
   ('11111111-1111-1111-1111-111111111102', 'Vinyl Stickers', 'vinyl-stickers', 'labels',
-   'Durable vinyl stickers for indoor and outdoor use. Waterproof and UV-resistant.', NULL, true, 2),
+   'Durable vinyl stickers for indoor and outdoor use. Waterproof and UV-resistant.', '/images/products/vinyl-stickers.png', true, 2),
   ('11111111-1111-1111-1111-111111111103', 'Acrylic Signs', 'acrylic-signs', 'laser',
-   'Precision laser-cut acrylic signs. Perfect for businesses, offices, and events.', NULL, true, 3),
+   'Precision laser-cut acrylic signs. Perfect for businesses, offices, and events.', '/images/products/acrylic-signs.png', true, 3),
   ('11111111-1111-1111-1111-111111111104', 'Wooden Plaques', 'wooden-plaques', 'laser',
-   'Laser-engraved wooden plaques for awards, gifts, and decor.', NULL, true, 4),
+   'Laser-engraved wooden plaques for awards, gifts, and decor.', '/images/products/wooden-plaques.png', true, 4),
   ('11111111-1111-1111-1111-111111111105', 'Race Bibs', 'race-bibs', 'events',
-   'Professional race bibs with custom numbering. Tyvek material, waterproof, with tear-off tabs.', NULL, true, 5),
+   'Professional race bibs with custom numbering. Tyvek material, waterproof, with tear-off tabs.', '/images/products/race-bibs.png', true, 5),
   ('11111111-1111-1111-1111-111111111106', 'Event Tags', 'event-tags', 'events',
-   'Custom event identification tags, lanyards, and badges.', NULL, true, 6),
+   'Custom event identification tags, lanyards, and badges.', '/images/products/event-tags.png', true, 6),
   ('11111111-1111-1111-1111-111111111107', 'MTB Number Boards', 'mtb-number-boards', 'events',
-   'Mountain bike number boards. Durable, lightweight, and UV resistant.', NULL, true, 7),
+   'Mountain bike number boards. Durable, lightweight, and UV resistant.', '/images/products/mtb-number-boards.png', true, 7),
   ('11111111-1111-1111-1111-111111111108', 'Self-Inking Stamps', 'self-inking-stamps', 'stamps',
-   'Professional self-inking rubber stamps for businesses. Multiple sizes available.', NULL, true, 8),
+   'Professional self-inking rubber stamps for businesses. Multiple sizes available.', '/images/products/self-inking-stamps.png', true, 8),
   ('11111111-1111-1111-1111-111111111109', 'Coffee Cup Sleeves', 'coffee-cup-sleeves', 'sleeves',
-   'Branded coffee cup sleeves for cafes and events. Full-color printing on recycled cardboard.', NULL, true, 9),
+   'Branded coffee cup sleeves for cafes and events. Full-color printing on recycled cardboard.', '/images/products/coffee-cup-sleeves.png', true, 9),
   ('11111111-1111-1111-1111-111111111110', 'Award Trophies', 'award-trophies', 'sleeves',
-   'Custom laser-cut acrylic trophies and awards for corporate events.', NULL, true, 10)
+   'Custom laser-cut acrylic trophies and awards for corporate events.', '/images/products/award-trophies.png', true, 10)
 ON CONFLICT (id) DO NOTHING;
 
 -- ============================================================

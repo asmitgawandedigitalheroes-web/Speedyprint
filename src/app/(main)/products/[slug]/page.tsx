@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation'
+import Image from 'next/image'
 import { createClient } from '@/lib/supabase/server'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
@@ -104,17 +105,21 @@ export default async function ProductPage({ params }: ProductPageProps) {
         {/* Left: Product image / visual */}
         <div>
           <div
-            className={`relative flex h-80 items-center justify-center rounded-xl bg-gradient-to-br ${gradient} lg:h-[480px]`}
+            className={`relative flex h-80 items-center justify-center rounded-xl bg-gradient-to-br ${gradient} lg:h-[480px] overflow-hidden`}
           >
-            <span className="text-8xl font-bold text-white/20 select-none">
-              {typedProduct.name.charAt(0)}
-            </span>
-            {typedProduct.image_url && (
-              <img
+            {typedProduct.image_url ? (
+              <Image
                 src={typedProduct.image_url}
                 alt={typedProduct.name}
-                className="absolute inset-0 h-full w-full rounded-xl object-cover"
+                fill
+                sizes="(max-width: 1024px) 100vw, 50vw"
+                className="object-cover rounded-xl"
+                priority
               />
+            ) : (
+              <span className="text-8xl font-bold text-white/20 select-none">
+                {typedProduct.name.charAt(0)}
+              </span>
             )}
           </div>
         </div>

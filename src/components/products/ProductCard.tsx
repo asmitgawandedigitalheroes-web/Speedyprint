@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { DIVISIONS } from '@/lib/utils/constants'
@@ -23,19 +24,22 @@ export function ProductCard({ product }: ProductCardProps) {
   return (
     <Link href={`/products/${product.slug}`}>
       <Card className="group overflow-hidden transition-shadow hover:shadow-lg">
-        {/* Image placeholder */}
+        {/* Product image */}
         <div
-          className={`relative h-48 bg-gradient-to-br ${gradient} flex items-center justify-center`}
+          className={`relative h-48 bg-gradient-to-br ${gradient} flex items-center justify-center overflow-hidden`}
         >
-          <span className="text-5xl font-bold text-white/30 select-none">
-            {product.name.charAt(0)}
-          </span>
-          {product.image_url && (
-            <img
+          {product.image_url ? (
+            <Image
               src={product.image_url}
               alt={product.name}
-              className="absolute inset-0 h-full w-full object-cover"
+              fill
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+              className="object-cover transition-transform duration-300 group-hover:scale-105"
             />
+          ) : (
+            <span className="text-5xl font-bold text-white/30 select-none">
+              {product.name.charAt(0)}
+            </span>
           )}
         </div>
 
