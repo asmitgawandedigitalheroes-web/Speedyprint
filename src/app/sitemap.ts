@@ -1,6 +1,10 @@
 import type { MetadataRoute } from 'next'
+import { createClient } from '@supabase/supabase-js'
 import { SITE_URL } from '@/lib/utils/constants'
-import { createClient } from '@/lib/supabase/server'
+
+// Ensure sitemap is regenerated on each request to pick up new products
+export const dynamic = 'force-dynamic'
+export const revalidate = 3600 // Revalidate every hour
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = SITE_URL
@@ -39,22 +43,27 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
   ]
 
-  // Dynamic product pages from Supabase
+  // Dynamic product pages from Supabase (using direct client, no cookies needed)
   let productPages: MetadataRoute.Sitemap = []
   try {
-    const supabase = await createClient()
-    const { data: products } = await supabase
-      .from('product_groups')
-      .select('slug, created_at')
-      .eq('is_active', true)
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-    if (products) {
-      productPages = products.map((product) => ({
-        url: `${baseUrl}/products/${product.slug}`,
-        lastModified: product.created_at ? new Date(product.created_at) : new Date(),
-        changeFrequency: 'weekly' as const,
-        priority: 0.8,
-      }))
+    if (supabaseUrl && supabaseKey) {
+      const supabase = createClient(supabaseUrl, supabaseKey)
+      const { data: products } = await supabase
+        .from('product_groups')
+        .select('slug, created_at')
+        .eq('is_active', true)
+
+      if (products) {
+        productPages = products.map((product) => ({
+          url: `${baseUrl}/products/${product.slug}`,
+          lastModified: product.created_at ? new Date(product.created_at) : new Date(),
+          changeFrequency: 'weekly' as const,
+          priority: 0.8,
+        }))
+      }
     }
   } catch {
     // If Supabase is unavailable, return only static pages
