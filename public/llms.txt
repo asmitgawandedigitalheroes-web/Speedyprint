@@ -1,0 +1,34 @@
+# SpeedyPrint
+
+> South Africa's online web-to-print platform for custom printing solutions.
+
+## About
+
+SpeedyPrint is a South African web-to-print e-commerce platform that enables customers to design, customize, proof, and order professional printed products online. We specialize in five product divisions: custom labels & stickers, laser-cut products, event numbers & race bibs, stamps, and trophies & sleeves.
+
+## Products
+
+- [Custom Labels & Stickers](/products/custom-labels): Durable labels and stickers in various materials including paper, vinyl, and polyester with custom shapes and finishes.
+- [Vinyl Stickers](/products/vinyl-stickers): Weatherproof vinyl stickers and decals for indoor and outdoor use.
+- [Acrylic Signs](/products/acrylic-signs): Professional laser-cut acrylic signs and displays.
+- [Wooden Plaques](/products/wooden-plaques): Custom engraved and laser-cut wooden plaques and awards.
+- [Race Bibs](/products/race-bibs): Professional race bibs and running numbers for sporting events.
+- [MTB Number Boards](/products/mtb-number-boards): Mountain bike number boards for cycling events.
+- [Event Tags](/products/event-tags): Custom event tags, lanyards, and identification products.
+- [Self-Inking Stamps](/products/self-inking-stamps): Custom self-inking stamps for business and personal use.
+- [Coffee Cup Sleeves](/products/coffee-cup-sleeves): Branded coffee cup sleeves for cafes and businesses.
+- [Award Trophies](/products/award-trophies): Custom trophies and awards for events and corporate recognition.
+
+## Key Features
+
+- Online design editor with templates
+- Real-time pricing calculator
+- CSV bulk upload for event products
+- Digital proofing workflow
+- High-resolution PDF production files
+- Nationwide delivery across South Africa
+
+## Contact
+
+- Website: https://speedyprint-v1.vercel.app
+- Location: South Africa

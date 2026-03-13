@@ -45,13 +45,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const supabase = await createClient()
     const { data: products } = await supabase
       .from('product_groups')
-      .select('slug, updated_at')
+      .select('slug, created_at')
       .eq('is_active', true)
 
     if (products) {
       productPages = products.map((product) => ({
         url: `${baseUrl}/products/${product.slug}`,
-        lastModified: product.updated_at ? new Date(product.updated_at) : new Date(),
+        lastModified: product.created_at ? new Date(product.created_at) : new Date(),
         changeFrequency: 'weekly' as const,
         priority: 0.8,
       }))
