@@ -1,5 +1,21 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
-import { DIVISIONS, SITE_NAME } from '@/lib/utils/constants'
+import { DIVISIONS, SITE_NAME, SITE_URL } from '@/lib/utils/constants'
+
+export const metadata: Metadata = {
+  title: `${SITE_NAME} | Custom Printing Solutions in South Africa`,
+  description:
+    'Design, customize, and order professional printed products online. Custom labels, vinyl stickers, acrylic signs, race bibs, stamps, trophies and more. Fast turnaround, production-ready quality.',
+  alternates: {
+    canonical: SITE_URL,
+  },
+  openGraph: {
+    title: `${SITE_NAME} | Custom Printing Made Simple`,
+    description:
+      'South Africa\'s online custom printing platform. Labels, stickers, laser-cut signs, event numbers, stamps, and trophies.',
+    url: SITE_URL,
+  },
+}
 
 const iconMap: Record<string, string> = {
   labels: '🏷️',

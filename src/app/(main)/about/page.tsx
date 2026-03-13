@@ -1,4 +1,19 @@
-import { SITE_NAME } from '@/lib/utils/constants'
+import type { Metadata } from 'next'
+import { SITE_NAME, SITE_URL } from '@/lib/utils/constants'
+
+export const metadata: Metadata = {
+  title: `About ${SITE_NAME} | Custom Printing in South Africa`,
+  description:
+    'Learn about SpeedyPrint — South Africa\'s custom printing platform with five specialized divisions: labels, laser cutting, event numbers, stamps, and trophies.',
+  alternates: {
+    canonical: `${SITE_URL}/about`,
+  },
+  openGraph: {
+    title: `About ${SITE_NAME}`,
+    description: 'South African printing business delivering custom solutions across five specialized divisions.',
+    url: `${SITE_URL}/about`,
+  },
+}
 
 export default function AboutPage() {
   return (

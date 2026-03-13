@@ -3,8 +3,9 @@ import Image from 'next/image'
 import { createClient } from '@/lib/supabase/server'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
-import { DIVISIONS } from '@/lib/utils/constants'
+import { DIVISIONS, SITE_URL, SITE_NAME } from '@/lib/utils/constants'
 import { ProductConfigurator } from './ProductConfigurator'
+import { ProductJsonLd, BreadcrumbJsonLd } from '@/components/seo/JsonLd'
 import type { ProductGroup, ProductTemplate, TemplateParameter, PricingRule } from '@/types'
 
 interface ProductPageProps {
@@ -16,18 +17,39 @@ export async function generateMetadata({ params }: ProductPageProps) {
   const supabase = await createClient()
   const { data } = await supabase
     .from('product_groups')
-    .select('name, description')
+    .select('name, description, image_url')
     .eq('slug', slug)
     .eq('is_active', true)
     .single()
 
   if (!data) {
-    return { title: 'Product Not Found | SpeedyPrint' }
+    return { title: 'Product Not Found' }
   }
 
+  const title = `Custom ${data.name} | Order Online`
+  const description = data.description ?? `Design and order custom ${data.name} online from ${SITE_NAME}. Fast turnaround, production-ready quality.`
+  const url = `${SITE_URL}/products/${slug}`
+  const image = data.image_url ? `${SITE_URL}${data.image_url}` : `${SITE_URL}/images/logo.png`
+
   return {
-    title: `${data.name} | SpeedyPrint`,
-    description: data.description ?? `Custom ${data.name} from SpeedyPrint`,
+    title,
+    description,
+    alternates: {
+      canonical: url,
+    },
+    openGraph: {
+      title,
+      description,
+      url,
+      images: [{ url: image, alt: data.name }],
+      type: 'website',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      images: [image],
+    },
   }
 }
 
@@ -92,8 +114,21 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+      <ProductJsonLd
+        name={typedProduct.name}
+        description={typedProduct.description ?? `Custom ${typedProduct.name}`}
+        image={typedProduct.image_url ?? undefined}
+        slug={typedProduct.slug}
+      />
+      <BreadcrumbJsonLd
+        items={[
+          { name: 'Home', url: SITE_URL },
+          { name: 'Products', url: `${SITE_URL}/products` },
+          { name: typedProduct.name, url: `${SITE_URL}/products/${typedProduct.slug}` },
+        ]}
+      />
       {/* Breadcrumb */}
-      <nav className="mb-8 text-sm text-brand-gray-medium">
+      <nav aria-label="Breadcrumb" className="mb-8 text-sm text-brand-gray-medium">
         <a href="/products" className="hover:text-brand-red transition-colors">
           Products
         </a>

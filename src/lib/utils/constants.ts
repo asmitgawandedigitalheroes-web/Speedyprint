@@ -1,6 +1,6 @@
 export const SITE_NAME = 'SpeedyPrint'
 export const SITE_DESCRIPTION = 'Custom printing solutions for labels, laser cutting, event numbers, stamps, and more.'
-export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://speedyprint-v1.vercel.app'
 
 export const VAT_RATE = 0.15 // 15% South African VAT
 export const CURRENCY = 'ZAR'

@@ -1,16 +1,27 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { ProductCard } from '@/components/products/ProductCard'
-import { DIVISIONS } from '@/lib/utils/constants'
+import { DIVISIONS, SITE_URL } from '@/lib/utils/constants'
 import type { Division, ProductGroup } from '@/types'
 
 interface ProductsPageProps {
   searchParams: Promise<{ division?: string }>
 }
 
-export const metadata = {
-  title: 'Products | SpeedyPrint',
-  description: 'Browse our range of custom printing products across all divisions.',
+export const metadata: Metadata = {
+  title: 'Custom Printing Products',
+  description:
+    'Browse our full range of custom printing products — labels, vinyl stickers, acrylic signs, wooden plaques, race bibs, event tags, MTB boards, stamps, trophies and more.',
+  alternates: {
+    canonical: `${SITE_URL}/products`,
+  },
+  openGraph: {
+    title: 'Custom Printing Products | SpeedyPrint',
+    description:
+      'Shop custom labels, stickers, laser-cut signs, event numbers, stamps, and trophies online.',
+    url: `${SITE_URL}/products`,
+  },
 }
 
 export default async function ProductsPage({ searchParams }: ProductsPageProps) {
