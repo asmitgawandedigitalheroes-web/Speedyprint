@@ -31,31 +31,7 @@ import {
   MousePointer2,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-
-// --- Google Fonts (same list as Toolbar) ---
-
-const GOOGLE_FONTS = [
-  'Inter',
-  'Roboto',
-  'Open Sans',
-  'Lato',
-  'Montserrat',
-  'Oswald',
-  'Raleway',
-  'Poppins',
-  'Playfair Display',
-  'Merriweather',
-  'Source Sans Pro',
-  'Ubuntu',
-  'Nunito',
-  'PT Sans',
-  'Work Sans',
-  'Quicksand',
-  'Barlow',
-  'Cabin',
-  'Dosis',
-  'Titillium Web',
-] as const
+import { GOOGLE_FONTS } from '@/lib/designer/fonts'
 
 // --- Props ---
 

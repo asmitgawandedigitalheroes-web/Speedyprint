@@ -219,29 +219,31 @@ export function getCanvasJSON(canvas: any): Record<string, unknown> {
 
 /**
  * Load canvas state from JSON, preserving existing zone guides.
+ * Fabric.js v7 uses Promise-based loadFromJSON (no callback parameter).
  */
-export function loadCanvasJSON(
+export async function loadCanvasJSON(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   canvas: any,
   json: Record<string, unknown>,
   callback?: () => void
-): void {
-  // Store existing zone guides
+): Promise<void> {
+  // Store existing zone guides before loading
   const guides = canvas
     .getObjects()
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .filter((obj: any) => isZoneGuide(obj) || obj.name === '__print_bg')
 
-  // Load the JSON (which has no guides)
-  canvas.loadFromJSON(json, () => {
-    // Re-add zone guides at the bottom
-    guides.forEach((guide: unknown) => {
-      canvas.add(guide)
-      canvas.sendObjectToBack(guide)
-    })
-    canvas.renderAll()
-    callback?.()
+  // Fabric.js v7: loadFromJSON returns a Promise (no callback)
+  await canvas.loadFromJSON(json)
+
+  // Re-add zone guides at the bottom
+  guides.forEach((guide: unknown) => {
+    canvas.add(guide)
+    canvas.sendObjectToBack(guide)
   })
+
+  canvas.renderAll()
+  callback?.()
 }
 
 // --- Thumbnail Generation ---

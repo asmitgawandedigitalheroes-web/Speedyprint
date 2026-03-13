@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useRef, use } from 'react'
 import dynamic from 'next/dynamic'
 import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
@@ -117,10 +118,20 @@ export default function DesignerPage({ params }: DesignerPageProps) {
 
   const handleSave = useCallback(async () => {
     if (!isAuthenticated) {
+      toast.info('Please log in to save your design')
       router.push('/login')
       return
     }
-    await saveDesign()
+    try {
+      const design = await saveDesign()
+      if (design) {
+        toast.success('Design saved successfully')
+      } else {
+        toast.error('Failed to save design')
+      }
+    } catch {
+      toast.error('Failed to save design')
+    }
   }, [isAuthenticated, saveDesign, router])
 
   const handlePreview = useCallback(() => {
@@ -134,30 +145,39 @@ export default function DesignerPage({ params }: DesignerPageProps) {
 
   const handleAddToCart = useCallback(async () => {
     if (!isAuthenticated) {
+      toast.info('Please log in to add items to your cart')
       router.push('/login')
       return
     }
 
     if (!state.template) return
 
-    // Save the design first
-    const design = await saveDesign()
-    if (!design) return
+    try {
+      // Save the design first
+      const design = await saveDesign()
+      if (!design) {
+        toast.error('Failed to save design before adding to cart')
+        return
+      }
 
-    // Add to cart
-    addItem({
-      product_group_id: state.template.product_group_id,
-      product_template_id: state.template.id,
-      product_name: state.template.product_group?.name || 'Product',
-      template_name: state.template.name,
-      quantity: 1,
-      unit_price: 0, // Price calculated from pricing rules
-      selected_params: {},
-      design_id: design.id,
-      thumbnail_url: design.thumbnail_url || undefined,
-    })
+      // Add to cart
+      addItem({
+        product_group_id: state.template.product_group_id,
+        product_template_id: state.template.id,
+        product_name: state.template.product_group?.name || 'Product',
+        template_name: state.template.name,
+        quantity: 1,
+        unit_price: 0, // Price calculated from pricing rules
+        selected_params: {},
+        design_id: design.id,
+        thumbnail_url: design.thumbnail_url || undefined,
+      })
 
-    router.push('/cart')
+      toast.success('Added to cart!')
+      router.push('/cart')
+    } catch {
+      toast.error('Failed to add to cart')
+    }
   }, [isAuthenticated, state.template, saveDesign, addItem, router])
 
   // --- Loading state ---
@@ -314,6 +334,7 @@ export default function DesignerPage({ params }: DesignerPageProps) {
           initialJson={initialJson}
           onSelectionChange={handleSelectionChange}
           onCanvasModified={handleCanvasModified}
+          onSaveRequested={handleSave}
         />
 
         {/* Right: Properties */}

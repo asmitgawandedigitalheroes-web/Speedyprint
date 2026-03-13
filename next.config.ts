@@ -15,6 +15,17 @@ const nextConfig: NextConfig = {
       bodySizeLimit: '50mb',
     },
   },
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      config.externals = [
+        ...(Array.isArray(config.externals) ? config.externals : []),
+        'canvas',
+        'bufferutil',
+        'utf-8-validate',
+      ]
+    }
+    return config
+  },
   async headers() {
     return [
       {
