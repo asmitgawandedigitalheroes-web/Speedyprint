@@ -111,14 +111,17 @@ export default function FAQPage() {
                     <button
                       onClick={() => toggle(key)}
                       className="flex w-full items-center justify-between px-6 py-4 text-left transition hover:bg-brand-bg"
+                      aria-expanded={isOpen}
+                      aria-controls={`faq-answer-${key}`}
                     >
                       <span className="font-medium text-brand-black">{item.q}</span>
                       <ChevronDown
                         className={`h-5 w-5 shrink-0 text-brand-gray-medium transition-transform ${isOpen ? 'rotate-180' : ''}`}
+                        aria-hidden="true"
                       />
                     </button>
                     {isOpen && (
-                      <div className="px-6 pb-4 text-brand-gray-medium">{item.a}</div>
+                      <div id={`faq-answer-${key}`} role="region" aria-labelledby={`faq-q-${key}`} className="px-6 pb-4 text-brand-gray-medium">{item.a}</div>
                     )}
                   </div>
                 )
