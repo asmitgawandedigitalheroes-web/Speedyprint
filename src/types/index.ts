@@ -200,6 +200,32 @@ export interface UploadedFile {
   created_at: string
 }
 
+// V2 Content types
+export interface BlogPost {
+  id: string
+  title: string
+  slug: string
+  excerpt: string | null
+  content: string
+  featured_image: string | null
+  author: string
+  published: boolean
+  published_at: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface Testimonial {
+  id: string
+  customer_name: string
+  company_name: string | null
+  location: string | null
+  rating: number
+  review_text: string
+  featured: boolean
+  created_at: string
+}
+
 // Cart types (client-side)
 export interface CartItem {
   id: string
@@ -213,4 +239,5 @@ export interface CartItem {
   selected_params: Record<string, unknown>
   design_id?: string
   thumbnail_url?: string
+  artwork_url?: string
 }

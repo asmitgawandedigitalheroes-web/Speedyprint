@@ -1,24 +1,41 @@
 @import "tailwindcss";
 
 @theme {
-  --color-brand-red: #C62828;
-  --color-brand-red-light: #EF5350;
-  --color-brand-red-dark: #8E0000;
-  --color-brand-black: #1A1A2E;
+  /* V2 Primary Palette */
+  --color-brand-primary: #FF6B00;
+  --color-brand-primary-light: #FF8A3D;
+  --color-brand-primary-dark: #E05E00;
+  --color-brand-secondary: #1E3A5F;
+  --color-brand-secondary-light: #2A4F7F;
+  --color-brand-accent: #00C853;
+  --color-brand-text: #1A1A1A;
+  --color-brand-text-muted: #6B7280;
+  --color-brand-bg: #F5F5F5;
+  --color-brand-surface: #FFFFFF;
+
+  /* Legacy aliases (admin pages + backward compat) */
+  --color-brand-red: #FF6B00;
+  --color-brand-red-light: #FF8A3D;
+  --color-brand-red-dark: #E05E00;
+  --color-brand-black: #1A1A1A;
   --color-brand-yellow: #FFC107;
   --color-brand-yellow-light: #FFD54F;
   --color-brand-white: #FFFFFF;
   --color-brand-gray: #333333;
   --color-brand-gray-light: #E0E0E0;
-  --color-brand-gray-medium: #9E9E9E;
-  --color-brand-bg: #F5F5F5;
+  --color-brand-gray-medium: #6B7280;
 
+  --font-heading: 'Poppins', system-ui, sans-serif;
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  --radius-card: 8px;
+  --radius-button: 6px;
+  --radius-hero: 12px;
 }
 
 @layer base {
   body {
-    @apply bg-white text-brand-gray antialiased;
+    @apply bg-white text-brand-text antialiased;
   }
 }

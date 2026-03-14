@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next'
-import { Inter } from 'next/font/google'
+import { Inter, Poppins } from 'next/font/google'
 import { Toaster } from '@/components/ui/sonner'
 import { SITE_NAME, SITE_DESCRIPTION, SITE_URL } from '@/lib/utils/constants'
 import './globals.css'
@@ -10,10 +10,17 @@ const inter = Inter({
   display: 'swap',
 })
 
+const poppins = Poppins({
+  weight: ['600', '700'],
+  subsets: ['latin'],
+  variable: '--font-heading',
+  display: 'swap',
+})
+
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  themeColor: '#C62828',
+  themeColor: '#FF6B00',
 }
 
 export const metadata: Metadata = {
@@ -99,7 +106,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`${inter.variable} font-sans`}>
+      <body className={`${inter.variable} ${poppins.variable} font-sans`}>
         {children}
         <Toaster richColors closeButton position="top-right" />
       </body>

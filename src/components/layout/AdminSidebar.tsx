@@ -13,6 +13,8 @@ import {
   Menu,
   X,
   ChevronLeft,
+  PenSquare,
+  MessageSquareQuote,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -23,6 +25,8 @@ const ADMIN_NAV = [
   { href: '/admin/orders', label: 'Orders', icon: ShoppingCart },
   { href: '/admin/products', label: 'Products', icon: Package },
   { href: '/admin/templates', label: 'Templates', icon: FileText },
+  { href: '/admin/blog', label: 'Blog', icon: PenSquare },
+  { href: '/admin/testimonials', label: 'Testimonials', icon: MessageSquareQuote },
   { href: '/admin/users', label: 'Users', icon: Users },
   { href: '/admin/settings', label: 'Settings', icon: Settings },
 ]

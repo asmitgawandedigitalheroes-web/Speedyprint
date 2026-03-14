@@ -3,7 +3,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { CartItem } from '@/types'
-import { VAT_RATE } from '@/lib/utils/constants'
+import { VAT_RATE, FREE_DELIVERY_THRESHOLD, FLAT_SHIPPING_RATE } from '@/lib/utils/constants'
 
 interface CartState {
   items: CartItem[]
@@ -13,6 +13,7 @@ interface CartState {
   clearCart: () => void
   getSubtotal: () => number
   getTax: () => number
+  getShippingCost: () => number
   getTotal: () => number
   getItemCount: () => number
 }
@@ -57,9 +58,15 @@ export const useCart = create<CartState>()(
         return get().getSubtotal() * VAT_RATE
       },
 
+      getShippingCost: () => {
+        const subtotal = get().getSubtotal()
+        return subtotal >= FREE_DELIVERY_THRESHOLD ? 0 : FLAT_SHIPPING_RATE
+      },
+
       getTotal: () => {
         const subtotal = get().getSubtotal()
-        return subtotal + subtotal * VAT_RATE
+        const shipping = get().getShippingCost()
+        return subtotal + subtotal * VAT_RATE + shipping
       },
 
       getItemCount: () => {

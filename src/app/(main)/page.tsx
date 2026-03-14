@@ -1,129 +1,118 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { DIVISIONS, SITE_NAME, SITE_URL } from '@/lib/utils/constants'
+import { SITE_NAME, SITE_URL } from '@/lib/utils/constants'
+import { HeroCalculator } from '@/components/home/HeroCalculator'
+import { HowItWorks } from '@/components/home/HowItWorks'
+import { DivisionShowcase } from '@/components/home/DivisionShowcase'
+import { TestimonialsCarousel } from '@/components/home/TestimonialsCarousel'
 
 export const metadata: Metadata = {
-  title: `${SITE_NAME} | Custom Printing Solutions in South Africa`,
+  title: `${SITE_NAME} | Custom Stickers, Labels & Decals in South Africa`,
   description:
-    'Design, customize, and order professional printed products online. Custom labels, vinyl stickers, acrylic signs, race bibs, stamps, trophies and more. Fast turnaround, production-ready quality.',
+    'Premium custom stickers, product labels, vehicle decals, and 3D domed stickers. Get an instant quote, design online, and order. Fast delivery across South Africa.',
   alternates: {
     canonical: SITE_URL,
   },
   openGraph: {
-    title: `${SITE_NAME} | Custom Printing Made Simple`,
+    title: `${SITE_NAME} | Custom Stickers & Labels Made Simple`,
     description:
-      'South Africa\'s online custom printing platform. Labels, stickers, laser-cut signs, event numbers, stamps, and trophies.',
+      'South Africa\'s online custom sticker and label printing platform. Instant pricing, online designer, fast delivery.',
     url: SITE_URL,
   },
-}
-
-const iconMap: Record<string, string> = {
-  labels: '🏷️',
-  laser: '⚡',
-  events: '🏃',
-  stamps: '📌',
-  sleeves: '🏆',
 }
 
 export default function HomePage() {
   return (
     <div>
-      {/* Hero Section */}
-      <section className="relative bg-brand-black text-white">
-        <div className="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
-          <div className="max-w-3xl">
-            <h1 className="text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
-              Custom Printing
-              <span className="text-brand-red"> Made Simple</span>
-            </h1>
-            <p className="mt-6 text-lg text-gray-300">
-              Design, customize, and order professional printed products online.
-              From labels to laser-cut signs, event numbers to custom stamps —
-              all with production-ready quality.
-            </p>
-            <div className="mt-10 flex gap-4">
-              <Link
-                href="/products"
-                className="rounded-lg bg-brand-red px-8 py-3 text-lg font-semibold text-white transition hover:bg-brand-red-light"
-              >
-                Browse Products
-              </Link>
-              <Link
-                href="/about"
-                className="rounded-lg border border-white/30 px-8 py-3 text-lg font-semibold text-white transition hover:bg-white/10"
-              >
-                Learn More
-              </Link>
+      {/* Hero Section with Embedded Calculator */}
+      <section className="relative bg-gradient-to-br from-brand-secondary to-brand-secondary-light">
+        <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8 lg:py-24">
+          <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-2">
+            {/* Left: Headline */}
+            <div className="text-white">
+              <h1 className="font-heading text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
+                Premium Custom
+                <span className="text-brand-primary"> Stickers</span>,{' '}
+                <span className="text-brand-primary">Labels</span> &{' '}
+                <span className="text-brand-primary">Decals</span>
+              </h1>
+              <p className="mt-6 text-lg text-white/80">
+                Design, order, and receive high-quality custom stickers and
+                labels. Fast turnaround, competitive pricing, and free delivery
+                on orders over R500.
+              </p>
+              <div className="mt-8 flex flex-wrap gap-4">
+                <Link
+                  href="/order-now"
+                  className="rounded-lg bg-brand-primary px-8 py-3 text-lg font-semibold text-white transition hover:bg-brand-primary-dark"
+                >
+                  Order Now
+                </Link>
+                <Link
+                  href="/templates"
+                  className="rounded-lg border border-white/30 px-8 py-3 text-lg font-semibold text-white transition hover:bg-white/10"
+                >
+                  Design Online
+                </Link>
+              </div>
+
+              {/* Quick stats */}
+              <div className="mt-10 grid grid-cols-3 gap-6">
+                <div>
+                  <p className="text-3xl font-bold text-brand-primary">5000+</p>
+                  <p className="text-sm text-white/60">Happy Customers</p>
+                </div>
+                <div>
+                  <p className="text-3xl font-bold text-brand-primary">24hr</p>
+                  <p className="text-sm text-white/60">Quick Turnaround</p>
+                </div>
+                <div>
+                  <p className="text-3xl font-bold text-brand-primary">100%</p>
+                  <p className="text-sm text-white/60">Quality Guaranteed</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Right: Calculator */}
+            <div className="lg:pl-8">
+              <HeroCalculator />
             </div>
           </div>
         </div>
       </section>
 
-      {/* Divisions */}
-      <section className="py-20">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <h2 className="text-3xl font-bold text-brand-black">Our Divisions</h2>
-            <p className="mt-4 text-lg text-brand-gray-medium">
-              Five specialized divisions to serve all your printing needs
-            </p>
-          </div>
-          <div className="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {DIVISIONS.map((division) => (
-              <Link
-                key={division.key}
-                href={`/products?division=${division.key}`}
-                className="group rounded-xl border border-brand-gray-light bg-white p-8 shadow-sm transition hover:border-brand-red hover:shadow-md"
-              >
-                <div className="text-4xl">{iconMap[division.key]}</div>
-                <h3 className="mt-4 text-xl font-semibold text-brand-black group-hover:text-brand-red">
-                  {division.name}
-                </h3>
-                <p className="mt-2 text-brand-gray-medium">{division.description}</p>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* How It Works */}
-      <section className="bg-brand-bg py-20">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <h2 className="text-3xl font-bold text-brand-black">How It Works</h2>
-          </div>
-          <div className="mt-12 grid grid-cols-1 gap-8 md:grid-cols-4">
-            {[
-              { step: '1', title: 'Choose Product', desc: 'Select from our range of printing options' },
-              { step: '2', title: 'Customize Design', desc: 'Use our online designer or upload artwork' },
-              { step: '3', title: 'Approve Proof', desc: 'Review your digital proof before printing' },
-              { step: '4', title: 'We Print & Ship', desc: 'Production-ready files go straight to press' },
-            ].map((item) => (
-              <div key={item.step} className="text-center">
-                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-brand-red text-xl font-bold text-white">
-                  {item.step}
-                </div>
-                <h3 className="mt-4 text-lg font-semibold text-brand-black">{item.title}</h3>
-                <p className="mt-2 text-brand-gray-medium">{item.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      <HowItWorks />
 
-      {/* CTA */}
-      <section className="bg-brand-red py-16">
+      {/* Division Showcase */}
+      <DivisionShowcase />
+
+      {/* Testimonials */}
+      <TestimonialsCarousel />
+
+      {/* CTA Section */}
+      <section className="bg-brand-primary py-16">
         <div className="mx-auto max-w-7xl px-4 text-center sm:px-6 lg:px-8">
-          <h2 className="text-3xl font-bold text-white">Ready to get started?</h2>
+          <h2 className="font-heading text-3xl font-bold text-white">
+            Ready to get started?
+          </h2>
           <p className="mt-4 text-lg text-white/80">
-            Create an account and start designing your custom print products today.
+            Get an instant quote or design your stickers online today.
           </p>
-          <Link
-            href="/register"
-            className="mt-8 inline-block rounded-lg bg-white px-8 py-3 text-lg font-semibold text-brand-red transition hover:bg-gray-100"
-          >
-            Create Free Account
-          </Link>
+          <div className="mt-8 flex flex-wrap justify-center gap-4">
+            <Link
+              href="/order-now"
+              className="rounded-lg bg-white px-8 py-3 text-lg font-semibold text-brand-primary transition hover:bg-gray-100"
+            >
+              Get a Quote
+            </Link>
+            <Link
+              href="/register"
+              className="rounded-lg border-2 border-white px-8 py-3 text-lg font-semibold text-white transition hover:bg-white/10"
+            >
+              Create Free Account
+            </Link>
+          </div>
         </div>
       </section>
     </div>
