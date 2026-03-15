@@ -1,34 +1,48 @@
 'use client'
 
+/**
+ * Toolbar — Tabbed left panel for the designer editor.
+ * Tabs: Text | Images | Shapes | QR/Barcode | Filters | Layers
+ */
+
 import { useRef, useState, useCallback } from 'react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { Separator } from '@/components/ui/separator'
+import { cn } from '@/lib/utils'
+import { useEditorStore } from '@/lib/designer/store'
+import { LayersPanel } from './LayersPanel'
+import { TextPanel } from './panels/TextPanel'
+import { ShapesPanel } from './panels/ShapesPanel'
+import { QRCodePanel } from './panels/QRCodePanel'
+import { BarcodePanel } from './panels/BarcodePanel'
+import { ImageFiltersPanel } from './panels/ImageFiltersPanel'
 import type { DesignerCanvasRef } from '@/hooks/useDesigner'
 import {
   Type,
   ImagePlus,
-  Square,
-  Circle,
-  Minus,
-  Bold,
-  Italic,
-  Underline,
-  AlignLeft,
-  AlignCenter,
-  AlignRight,
+  Shapes,
+  QrCode,
   Layers,
+  Upload,
+  FileJson,
 } from 'lucide-react'
-import { cn } from '@/lib/utils'
-import { GOOGLE_FONTS } from '@/lib/designer/fonts'
+
+// --- Tab definitions ---
+
+type TabId = 'text' | 'images' | 'shapes' | 'qrcode' | 'layers' | 'filters'
+
+interface TabDef {
+  id: TabId
+  label: string
+  icon: React.ComponentType<{ className?: string }>
+}
+
+const TABS: TabDef[] = [
+  { id: 'text', label: 'Text', icon: Type },
+  { id: 'images', label: 'Images', icon: ImagePlus },
+  { id: 'shapes', label: 'Shapes', icon: Shapes },
+  { id: 'qrcode', label: 'QR/Barcode', icon: QrCode },
+  { id: 'filters', label: 'Filters', icon: ImagePlus },
+  { id: 'layers', label: 'Layers', icon: Layers },
+]
 
 // --- Props ---
 
@@ -43,56 +57,16 @@ interface ToolbarProps {
 
 export function Toolbar({
   canvasRef,
-  onToggleLayers,
-  showLayers,
   className,
 }: ToolbarProps) {
+  const [activeTab, setActiveTab] = useState<TabId>('text')
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const importInputRef = useRef<HTMLInputElement>(null)
+  const editor = useEditorStore((s) => s.editor)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const selectedObject = useEditorStore((s) => s.activeObjects?.[0] as any)
 
-  // Text options
-  const [fontFamily, setFontFamily] = useState('Inter')
-  const [fontSize, setFontSize] = useState(24)
-  const [textColor, setTextColor] = useState('#000000')
-  const [isBold, setIsBold] = useState(false)
-  const [isItalic, setIsItalic] = useState(false)
-  const [isUnderline, setIsUnderline] = useState(false)
-  const [textAlign, setTextAlign] = useState<'left' | 'center' | 'right'>('left')
-
-  // Shape options
-  const [shapeFill, setShapeFill] = useState('#3b82f6')
-  const [shapeStroke, setShapeStroke] = useState('#1d4ed8')
-  const [shapeStrokeWidth, setShapeStrokeWidth] = useState(2)
-
-  // --- Text actions ---
-
-  const handleAddText = useCallback(() => {
-    canvasRef.current?.addText({
-      fontFamily,
-      fontSize,
-      fill: textColor,
-      fontWeight: isBold ? 'bold' : 'normal',
-      fontStyle: isItalic ? 'italic' : 'normal',
-      underline: isUnderline,
-      textAlign,
-    })
-  }, [canvasRef, fontFamily, fontSize, textColor, isBold, isItalic, isUnderline, textAlign])
-
-  const updateSelectedText = useCallback(
-    (property: string, value: unknown) => {
-      const canvas = canvasRef.current?.getCanvas()
-      if (!canvas) return
-
-      const activeObj = canvas.getActiveObject()
-      if (!activeObj || (activeObj.type !== 'i-text' && activeObj.type !== 'textbox')) return
-
-      activeObj.set(property, value)
-      canvas.renderAll()
-    },
-    [canvasRef]
-  )
-
-  // --- Image actions ---
-
+  // --- Image upload ---
   const handleImageUpload = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0]
@@ -104,352 +78,131 @@ export function Toolbar({
         canvasRef.current?.addImage(dataUrl)
       }
       reader.readAsDataURL(file)
-
-      // Reset input so the same file can be uploaded again
       e.target.value = ''
     },
     [canvasRef]
   )
 
-  // --- Shape actions ---
+  // --- File import ---
+  const handleFileImport = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0]
+      if (!file || !editor) return
 
-  const handleAddRect = useCallback(() => {
-    canvasRef.current?.addShape('rect', {
-      fill: shapeFill,
-      stroke: shapeStroke,
-      strokeWidth: shapeStrokeWidth,
-    })
-  }, [canvasRef, shapeFill, shapeStroke, shapeStrokeWidth])
-
-  const handleAddCircle = useCallback(() => {
-    canvasRef.current?.addShape('circle', {
-      fill: shapeFill,
-      stroke: shapeStroke,
-      strokeWidth: shapeStrokeWidth,
-    })
-  }, [canvasRef, shapeFill, shapeStroke, shapeStrokeWidth])
-
-  const handleAddLine = useCallback(() => {
-    canvasRef.current?.addShape('line', {
-      stroke: shapeStroke,
-      strokeWidth: shapeStrokeWidth,
-    })
-  }, [canvasRef, shapeStroke, shapeStrokeWidth])
+      const plugin = editor.getPlugin<{
+        importFile: (file: File) => Promise<void>
+      }>('ImportPlugin')
+      if (plugin) {
+        plugin.importFile(file)
+      }
+      e.target.value = ''
+    },
+    [editor]
+  )
 
   return (
-    <div
-      className={cn(
-        'flex w-[250px] shrink-0 flex-col overflow-y-auto border-r bg-background p-4',
-        className
-      )}
-    >
-      {/* --- Text Section --- */}
-      <div className="space-y-3">
-        <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
-          <Type className="size-4" />
-          Add Text
-        </h3>
+    <div className={cn('flex h-full shrink-0', className)}>
+      {/* Icon sidebar */}
+      <div className="flex w-12 flex-col items-center border-r bg-gray-50 py-2 gap-1">
+        {TABS.map((tab) => {
+          const Icon = tab.icon
+          const isActive = activeTab === tab.id
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={cn(
+                'flex h-10 w-10 flex-col items-center justify-center rounded-lg text-[9px] transition-colors',
+                isActive
+                  ? 'bg-indigo-100 text-indigo-700'
+                  : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'
+              )}
+              title={tab.label}
+            >
+              <Icon className="h-4 w-4" />
+              <span className="mt-0.5 leading-tight">{tab.label}</span>
+            </button>
+          )
+        })}
+      </div>
 
-        <Button
-          variant="outline"
-          size="sm"
-          className="w-full"
-          onClick={handleAddText}
-        >
-          <Type className="size-4" />
-          Add Text
-        </Button>
+      {/* Panel content */}
+      <div className="w-[228px] overflow-y-auto border-r bg-background p-3">
+        {/* Text tab */}
+        {activeTab === 'text' && <TextPanel />}
 
-        {/* Font picker */}
-        <div className="space-y-1.5">
-          <Label className="text-xs">Font</Label>
-          <Select
-            value={fontFamily}
-            onValueChange={(value) => {
-              setFontFamily(value)
-              updateSelectedText('fontFamily', value)
-            }}
-          >
-            <SelectTrigger className="w-full text-xs">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {GOOGLE_FONTS.map((font) => (
-                <SelectItem key={font} value={font} className="text-xs">
-                  {font}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        {/* Images tab */}
+        {activeTab === 'images' && (
+          <div className="space-y-4">
+            <div className="text-sm font-semibold text-gray-700">Images</div>
 
-        {/* Font size */}
-        <div className="space-y-1.5">
-          <Label className="text-xs">Size</Label>
-          <Input
-            type="number"
-            min={8}
-            max={200}
-            value={fontSize}
-            onChange={(e) => {
-              const val = Number(e.target.value)
-              setFontSize(val)
-              updateSelectedText('fontSize', val)
-            }}
-            className="h-8 text-xs"
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/png,image/jpeg,image/svg+xml,image/webp"
+              className="hidden"
+              onChange={handleImageUpload}
+            />
+
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="flex w-full items-center gap-2 rounded-lg border-2 border-dashed border-gray-300 px-4 py-6 text-sm text-gray-500 hover:border-indigo-400 hover:bg-indigo-50 hover:text-indigo-600 transition-colors"
+            >
+              <Upload className="h-5 w-5" />
+              <div>
+                <div className="font-medium">Upload Image</div>
+                <div className="text-[10px] text-gray-400">PNG, JPG, SVG, WebP</div>
+              </div>
+            </button>
+
+            {/* Import file */}
+            <input
+              ref={importInputRef}
+              type="file"
+              accept=".svg,.json,image/svg+xml,application/json"
+              className="hidden"
+              onChange={handleFileImport}
+            />
+
+            <button
+              onClick={() => importInputRef.current?.click()}
+              className="flex w-full items-center gap-2 rounded-md border border-gray-200 px-3 py-2 text-sm text-gray-600 hover:bg-gray-50 transition-colors"
+            >
+              <FileJson className="h-4 w-4" />
+              <span>Import SVG / JSON</span>
+            </button>
+
+            {/* Image filters section (shown when an image is selected) */}
+            <div className="border-t pt-3">
+              <ImageFiltersPanel />
+            </div>
+          </div>
+        )}
+
+        {/* Shapes tab */}
+        {activeTab === 'shapes' && <ShapesPanel />}
+
+        {/* QR/Barcode tab */}
+        {activeTab === 'qrcode' && (
+          <div className="space-y-6">
+            <QRCodePanel />
+            <div className="border-t pt-4">
+              <BarcodePanel />
+            </div>
+          </div>
+        )}
+
+        {/* Filters tab */}
+        {activeTab === 'filters' && <ImageFiltersPanel />}
+
+        {/* Layers tab */}
+        {activeTab === 'layers' && (
+          <LayersPanel
+            canvasRef={canvasRef}
+            selectedObject={selectedObject}
+            onClose={() => setActiveTab('text')}
           />
-        </div>
-
-        {/* Text color */}
-        <div className="space-y-1.5">
-          <Label className="text-xs">Color</Label>
-          <div className="flex items-center gap-2">
-            <input
-              type="color"
-              value={textColor}
-              onChange={(e) => {
-                setTextColor(e.target.value)
-                updateSelectedText('fill', e.target.value)
-              }}
-              className="size-8 cursor-pointer rounded border"
-            />
-            <Input
-              value={textColor}
-              onChange={(e) => {
-                setTextColor(e.target.value)
-                updateSelectedText('fill', e.target.value)
-              }}
-              className="h-8 flex-1 text-xs"
-              maxLength={7}
-            />
-          </div>
-        </div>
-
-        {/* Bold / Italic / Underline */}
-        <div className="flex items-center gap-1">
-          <Button
-            variant={isBold ? 'default' : 'outline'}
-            size="icon-xs"
-            onClick={() => {
-              const next = !isBold
-              setIsBold(next)
-              updateSelectedText('fontWeight', next ? 'bold' : 'normal')
-            }}
-            title="Bold"
-          >
-            <Bold className="size-3" />
-          </Button>
-          <Button
-            variant={isItalic ? 'default' : 'outline'}
-            size="icon-xs"
-            onClick={() => {
-              const next = !isItalic
-              setIsItalic(next)
-              updateSelectedText('fontStyle', next ? 'italic' : 'normal')
-            }}
-            title="Italic"
-          >
-            <Italic className="size-3" />
-          </Button>
-          <Button
-            variant={isUnderline ? 'default' : 'outline'}
-            size="icon-xs"
-            onClick={() => {
-              const next = !isUnderline
-              setIsUnderline(next)
-              updateSelectedText('underline', next)
-            }}
-            title="Underline"
-          >
-            <Underline className="size-3" />
-          </Button>
-        </div>
-
-        {/* Text alignment */}
-        <div className="flex items-center gap-1">
-          <Button
-            variant={textAlign === 'left' ? 'default' : 'outline'}
-            size="icon-xs"
-            onClick={() => {
-              setTextAlign('left')
-              updateSelectedText('textAlign', 'left')
-            }}
-            title="Align Left"
-          >
-            <AlignLeft className="size-3" />
-          </Button>
-          <Button
-            variant={textAlign === 'center' ? 'default' : 'outline'}
-            size="icon-xs"
-            onClick={() => {
-              setTextAlign('center')
-              updateSelectedText('textAlign', 'center')
-            }}
-            title="Align Center"
-          >
-            <AlignCenter className="size-3" />
-          </Button>
-          <Button
-            variant={textAlign === 'right' ? 'default' : 'outline'}
-            size="icon-xs"
-            onClick={() => {
-              setTextAlign('right')
-              updateSelectedText('textAlign', 'right')
-            }}
-            title="Align Right"
-          >
-            <AlignRight className="size-3" />
-          </Button>
-        </div>
-      </div>
-
-      <Separator className="my-4" />
-
-      {/* --- Image Section --- */}
-      <div className="space-y-3">
-        <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
-          <ImagePlus className="size-4" />
-          Add Image
-        </h3>
-
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/png,image/jpeg,image/svg+xml"
-          className="hidden"
-          onChange={handleImageUpload}
-        />
-
-        <Button
-          variant="outline"
-          size="sm"
-          className="w-full"
-          onClick={() => fileInputRef.current?.click()}
-        >
-          <ImagePlus className="size-4" />
-          Upload Image
-        </Button>
-      </div>
-
-      <Separator className="my-4" />
-
-      {/* --- Shapes Section --- */}
-      <div className="space-y-3">
-        <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
-          <Square className="size-4" />
-          Add Shape
-        </h3>
-
-        <div className="flex items-center gap-1">
-          <Button
-            variant="outline"
-            size="sm"
-            className="flex-1"
-            onClick={handleAddRect}
-            title="Add Rectangle"
-          >
-            <Square className="size-3.5" />
-            Rect
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="flex-1"
-            onClick={handleAddCircle}
-            title="Add Circle"
-          >
-            <Circle className="size-3.5" />
-            Circle
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="flex-1"
-            onClick={handleAddLine}
-            title="Add Line"
-          >
-            <Minus className="size-3.5" />
-            Line
-          </Button>
-        </div>
-
-        {/* Shape fill color */}
-        <div className="space-y-1.5">
-          <Label className="text-xs">Fill Color</Label>
-          <div className="flex items-center gap-2">
-            <input
-              type="color"
-              value={shapeFill}
-              onChange={(e) => setShapeFill(e.target.value)}
-              className="size-8 cursor-pointer rounded border"
-            />
-            <Input
-              value={shapeFill}
-              onChange={(e) => setShapeFill(e.target.value)}
-              className="h-8 flex-1 text-xs"
-              maxLength={7}
-            />
-          </div>
-        </div>
-
-        {/* Shape stroke color */}
-        <div className="space-y-1.5">
-          <Label className="text-xs">Stroke Color</Label>
-          <div className="flex items-center gap-2">
-            <input
-              type="color"
-              value={shapeStroke}
-              onChange={(e) => setShapeStroke(e.target.value)}
-              className="size-8 cursor-pointer rounded border"
-            />
-            <Input
-              value={shapeStroke}
-              onChange={(e) => setShapeStroke(e.target.value)}
-              className="h-8 flex-1 text-xs"
-              maxLength={7}
-            />
-          </div>
-        </div>
-
-        {/* Shape stroke width */}
-        <div className="space-y-1.5">
-          <Label className="text-xs">Stroke Width</Label>
-          <Input
-            type="number"
-            min={0}
-            max={20}
-            value={shapeStrokeWidth}
-            onChange={(e) => setShapeStrokeWidth(Number(e.target.value))}
-            className="h-8 text-xs"
-          />
-        </div>
-      </div>
-
-      <Separator className="my-4" />
-
-      {/* --- Templates / Layers Toggle --- */}
-      <div className="space-y-3">
-        <h3 className="text-sm font-semibold text-muted-foreground">Tools</h3>
-
-        <Button
-          variant={showLayers ? 'default' : 'outline'}
-          size="sm"
-          className="w-full"
-          onClick={onToggleLayers}
-        >
-          <Layers className="size-4" />
-          Layers
-        </Button>
-      </div>
-
-      <Separator className="my-4" />
-
-      {/* --- Templates (placeholder) --- */}
-      <div className="space-y-3">
-        <h3 className="text-sm font-semibold text-muted-foreground">Templates</h3>
-        <p className="text-xs text-muted-foreground">
-          Template gallery coming soon. You can design from scratch using the tools above.
-        </p>
+        )}
       </div>
     </div>
   )

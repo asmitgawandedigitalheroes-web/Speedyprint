@@ -29,7 +29,18 @@ import {
   AlignRight,
   ImagePlus,
   MousePointer2,
+  AlignStartVertical,
+  AlignCenterVertical,
+  AlignEndVertical,
+  AlignStartHorizontal,
+  AlignCenterHorizontal,
+  AlignEndHorizontal,
+  FlipHorizontal2,
+  FlipVertical2,
+  Group,
+  Ungroup,
 } from 'lucide-react'
+import { useEditorStore } from '@/lib/designer/store'
 import { cn } from '@/lib/utils'
 import { GOOGLE_FONTS } from '@/lib/designer/fonts'
 
@@ -616,6 +627,11 @@ export function PropertiesPanel({
         </div>
       )}
 
+      {/* --- Alignment Controls --- */}
+      <AlignmentSection />
+
+      <Separator className="my-3" />
+
       {/* --- Layer Controls --- */}
       <div className="space-y-2">
         <Label className="text-xs font-medium text-muted-foreground">Layer Order</Label>
@@ -657,6 +673,11 @@ export function PropertiesPanel({
 
       <Separator className="my-3" />
 
+      {/* --- Flip + Group --- */}
+      <FlipGroupSection />
+
+      <Separator className="my-3" />
+
       {/* --- Lock / Delete --- */}
       <div className="flex items-center gap-2">
         <Button
@@ -686,6 +707,108 @@ export function PropertiesPanel({
         >
           <Trash2 className="size-3.5" />
           Delete
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+// --- AlignmentSection component ---
+
+function AlignmentSection() {
+  const editor = useEditorStore((s) => s.editor)
+
+  const handleAlign = (type: string) => {
+    if (!editor) return
+    const plugin = editor.getPlugin<{ align: (type: string) => void }>('AlignPlugin')
+    plugin?.align(type)
+  }
+
+  const handleDistribute = (type: string) => {
+    if (!editor) return
+    const plugin = editor.getPlugin<{ distribute: (type: string) => void }>('AlignPlugin')
+    plugin?.distribute(type)
+  }
+
+  return (
+    <div className="space-y-2">
+      <Label className="text-xs font-medium text-muted-foreground">Align</Label>
+      <div className="grid grid-cols-6 gap-1">
+        <Button variant="outline" size="icon-xs" onClick={() => handleAlign('left')} title="Align Left">
+          <AlignStartVertical className="size-3" />
+        </Button>
+        <Button variant="outline" size="icon-xs" onClick={() => handleAlign('center-h')} title="Align Center H">
+          <AlignCenterVertical className="size-3" />
+        </Button>
+        <Button variant="outline" size="icon-xs" onClick={() => handleAlign('right')} title="Align Right">
+          <AlignEndVertical className="size-3" />
+        </Button>
+        <Button variant="outline" size="icon-xs" onClick={() => handleAlign('top')} title="Align Top">
+          <AlignStartHorizontal className="size-3" />
+        </Button>
+        <Button variant="outline" size="icon-xs" onClick={() => handleAlign('center-v')} title="Align Center V">
+          <AlignCenterHorizontal className="size-3" />
+        </Button>
+        <Button variant="outline" size="icon-xs" onClick={() => handleAlign('bottom')} title="Align Bottom">
+          <AlignEndHorizontal className="size-3" />
+        </Button>
+      </div>
+      <div className="grid grid-cols-2 gap-1">
+        <Button variant="outline" size="xs" onClick={() => handleDistribute('horizontal')} className="text-[10px]">
+          Distribute H
+        </Button>
+        <Button variant="outline" size="xs" onClick={() => handleDistribute('vertical')} className="text-[10px]">
+          Distribute V
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+// --- FlipGroupSection component ---
+
+function FlipGroupSection() {
+  const editor = useEditorStore((s) => s.editor)
+
+  const handleFlipH = () => {
+    if (!editor) return
+    const plugin = editor.getPlugin<{ flipHorizontal: () => void }>('FlipPlugin')
+    plugin?.flipHorizontal()
+  }
+
+  const handleFlipV = () => {
+    if (!editor) return
+    const plugin = editor.getPlugin<{ flipVertical: () => void }>('FlipPlugin')
+    plugin?.flipVertical()
+  }
+
+  const handleGroup = () => {
+    if (!editor) return
+    const plugin = editor.getPlugin<{ group: () => void }>('GroupPlugin')
+    plugin?.group()
+  }
+
+  const handleUngroup = () => {
+    if (!editor) return
+    const plugin = editor.getPlugin<{ ungroup: () => void }>('GroupPlugin')
+    plugin?.ungroup()
+  }
+
+  return (
+    <div className="space-y-2">
+      <Label className="text-xs font-medium text-muted-foreground">Transform</Label>
+      <div className="grid grid-cols-4 gap-1">
+        <Button variant="outline" size="icon-xs" onClick={handleFlipH} title="Flip Horizontal">
+          <FlipHorizontal2 className="size-3" />
+        </Button>
+        <Button variant="outline" size="icon-xs" onClick={handleFlipV} title="Flip Vertical">
+          <FlipVertical2 className="size-3" />
+        </Button>
+        <Button variant="outline" size="icon-xs" onClick={handleGroup} title="Group (Ctrl+G)">
+          <Group className="size-3" />
+        </Button>
+        <Button variant="outline" size="icon-xs" onClick={handleUngroup} title="Ungroup (Ctrl+Shift+G)">
+          <Ungroup className="size-3" />
         </Button>
       </div>
     </div>

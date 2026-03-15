@@ -10,29 +10,34 @@ import {
 } from 'react'
 import type { ProductTemplate } from '@/types'
 import type { DesignerCanvasRef } from '@/hooks/useDesigner'
-import type { CanvasZones } from '@/lib/designer/canvas-utils'
-import {
-  initializeCanvas,
-  getCanvasJSON,
-  loadCanvasJSON,
-  isZoneGuide,
-} from '@/lib/designer/canvas-utils'
-import {
-  enforceConstraints,
-  enforceScaleConstraints,
-  clearAlignmentGuides,
-} from '@/lib/designer/constraints'
+import { getCanvasJSON, loadCanvasJSON } from '@/lib/designer/canvas-utils'
 import { loadGoogleFonts, GOOGLE_FONTS } from '@/lib/designer/fonts'
 import { cn } from '@/lib/utils'
-import { Button } from '@/components/ui/button'
-import { ZoomIn, ZoomOut, Maximize } from 'lucide-react'
-
-// --- Constants ---
-
-const MAX_UNDO_STACK = 50
-const MIN_ZOOM = 0.1
-const MAX_ZOOM = 5
-const ZOOM_STEP = 0.1
+import { Editor } from '@/lib/designer/editor'
+import { useEditorStore } from '@/lib/designer/store'
+import {
+  HistoryPlugin,
+  CopyPastePlugin,
+  ZoomPlugin,
+  ZonePlugin,
+  SnapPlugin,
+  KeyboardPlugin,
+  ContextMenuPlugin,
+  GroupPlugin,
+  AlignPlugin,
+  FlipPlugin,
+  GridPlugin,
+  TextPlugin,
+  RulerPlugin,
+  GuidelinePlugin,
+  QRCodePlugin,
+  BarcodePlugin,
+  ShapePlugin,
+  ImagePlugin,
+  ExportPlugin,
+  ImportPlugin,
+  WatermarkPlugin,
+} from '@/lib/designer/plugins'
 
 // --- Types ---
 
@@ -53,176 +58,18 @@ const DesignerCanvasInner = forwardRef<DesignerCanvasRef, DesignerCanvasProps>(
     ref
   ) {
     const canvasElRef = useRef<HTMLCanvasElement>(null)
+    const editorRef = useRef<Editor | null>(null)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const canvasRef = useRef<any>(null)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const fabricRef = useRef<any>(null)
-    const zonesRef = useRef<CanvasZones | null>(null)
-    const [zoom, setZoom] = useState(1)
-    const [isReady, setIsReady] = useState(false)
+    const containerRef = useRef<HTMLDivElement>(null)
     const [isDragOver, setIsDragOver] = useState(false)
 
-    // Undo/redo stacks
-    const undoStack = useRef<string[]>([])
-    const redoStack = useRef<string[]>([])
-    const isUndoRedo = useRef(false)
+    const zoom = useEditorStore((s) => s.zoom)
+    const isReady = useEditorStore((s) => s.isReady)
 
-    // Pan state
-    const isPanning = useRef(false)
-    const lastPanPoint = useRef<{ x: number; y: number } | null>(null)
-    const spaceHeld = useRef(false)
-
-    // Clipboard for copy/paste
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const clipboardRef = useRef<any>(null)
-
-    // --- Save state to undo stack ---
-
-    const saveState = useCallback(() => {
-      if (isUndoRedo.current || !canvasRef.current) return
-
-      const json = JSON.stringify(getCanvasJSON(canvasRef.current))
-
-      // Avoid duplicate consecutive states
-      if (undoStack.current.length > 0 && undoStack.current[undoStack.current.length - 1] === json) {
-        return
-      }
-
-      undoStack.current.push(json)
-      if (undoStack.current.length > MAX_UNDO_STACK) {
-        undoStack.current.shift()
-      }
-      // Clear redo stack when new action is performed
-      redoStack.current = []
-    }, [])
-
-    // --- Undo ---
-
-    const undo = useCallback(async () => {
-      if (undoStack.current.length === 0 || !canvasRef.current) return
-
-      isUndoRedo.current = true
-      const currentState = JSON.stringify(getCanvasJSON(canvasRef.current))
-      redoStack.current.push(currentState)
-
-      const prevState = undoStack.current.pop()!
-      const json = JSON.parse(prevState)
-      await loadCanvasJSON(canvasRef.current, json, () => {
-        isUndoRedo.current = false
-        canvasRef.current?.renderAll()
-      })
-    }, [])
-
-    // --- Redo ---
-
-    const redo = useCallback(async () => {
-      if (redoStack.current.length === 0 || !canvasRef.current) return
-
-      isUndoRedo.current = true
-      const currentState = JSON.stringify(getCanvasJSON(canvasRef.current))
-      undoStack.current.push(currentState)
-
-      const nextState = redoStack.current.pop()!
-      const json = JSON.parse(nextState)
-      await loadCanvasJSON(canvasRef.current, json, () => {
-        isUndoRedo.current = false
-        canvasRef.current?.renderAll()
-      })
-    }, [])
-
-    // --- Delete selected ---
-
-    const deleteSelected = useCallback(() => {
-      const canvas = canvasRef.current
-      if (!canvas) return
-
-      const activeObjects = canvas.getActiveObjects()
-      if (activeObjects.length === 0) return
-
-      saveState()
-
-      activeObjects.forEach((obj: { name?: string }) => {
-        if (!isZoneGuide(obj) && obj.name !== '__print_bg') {
-          canvas.remove(obj)
-        }
-      })
-
-      canvas.discardActiveObject()
-      canvas.renderAll()
-      onSelectionChange?.(null)
-      onCanvasModified?.()
-    }, [saveState, onSelectionChange, onCanvasModified])
-
-    // --- Copy / Paste ---
-
-    const copySelected = useCallback(() => {
-      const canvas = canvasRef.current
-      if (!canvas) return
-
-      const active = canvas.getActiveObject()
-      if (!active) return
-
-      // Clone the active object using Fabric v7 async clone
-      active.clone().then((cloned: unknown) => {
-        clipboardRef.current = cloned
-      }).catch(() => {
-        // Fallback: serialize and store
-        clipboardRef.current = active.toObject(['name'])
-      })
-    }, [])
-
-    const pasteFromClipboard = useCallback(() => {
-      const canvas = canvasRef.current
-      const clipboard = clipboardRef.current
-      if (!canvas || !clipboard) return
-
-      saveState()
-
-      // Clone again from clipboard to allow multiple pastes
-      const doPaste = (cloned: { set: (props: Record<string, unknown>) => void; canvas?: unknown }) => {
-        canvas.discardActiveObject()
-
-        // Offset paste position
-        cloned.set({
-          left: (cloned as unknown as { left: number }).left + 20,
-          top: (cloned as unknown as { top: number }).top + 20,
-          evented: true,
-        })
-
-        canvas.add(cloned)
-        canvas.setActiveObject(cloned)
-        canvas.requestRenderAll()
-        onCanvasModified?.()
-      }
-
-      if (typeof clipboard.clone === 'function') {
-        clipboard.clone().then(doPaste).catch(() => {
-          // Silently fail on clone errors
-        })
-      }
-    }, [saveState, onCanvasModified])
-
-    // --- Select All ---
-
-    const selectAll = useCallback(() => {
-      const canvas = canvasRef.current
-      const fabric = fabricRef.current
-      if (!canvas || !fabric) return
-
-      const objects = canvas
-        .getObjects()
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .filter((obj: any) => !isZoneGuide(obj) && obj.name !== '__print_bg' && obj.selectable !== false)
-
-      if (objects.length === 0) return
-
-      canvas.discardActiveObject()
-      const selection = new fabric.ActiveSelection(objects, { canvas })
-      canvas.setActiveObject(selection)
-      canvas.requestRenderAll()
-    }, [])
-
-    // --- Initialize Fabric Canvas ---
+    // --- Initialize Fabric Canvas + Editor ---
 
     useEffect(() => {
       let mounted = true
@@ -247,55 +94,86 @@ const DesignerCanvasInner = forwardRef<DesignerCanvasRef, DesignerCanvasProps>(
 
           canvasRef.current = canvas
 
+          // --- Create Editor & Register Plugins ---
+          const editor = new Editor(canvas)
+          editorRef.current = editor
+
+          // Register core plugins
+          await editor.use(HistoryPlugin)
+          await editor.use(CopyPastePlugin)
+          await editor.use(ZoomPlugin)
+          await editor.use(ZonePlugin)
+          await editor.use(SnapPlugin)
+          await editor.use(KeyboardPlugin)
+          await editor.use(ContextMenuPlugin)
+
+          // Register Phase 4-10 plugins
+          await editor.use(GroupPlugin)
+          await editor.use(AlignPlugin)
+          await editor.use(FlipPlugin)
+          await editor.use(GridPlugin)
+          await editor.use(TextPlugin)
+          await editor.use(RulerPlugin)
+          await editor.use(GuidelinePlugin)
+          await editor.use(QRCodePlugin)
+          await editor.use(BarcodePlugin)
+          await editor.use(ShapePlugin)
+          await editor.use(ImagePlugin)
+          await editor.use(ExportPlugin)
+          await editor.use(ImportPlugin)
+          await editor.use(WatermarkPlugin)
+
           // Initialize zones
-          const zones = initializeCanvas(fabric, canvas, template)
-          zonesRef.current = zones
+          const zonePlugin = editor.getPlugin<ZonePlugin>('ZonePlugin')
+          const zones = zonePlugin.initZones(fabric, template)
 
-          // Fit canvas to container on init
-          fitToScreen(canvas, zones)
+          // Configure snap plugin
+          const snapPlugin = editor.getPlugin<SnapPlugin>('SnapPlugin')
+          snapPlugin.setZonesAndFabric(zones, fabric)
 
-          // --- Event Handlers ---
+          // Configure zoom plugin
+          const zoomPlugin = editor.getPlugin<ZoomPlugin>('ZoomPlugin')
+          zoomPlugin.setZones(zones)
+          if (containerRef.current) {
+            zoomPlugin.setContainer(containerRef.current)
+          }
 
-          // Selection events
+          // --- Canvas Event Handlers ---
+
+          // Selection events → notify React
           canvas.on('selection:created', (e: { selected?: unknown[] }) => {
             onSelectionChange?.(e.selected?.[0] ?? null)
+            const store = useEditorStore.getState()
+            store.setActiveObjects((e.selected ?? []) as import('fabric').FabricObject[])
           })
 
           canvas.on('selection:updated', (e: { selected?: unknown[] }) => {
             onSelectionChange?.(e.selected?.[0] ?? null)
+            const store = useEditorStore.getState()
+            store.setActiveObjects((e.selected ?? []) as import('fabric').FabricObject[])
           })
 
           canvas.on('selection:cleared', () => {
             onSelectionChange?.(null)
+            const store = useEditorStore.getState()
+            store.setActiveObjects([])
           })
 
-          // Object modification events
-          canvas.on('object:moving', (e: { target?: unknown }) => {
-            if (zonesRef.current) {
-              enforceConstraints(fabric, canvas, zonesRef.current, e as { target?: unknown })
-            }
-          })
-
-          canvas.on('object:scaling', (e: { target?: unknown }) => {
-            if (zonesRef.current) {
-              enforceScaleConstraints(zonesRef.current, e as { target?: unknown })
-            }
-          })
-
+          // Object modification → mark dirty
           canvas.on('object:modified', () => {
-            clearAlignmentGuides(canvas)
-            saveState()
             onCanvasModified?.()
           })
 
           canvas.on('object:added', () => {
-            if (!isUndoRedo.current) {
+            const history = editor.getPlugin<HistoryPlugin>('HistoryPlugin')
+            if (!history.isInProgress()) {
               onCanvasModified?.()
             }
           })
 
           canvas.on('object:removed', () => {
-            if (!isUndoRedo.current) {
+            const history = editor.getPlugin<HistoryPlugin>('HistoryPlugin')
+            if (!history.isInProgress()) {
               onCanvasModified?.()
             }
           })
@@ -304,77 +182,34 @@ const DesignerCanvasInner = forwardRef<DesignerCanvasRef, DesignerCanvasProps>(
             onCanvasModified?.()
           })
 
-          // --- Pan with middle mouse button ---
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          canvas.on('mouse:down', (opt: any) => {
-            const evt = opt.e as MouseEvent
-            if (evt.button === 1 || spaceHeld.current) {
-              // Middle mouse button or space held
-              isPanning.current = true
-              lastPanPoint.current = { x: evt.clientX, y: evt.clientY }
-              canvas.selection = false
-              canvas.defaultCursor = 'grab'
-              evt.preventDefault()
-              evt.stopPropagation()
-            }
+          // Listen for save requests from KeyboardPlugin
+          editor.on('canvas:save', () => {
+            onSaveRequested?.()
           })
 
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          canvas.on('mouse:move', (opt: any) => {
-            if (!isPanning.current || !lastPanPoint.current) return
-
-            const evt = opt.e as MouseEvent
-            const vpt = canvas.viewportTransform
-            if (!vpt) return
-
-            const dx = evt.clientX - lastPanPoint.current.x
-            const dy = evt.clientY - lastPanPoint.current.y
-
-            vpt[4] += dx
-            vpt[5] += dy
-
-            lastPanPoint.current = { x: evt.clientX, y: evt.clientY }
-            canvas.requestRenderAll()
-          })
-
-          canvas.on('mouse:up', () => {
-            if (isPanning.current) {
-              isPanning.current = false
-              lastPanPoint.current = null
-              canvas.selection = true
-              canvas.defaultCursor = 'default'
-              canvas.setViewportTransform(canvas.viewportTransform!)
-            }
-          })
-
-          // --- Zoom with scroll wheel ---
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          canvas.on('mouse:wheel', (opt: any) => {
-            const evt = opt.e as WheelEvent
-            evt.preventDefault()
-            evt.stopPropagation()
-
-            const delta = evt.deltaY
-            let newZoom = canvas.getZoom()
-            newZoom *= 0.999 ** delta
-
-            newZoom = Math.min(Math.max(newZoom, MIN_ZOOM), MAX_ZOOM)
-
-            const point = new fabric.Point(evt.offsetX, evt.offsetY)
-            canvas.zoomToPoint(point, newZoom)
-            setZoom(newZoom)
+          // Listen for dirty events from plugins
+          editor.on('canvas:dirty', () => {
+            onCanvasModified?.()
           })
 
           // Load initial JSON if provided
           if (initialJson) {
-            await loadCanvasJSON(canvas, initialJson, () => {
-              saveState()
-            })
-          } else {
-            saveState()
+            await loadCanvasJSON(canvas, initialJson)
+            const history = editor.getPlugin<HistoryPlugin>('HistoryPlugin')
+            history.saveState()
           }
 
-          setIsReady(true)
+          // Fit canvas to container
+          zoomPlugin.zoomToFit()
+
+          // Set store references
+          const store = useEditorStore.getState()
+          store.setEditor(editor)
+          store.setIsReady(true)
+          store.setCanvasDimensions({
+            width: zones.bleedPx.width,
+            height: zones.bleedPx.height,
+          })
         } catch (err) {
           console.error('[DesignerCanvas] initFabric failed:', err)
         }
@@ -384,287 +219,19 @@ const DesignerCanvasInner = forwardRef<DesignerCanvasRef, DesignerCanvasProps>(
 
       return () => {
         mounted = false
+        if (editorRef.current) {
+          editorRef.current.destroy()
+          editorRef.current = null
+        }
         if (canvasRef.current) {
           canvasRef.current.dispose()
           canvasRef.current = null
         }
+        const store = useEditorStore.getState()
+        store.reset()
       }
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [template])
-
-    // --- Keyboard shortcuts ---
-
-    useEffect(() => {
-      const handleKeyDown = (e: KeyboardEvent) => {
-        // Track space key for pan mode
-        if (e.code === 'Space' && !e.repeat) {
-          spaceHeld.current = true
-          if (canvasRef.current) {
-            canvasRef.current.defaultCursor = 'grab'
-          }
-          // Don't prevent default if user is typing in an input
-          const target = e.target as HTMLElement
-          if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
-            return
-          }
-          e.preventDefault()
-        }
-
-        // Don't intercept shortcuts when typing in inputs
-        const target = e.target as HTMLElement
-        if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
-          return
-        }
-
-        // Check if user is editing text on canvas
-        const activeObj = canvasRef.current?.getActiveObject()
-        const isEditingText = activeObj && activeObj.isEditing
-
-        if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
-          e.preventDefault()
-          undo()
-        } else if ((e.ctrlKey || e.metaKey) && e.key === 'y') {
-          e.preventDefault()
-          redo()
-        } else if ((e.ctrlKey || e.metaKey) && e.key === 'c' && !isEditingText) {
-          e.preventDefault()
-          copySelected()
-        } else if ((e.ctrlKey || e.metaKey) && e.key === 'v' && !isEditingText) {
-          e.preventDefault()
-          pasteFromClipboard()
-        } else if ((e.ctrlKey || e.metaKey) && e.key === 'a' && !isEditingText) {
-          e.preventDefault()
-          selectAll()
-        } else if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-          e.preventDefault()
-          onSaveRequested?.()
-        } else if (e.key === 'Escape') {
-          e.preventDefault()
-          canvasRef.current?.discardActiveObject()
-          canvasRef.current?.renderAll()
-          onSelectionChange?.(null)
-        } else if (e.key === 'Delete' || e.key === 'Backspace') {
-          // Only delete if not editing text
-          if (isEditingText) return
-          e.preventDefault()
-          deleteSelected()
-        }
-      }
-
-      const handleKeyUp = (e: KeyboardEvent) => {
-        if (e.code === 'Space') {
-          spaceHeld.current = false
-          if (canvasRef.current && !isPanning.current) {
-            canvasRef.current.defaultCursor = 'default'
-          }
-        }
-      }
-
-      window.addEventListener('keydown', handleKeyDown)
-      window.addEventListener('keyup', handleKeyUp)
-
-      return () => {
-        window.removeEventListener('keydown', handleKeyDown)
-        window.removeEventListener('keyup', handleKeyUp)
-      }
-    }, [undo, redo, deleteSelected, copySelected, pasteFromClipboard, selectAll, onSaveRequested, onSelectionChange])
-
-    // --- Fit to screen ---
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    function fitToScreen(canvas?: any, zones?: CanvasZones | null) {
-      const c = canvas || canvasRef.current
-      const z = zones || zonesRef.current
-      if (!c || !z) return
-
-      const container = canvasElRef.current?.parentElement
-      if (!container) return
-
-      const containerWidth = container.clientWidth - 40 // padding
-      const containerHeight = container.clientHeight - 40
-
-      const canvasWidth = z.bleedPx.width
-      const canvasHeight = z.bleedPx.height
-
-      const scaleX = containerWidth / canvasWidth
-      const scaleY = containerHeight / canvasHeight
-      const newZoom = Math.min(scaleX, scaleY, 1)
-
-      // Center the canvas
-      const vpWidth = containerWidth
-      const vpHeight = containerHeight
-      const offsetX = (vpWidth - canvasWidth * newZoom) / 2
-      const offsetY = (vpHeight - canvasHeight * newZoom) / 2
-
-      c.setViewportTransform([newZoom, 0, 0, newZoom, offsetX, offsetY])
-      setZoom(newZoom)
-    }
-
-    // --- Zoom controls ---
-
-    const zoomIn = useCallback(() => {
-      const canvas = canvasRef.current
-      if (!canvas) return
-
-      const center = canvas.getCenterPoint()
-      const newZoom = Math.min(canvas.getZoom() + ZOOM_STEP, MAX_ZOOM)
-      canvas.zoomToPoint(center, newZoom)
-      setZoom(newZoom)
-    }, [])
-
-    const zoomOut = useCallback(() => {
-      const canvas = canvasRef.current
-      if (!canvas) return
-
-      const center = canvas.getCenterPoint()
-      const newZoom = Math.max(canvas.getZoom() - ZOOM_STEP, MIN_ZOOM)
-      canvas.zoomToPoint(center, newZoom)
-      setZoom(newZoom)
-    }, [])
-
-    const zoomFit = useCallback(() => {
-      fitToScreen()
-    }, [])
-
-    // --- Add methods ---
-
-    const addText = useCallback(
-      (options?: Record<string, unknown>) => {
-        const fabric = fabricRef.current
-        const canvas = canvasRef.current
-        const zones = zonesRef.current
-        if (!fabric || !canvas || !zones) return
-
-        saveState()
-
-        const text = new fabric.IText('Edit this text', {
-          left: zones.safePx.left + zones.safePx.width / 2,
-          top: zones.safePx.top + zones.safePx.height / 2,
-          originX: 'center',
-          originY: 'center',
-          fontFamily: 'Inter',
-          fontSize: 24,
-          fill: '#000000',
-          ...options,
-        })
-
-        canvas.add(text)
-        canvas.setActiveObject(text)
-        canvas.renderAll()
-        onCanvasModified?.()
-      },
-      [saveState, onCanvasModified]
-    )
-
-    const addImage = useCallback(
-      async (url: string, options?: Record<string, unknown>) => {
-        const fabric = fabricRef.current
-        const canvas = canvasRef.current
-        const zones = zonesRef.current
-        if (!fabric || !canvas || !zones) return null
-
-        saveState()
-
-        return new Promise((resolve) => {
-          const imgElement = new Image()
-          imgElement.crossOrigin = 'anonymous'
-          imgElement.onload = () => {
-            const fabricImage = new fabric.FabricImage(imgElement, {
-              left: zones.safePx.left + zones.safePx.width / 2,
-              top: zones.safePx.top + zones.safePx.height / 2,
-              originX: 'center',
-              originY: 'center',
-              ...options,
-            })
-
-            // Scale to max 300px on largest dimension
-            const maxDim = 300
-            const imgWidth = fabricImage.width || 1
-            const imgHeight = fabricImage.height || 1
-            const scaleFactor = Math.min(maxDim / imgWidth, maxDim / imgHeight, 1)
-            fabricImage.scale(scaleFactor)
-
-            canvas.add(fabricImage)
-            canvas.setActiveObject(fabricImage)
-            canvas.renderAll()
-            onCanvasModified?.()
-            resolve(fabricImage)
-          }
-          imgElement.onerror = () => resolve(null)
-          imgElement.src = url
-        })
-      },
-      [saveState, onCanvasModified]
-    )
-
-    const addShape = useCallback(
-      (type: 'rect' | 'circle' | 'line', options?: Record<string, unknown>) => {
-        const fabric = fabricRef.current
-        const canvas = canvasRef.current
-        const zones = zonesRef.current
-        if (!fabric || !canvas || !zones) return
-
-        saveState()
-
-        const centerX = zones.safePx.left + zones.safePx.width / 2
-        const centerY = zones.safePx.top + zones.safePx.height / 2
-
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        let shape: any
-
-        switch (type) {
-          case 'rect':
-            shape = new fabric.Rect({
-              left: centerX,
-              top: centerY,
-              originX: 'center',
-              originY: 'center',
-              width: 120,
-              height: 80,
-              fill: '#3b82f6',
-              stroke: '#1d4ed8',
-              strokeWidth: 2,
-              rx: 0,
-              ry: 0,
-              ...options,
-            })
-            break
-
-          case 'circle':
-            shape = new fabric.Circle({
-              left: centerX,
-              top: centerY,
-              originX: 'center',
-              originY: 'center',
-              radius: 50,
-              fill: '#22c55e',
-              stroke: '#15803d',
-              strokeWidth: 2,
-              ...options,
-            })
-            break
-
-          case 'line':
-            shape = new fabric.Line(
-              [centerX - 60, centerY, centerX + 60, centerY],
-              {
-                stroke: '#000000',
-                strokeWidth: 3,
-                ...options,
-              }
-            )
-            break
-        }
-
-        if (shape) {
-          canvas.add(shape)
-          canvas.setActiveObject(shape)
-          canvas.renderAll()
-          onCanvasModified?.()
-        }
-      },
-      [saveState, onCanvasModified]
-    )
 
     // --- Drag and Drop Image Upload ---
 
@@ -696,33 +263,169 @@ const DesignerCanvasInner = forwardRef<DesignerCanvasRef, DesignerCanvasProps>(
         const reader = new FileReader()
         reader.onload = () => {
           const dataUrl = reader.result as string
-          addImage(dataUrl)
+          addImageInternal(dataUrl)
         }
         reader.readAsDataURL(file)
       },
-      [addImage]
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      []
     )
 
-    // --- Imperative handle ---
+    // --- Internal helper for adding images ---
+
+    const addImageInternal = useCallback(
+      async (url: string, options?: Record<string, unknown>) => {
+        const fabric = fabricRef.current
+        const canvas = canvasRef.current
+        const editor = editorRef.current
+        if (!fabric || !canvas || !editor) return null
+
+        const zonePlugin = editor.getPlugin<ZonePlugin>('ZonePlugin')
+        const zones = zonePlugin.getZones()
+        if (!zones) return null
+
+        const history = editor.getPlugin<HistoryPlugin>('HistoryPlugin')
+        history.saveState()
+
+        return new Promise((resolve) => {
+          const imgElement = new Image()
+          imgElement.crossOrigin = 'anonymous'
+          imgElement.onload = () => {
+            const fabricImage = new fabric.FabricImage(imgElement, {
+              left: zones.safePx.left + zones.safePx.width / 2,
+              top: zones.safePx.top + zones.safePx.height / 2,
+              originX: 'center',
+              originY: 'center',
+              ...options,
+            })
+
+            const maxDim = 300
+            const imgWidth = fabricImage.width || 1
+            const imgHeight = fabricImage.height || 1
+            const scaleFactor = Math.min(maxDim / imgWidth, maxDim / imgHeight, 1)
+            fabricImage.scale(scaleFactor)
+
+            canvas.add(fabricImage)
+            canvas.setActiveObject(fabricImage)
+            canvas.requestRenderAll()
+            onCanvasModified?.()
+            resolve(fabricImage)
+          }
+          imgElement.onerror = () => resolve(null)
+          imgElement.src = url
+        })
+      },
+      [onCanvasModified]
+    )
+
+    // --- Imperative handle (backward-compatible) ---
 
     useImperativeHandle(
       ref,
       () => ({
         getCanvas: () => canvasRef.current,
-        addText,
-        addImage,
-        addShape,
-        undo,
-        redo,
+        getEditor: () => editorRef.current,
+        addText: (options?: Record<string, unknown>) => {
+          const fabric = fabricRef.current
+          const canvas = canvasRef.current
+          const editor = editorRef.current
+          if (!fabric || !canvas || !editor) return
+
+          const zonePlugin = editor.getPlugin<ZonePlugin>('ZonePlugin')
+          const zones = zonePlugin.getZones()
+          if (!zones) return
+
+          const history = editor.getPlugin<HistoryPlugin>('HistoryPlugin')
+          history.saveState()
+
+          const text = new fabric.IText('Edit this text', {
+            left: zones.safePx.left + zones.safePx.width / 2,
+            top: zones.safePx.top + zones.safePx.height / 2,
+            originX: 'center',
+            originY: 'center',
+            fontFamily: 'Inter',
+            fontSize: 24,
+            fill: '#000000',
+            ...options,
+          })
+
+          canvas.add(text)
+          canvas.setActiveObject(text)
+          canvas.renderAll()
+          onCanvasModified?.()
+        },
+        addImage: addImageInternal,
+        addShape: (type: 'rect' | 'circle' | 'line', options?: Record<string, unknown>) => {
+          const fabric = fabricRef.current
+          const canvas = canvasRef.current
+          const editor = editorRef.current
+          if (!fabric || !canvas || !editor) return
+
+          const zonePlugin = editor.getPlugin<ZonePlugin>('ZonePlugin')
+          const zones = zonePlugin.getZones()
+          if (!zones) return
+
+          const history = editor.getPlugin<HistoryPlugin>('HistoryPlugin')
+          history.saveState()
+
+          const centerX = zones.safePx.left + zones.safePx.width / 2
+          const centerY = zones.safePx.top + zones.safePx.height / 2
+
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          let shape: any
+
+          switch (type) {
+            case 'rect':
+              shape = new fabric.Rect({
+                left: centerX, top: centerY,
+                originX: 'center', originY: 'center',
+                width: 120, height: 80,
+                fill: '#3b82f6', stroke: '#1d4ed8', strokeWidth: 2,
+                rx: 0, ry: 0,
+                ...options,
+              })
+              break
+            case 'circle':
+              shape = new fabric.Circle({
+                left: centerX, top: centerY,
+                originX: 'center', originY: 'center',
+                radius: 50,
+                fill: '#22c55e', stroke: '#15803d', strokeWidth: 2,
+                ...options,
+              })
+              break
+            case 'line':
+              shape = new fabric.Line(
+                [centerX - 60, centerY, centerX + 60, centerY],
+                { stroke: '#000000', strokeWidth: 3, ...options }
+              )
+              break
+          }
+
+          if (shape) {
+            canvas.add(shape)
+            canvas.setActiveObject(shape)
+            canvas.renderAll()
+            onCanvasModified?.()
+          }
+        },
+        undo: () => {
+          const history = editorRef.current?.getPlugin<HistoryPlugin>('HistoryPlugin')
+          history?.undo()
+        },
+        redo: () => {
+          const history = editorRef.current?.getPlugin<HistoryPlugin>('HistoryPlugin')
+          history?.redo()
+        },
         saveJSON: () => {
           if (!canvasRef.current) return {}
           return getCanvasJSON(canvasRef.current)
         },
         loadJSON: async (json: Record<string, unknown>) => {
           if (!canvasRef.current) return
-          await loadCanvasJSON(canvasRef.current, json, () => {
-            saveState()
-          })
+          await loadCanvasJSON(canvasRef.current, json)
+          const history = editorRef.current?.getPlugin<HistoryPlugin>('HistoryPlugin')
+          history?.saveState()
         },
         exportImage: (format: string = 'png') => {
           if (!canvasRef.current) return ''
@@ -732,16 +435,29 @@ const DesignerCanvasInner = forwardRef<DesignerCanvasRef, DesignerCanvasProps>(
             multiplier: 1,
           })
         },
-        zoomIn,
-        zoomOut,
-        zoomFit,
-        deleteSelected,
+        zoomIn: () => {
+          const zoomPlugin = editorRef.current?.getPlugin<ZoomPlugin>('ZoomPlugin')
+          zoomPlugin?.zoomIn()
+        },
+        zoomOut: () => {
+          const zoomPlugin = editorRef.current?.getPlugin<ZoomPlugin>('ZoomPlugin')
+          zoomPlugin?.zoomOut()
+        },
+        zoomFit: () => {
+          const zoomPlugin = editorRef.current?.getPlugin<ZoomPlugin>('ZoomPlugin')
+          zoomPlugin?.zoomToFit()
+        },
+        deleteSelected: () => {
+          const copyPaste = editorRef.current?.getPlugin<CopyPastePlugin>('CopyPastePlugin')
+          copyPaste?.deleteSelected()
+        },
       }),
-      [addText, addImage, addShape, undo, redo, zoomIn, zoomOut, zoomFit, deleteSelected, saveState]
+      [addImageInternal, onCanvasModified]
     )
 
     return (
       <div
+        ref={containerRef}
         className={cn(
           'relative flex-1 overflow-hidden bg-muted/50',
           isDragOver && 'ring-2 ring-primary ring-inset bg-primary/5',
@@ -753,33 +469,42 @@ const DesignerCanvasInner = forwardRef<DesignerCanvasRef, DesignerCanvasProps>(
       >
         {/* Zoom controls */}
         <div className="absolute top-3 right-3 z-10 flex items-center gap-1 rounded-lg border bg-background p-1 shadow-sm">
-          <Button
-            variant="ghost"
-            size="icon-xs"
-            onClick={zoomOut}
+          <button
+            type="button"
+            className="inline-flex h-7 w-7 items-center justify-center rounded-md text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+            onClick={() => {
+              const zoomPlugin = editorRef.current?.getPlugin<ZoomPlugin>('ZoomPlugin')
+              zoomPlugin?.zoomOut()
+            }}
             title="Zoom Out"
           >
-            <ZoomOut className="size-3.5" />
-          </Button>
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+          </button>
           <span className="min-w-[3rem] text-center text-xs text-muted-foreground">
             {Math.round(zoom * 100)}%
           </span>
-          <Button
-            variant="ghost"
-            size="icon-xs"
-            onClick={zoomIn}
+          <button
+            type="button"
+            className="inline-flex h-7 w-7 items-center justify-center rounded-md text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+            onClick={() => {
+              const zoomPlugin = editorRef.current?.getPlugin<ZoomPlugin>('ZoomPlugin')
+              zoomPlugin?.zoomIn()
+            }}
             title="Zoom In"
           >
-            <ZoomIn className="size-3.5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon-xs"
-            onClick={zoomFit}
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+          </button>
+          <button
+            type="button"
+            className="inline-flex h-7 w-7 items-center justify-center rounded-md text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+            onClick={() => {
+              const zoomPlugin = editorRef.current?.getPlugin<ZoomPlugin>('ZoomPlugin')
+              zoomPlugin?.zoomToFit()
+            }}
             title="Fit to Screen"
           >
-            <Maximize className="size-3.5" />
-          </Button>
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+          </button>
         </div>
 
         {/* Drag-and-drop overlay */}

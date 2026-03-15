@@ -5,24 +5,15 @@ import dynamic from 'next/dynamic'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Separator } from '@/components/ui/separator'
 import { Toolbar } from '@/components/designer/Toolbar'
 import { PropertiesPanel } from '@/components/designer/PropertiesPanel'
-import { LayersPanel } from '@/components/designer/LayersPanel'
+import { EditorLayout } from '@/components/designer/EditorLayout'
+import { TopBar } from '@/components/designer/TopBar'
 import { useDesigner } from '@/hooks/useDesigner'
 import { useAuth } from '@/hooks/useAuth'
 import { useCart } from '@/hooks/useCart'
 import { generateThumbnail } from '@/lib/designer/canvas-utils'
-import {
-  Undo2,
-  Redo2,
-  Save,
-  Eye,
-  ShoppingCart,
-  Loader2,
-  ArrowLeft,
-} from 'lucide-react'
+import { Loader2, ArrowLeft } from 'lucide-react'
 
 // --- Dynamic import of DesignerCanvas (SSR disabled) ---
 
@@ -67,7 +58,6 @@ export default function DesignerPage({ params }: DesignerPageProps) {
     saveDesign,
   } = actions
 
-  const [showLayers, setShowLayers] = useState(false)
   const [showPreview, setShowPreview] = useState(false)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [initialJson, setInitialJson] = useState<Record<string, unknown> | null>(null)
@@ -107,14 +97,6 @@ export default function DesignerPage({ params }: DesignerPageProps) {
   const handleCanvasModified = useCallback(() => {
     markDirty()
   }, [markDirty])
-
-  const handleUndo = useCallback(() => {
-    canvasRef.current?.undo()
-  }, [canvasRef])
-
-  const handleRedo = useCallback(() => {
-    canvasRef.current?.redo()
-  }, [canvasRef])
 
   const handleSave = useCallback(async () => {
     if (!isAuthenticated) {
@@ -167,7 +149,7 @@ export default function DesignerPage({ params }: DesignerPageProps) {
         product_name: state.template.product_group?.name || 'Product',
         template_name: state.template.name,
         quantity: 1,
-        unit_price: 0, // Price calculated from pricing rules
+        unit_price: 0,
         selected_params: {},
         design_id: design.id,
         thumbnail_url: design.thumbnail_url || undefined,
@@ -222,133 +204,47 @@ export default function DesignerPage({ params }: DesignerPageProps) {
   }
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden">
-      {/* --- Top Bar --- */}
-      <div className="flex h-14 shrink-0 items-center justify-between border-b bg-background px-4">
-        {/* Left: template info */}
-        <div className="flex items-center gap-3">
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            onClick={() => router.back()}
-            title="Back"
-          >
-            <ArrowLeft className="size-4" />
-          </Button>
-
-          <Separator orientation="vertical" className="h-6" />
-
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground">
-              {state.template.product_group?.name || 'Product'}
-            </span>
-            <span className="text-xs text-muted-foreground">/</span>
-            <Input
-              value={state.designName}
-              onChange={(e) => setDesignName(e.target.value)}
-              className="h-7 w-48 border-none bg-transparent text-sm font-medium shadow-none focus-visible:ring-1"
-              placeholder="Design name"
-            />
-          </div>
-
-          {state.isDirty && (
-            <span className="text-xs text-amber-500">Unsaved changes</span>
-          )}
-        </div>
-
-        {/* Right: actions */}
-        <div className="flex items-center gap-2">
-          {/* Undo/Redo */}
-          <div className="flex items-center gap-0.5">
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              onClick={handleUndo}
-              title="Undo (Ctrl+Z)"
-            >
-              <Undo2 className="size-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              onClick={handleRedo}
-              title="Redo (Ctrl+Y)"
-            >
-              <Redo2 className="size-4" />
-            </Button>
-          </div>
-
-          <Separator orientation="vertical" className="h-6" />
-
-          {/* Save */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleSave}
-            disabled={state.isSaving || !state.isDirty}
-          >
-            {state.isSaving ? (
-              <Loader2 className="size-4 animate-spin" />
-            ) : (
-              <Save className="size-4" />
-            )}
-            Save
-          </Button>
-
-          {/* Preview */}
-          <Button variant="outline" size="sm" onClick={handlePreview}>
-            <Eye className="size-4" />
-            Preview
-          </Button>
-
-          {/* Add to Cart */}
-          <Button size="sm" onClick={handleAddToCart}>
-            <ShoppingCart className="size-4" />
-            Add to Cart
-          </Button>
-        </div>
-      </div>
-
-      {/* --- Main Layout --- */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* Left: Toolbar */}
-        <Toolbar
-          canvasRef={canvasRef}
-          onToggleLayers={() => setShowLayers(!showLayers)}
-          showLayers={showLayers}
-        />
-
-        {/* Layers panel (conditionally shown between toolbar and canvas) */}
-        {showLayers && (
-          <LayersPanel
-            canvasRef={canvasRef}
-            selectedObject={state.selectedObject}
-            onClose={() => setShowLayers(false)}
+    <>
+      <EditorLayout
+        topBar={
+          <TopBar
+            template={state.template}
+            designName={state.designName}
+            isDirty={state.isDirty}
+            isSaving={state.isSaving}
+            isAuthenticated={isAuthenticated}
+            onSetDesignName={setDesignName}
+            onSave={handleSave}
+            onPreview={handlePreview}
+            onAddToCart={handleAddToCart}
           />
-        )}
-
-        {/* Center: Canvas */}
-        <DesignerCanvasInner
-          ref={canvasRef}
-          template={state.template}
-          initialJson={initialJson}
-          onSelectionChange={handleSelectionChange}
-          onCanvasModified={handleCanvasModified}
-          onSaveRequested={handleSave}
-        />
-
-        {/* Right: Properties */}
-        <PropertiesPanel
-          selectedObject={state.selectedObject}
-          canvasRef={canvasRef}
-          onObjectModified={handleCanvasModified}
-        />
-      </div>
+        }
+        leftPanel={
+          <Toolbar canvasRef={canvasRef} />
+        }
+        canvas={
+          <DesignerCanvasInner
+            ref={canvasRef}
+            template={state.template}
+            initialJson={initialJson}
+            onSelectionChange={handleSelectionChange}
+            onCanvasModified={handleCanvasModified}
+            onSaveRequested={handleSave}
+          />
+        }
+        rightPanel={
+          <PropertiesPanel
+            selectedObject={state.selectedObject}
+            canvasRef={canvasRef}
+            onObjectModified={handleCanvasModified}
+          />
+        }
+      />
 
       {/* --- Preview Modal --- */}
       {showPreview && previewUrl && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70"
+          className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70"
           onClick={() => setShowPreview(false)}
         >
           <div
@@ -381,6 +277,6 @@ export default function DesignerPage({ params }: DesignerPageProps) {
           </div>
         </div>
       )}
-    </div>
+    </>
   )
 }
