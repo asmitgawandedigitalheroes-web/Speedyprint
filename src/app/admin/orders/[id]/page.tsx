@@ -1,19 +1,29 @@
 'use client'
 
-import { useEffect, useState, use } from 'react'
+import { useEffect, useState, use, useCallback } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import {
   ArrowLeft,
   Download,
   Eye,
   FileImage,
   FileText,
+  Mail,
+  Package,
+  Truck,
+  CheckCircle,
+  Clock,
+  CreditCard,
+  Save,
+  AlertCircle,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { Label } from '@/components/ui/label'
 import {
   Select,
   SelectContent,
@@ -21,8 +31,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
-import { formatCurrency, formatDate, formatDateTime } from '@/lib/utils/format'
+import { formatCurrency, formatDateTime } from '@/lib/utils/format'
 import {
   ORDER_STATUS_LABELS,
   ORDER_ITEM_STATUS_LABELS,
@@ -34,6 +53,7 @@ import type {
   ProductionFile,
   UploadedFile,
   OrderStatus,
+  OrderStatusHistory,
 } from '@/types'
 
 interface OrderDetail extends Omit<Order, 'profile'> {
@@ -47,8 +67,8 @@ export default function AdminOrderDetailPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = use(params)
-  const router = useRouter()
   const [order, setOrder] = useState<OrderDetail | null>(null)
+  const [history, setHistory] = useState<OrderStatusHistory[]>([])
   const [files, setFiles] = useState<{
     productionFiles: ProductionFile[]
     uploadedFiles: UploadedFile[]
@@ -56,49 +76,40 @@ export default function AdminOrderDetailPage({
   const [loading, setLoading] = useState(true)
   const [statusUpdating, setStatusUpdating] = useState(false)
 
-  useEffect(() => {
-    async function fetchOrder() {
-      try {
-        // Fetch order details via admin endpoint
-        const res = await fetch(`/api/admin/orders?search=&page=1&limit=1`)
-        // Actually we need a specific order endpoint. Let's use the admin client approach.
-        // For now, fetch from the general orders API and find our order
-        const orderRes = await fetch(`/api/admin/orders?page=1&limit=100`)
-        if (!orderRes.ok) throw new Error('Failed to fetch order')
+  // Editable fields
+  const [adminNotes, setAdminNotes] = useState('')
+  const [trackingNumber, setTrackingNumber] = useState('')
+  const [savingNotes, setSavingNotes] = useState(false)
+  const [savingTracking, setSavingTracking] = useState(false)
 
-        // We need a dedicated order detail. Let's construct from what we have.
-        // The better approach is to fetch directly.
-        // Since we don't have a dedicated single-order admin endpoint,
-        // we'll create the fetch inline.
-        const detailRes = await fetch(`/api/admin/orders/${id}`)
-        if (detailRes.ok) {
-          const data = await detailRes.json()
-          setOrder(data.order)
-        } else {
-          // Fallback: construct from list + additional data
-          throw new Error('No detail endpoint')
-        }
-      } catch {
-        // Fetch via the general approach with a client-side supabase call
-        try {
-          const res = await fetch(
-            `/api/admin/orders?search=&page=1&limit=1000`
-          )
-          const data = await res.json()
-          // This won't have full detail; mark as needing the detail API
-          const found = data.orders?.find(
-            (o: OrderDetail) => o.id === id
-          )
-          if (found) {
-            setOrder(found)
-          }
-        } catch (err) {
-          console.error('Order detail fetch error:', err)
-        }
-      } finally {
-        setLoading(false)
-      }
+  // Email states
+  const [sendingEmail, setSendingEmail] = useState<string | null>(null)
+  const [emailSuccess, setEmailSuccess] = useState<string | null>(null)
+
+  // Ship dialog
+  const [shipDialogOpen, setShipDialogOpen] = useState(false)
+  const [shipTracking, setShipTracking] = useState('')
+  const [shipSendEmail, setShipSendEmail] = useState(true)
+  const [shipping, setShipping] = useState(false)
+
+  const fetchOrder = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/admin/orders/${id}`)
+      if (!res.ok) throw new Error('Failed to fetch')
+      const data = await res.json()
+      setOrder(data.order)
+      setHistory(data.history ?? [])
+      setAdminNotes(data.order?.admin_notes ?? '')
+      setTrackingNumber(data.order?.tracking_number ?? '')
+    } catch (err) {
+      console.error('Order detail fetch error:', err)
+    } finally {
+      setLoading(false)
     }
+  }, [id])
+
+  useEffect(() => {
+    fetchOrder()
 
     async function fetchFiles() {
       try {
@@ -111,32 +122,126 @@ export default function AdminOrderDetailPage({
         console.error('Files fetch error:', err)
       }
     }
-
-    fetchOrder()
     fetchFiles()
-  }, [id])
+  }, [id, fetchOrder])
 
   const handleStatusChange = async (newStatus: string) => {
     if (!order) return
     setStatusUpdating(true)
     try {
-      const res = await fetch('/api/admin/orders/bulk-status', {
-        method: 'PATCH',
+      const res = await fetch(`/api/admin/orders/${id}`, {
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          order_ids: [order.id],
-          status: newStatus,
-        }),
+        body: JSON.stringify({ status: newStatus }),
       })
       if (res.ok) {
-        setOrder((prev) =>
-          prev ? { ...prev, status: newStatus as OrderStatus } : prev
-        )
+        await fetchOrder()
       }
     } catch (err) {
       console.error('Status update error:', err)
     } finally {
       setStatusUpdating(false)
+    }
+  }
+
+  const handleSaveNotes = async () => {
+    setSavingNotes(true)
+    try {
+      const res = await fetch(`/api/admin/orders/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ admin_notes: adminNotes }),
+      })
+      if (res.ok) {
+        setOrder((prev) => (prev ? { ...prev, admin_notes: adminNotes } : prev))
+      }
+    } catch (err) {
+      console.error('Save notes error:', err)
+    } finally {
+      setSavingNotes(false)
+    }
+  }
+
+  const handleSaveTracking = async () => {
+    setSavingTracking(true)
+    try {
+      const res = await fetch(`/api/admin/orders/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tracking_number: trackingNumber }),
+      })
+      if (res.ok) {
+        setOrder((prev) =>
+          prev ? { ...prev, tracking_number: trackingNumber } : prev
+        )
+      }
+    } catch (err) {
+      console.error('Save tracking error:', err)
+    } finally {
+      setSavingTracking(false)
+    }
+  }
+
+  const handleMarkShipped = async () => {
+    if (!order) return
+    setShipping(true)
+    try {
+      const res = await fetch(`/api/admin/orders/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          status: 'completed',
+          tracking_number: shipTracking || trackingNumber,
+        }),
+      })
+      if (!res.ok) throw new Error('Failed to update')
+
+      if (shipSendEmail) {
+        await fetch(`/api/admin/orders/${id}/email`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'shipped',
+            trackingNumber: shipTracking || trackingNumber || 'N/A',
+          }),
+        })
+      }
+
+      setShipDialogOpen(false)
+      await fetchOrder()
+    } catch (err) {
+      console.error('Ship error:', err)
+    } finally {
+      setShipping(false)
+    }
+  }
+
+  const handleSendEmail = async (
+    type: 'confirmation' | 'payment' | 'proof' | 'shipped'
+  ) => {
+    setSendingEmail(type)
+    setEmailSuccess(null)
+    try {
+      const res = await fetch(`/api/admin/orders/${id}/email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type,
+          trackingNumber: trackingNumber || order?.tracking_number || 'N/A',
+        }),
+      })
+      if (res.ok) {
+        setEmailSuccess(type)
+        setTimeout(() => setEmailSuccess(null), 3000)
+      } else {
+        const data = await res.json()
+        alert(`Failed to send email: ${data.error || 'Unknown error'}`)
+      }
+    } catch (err) {
+      console.error('Email send error:', err)
+      alert('Failed to send email')
+    } finally {
+      setSendingEmail(null)
     }
   }
 
@@ -197,27 +302,96 @@ export default function AdminOrderDetailPage({
           </p>
         </div>
 
-        {/* Status Update */}
         <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">Update status:</span>
-          <Select
-            value={order.status}
-            onValueChange={handleStatusChange}
-            disabled={statusUpdating}
-          >
-            <SelectTrigger className="w-[200px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {Object.entries(ORDER_STATUS_LABELS).map(
-                ([value, { label }]) => (
-                  <SelectItem key={value} value={value}>
-                    {label}
-                  </SelectItem>
-                )
-              )}
-            </SelectContent>
-          </Select>
+          {/* Mark as Shipped */}
+          {order.status !== 'completed' && order.status !== 'cancelled' && (
+            <Dialog open={shipDialogOpen} onOpenChange={setShipDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" className="gap-2">
+                  <Truck className="h-4 w-4" />
+                  Mark as Shipped
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Mark Order as Shipped</DialogTitle>
+                  <DialogDescription>
+                    Update the order status and optionally notify the customer.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label>Tracking Number</Label>
+                    <Input
+                      placeholder="Enter tracking number..."
+                      value={shipTracking}
+                      onChange={(e) => setShipTracking(e.target.value)}
+                    />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="ship-send-email"
+                      checked={shipSendEmail}
+                      onChange={(e) => setShipSendEmail(e.target.checked)}
+                      className="h-4 w-4 rounded border-gray-300"
+                    />
+                    <label htmlFor="ship-send-email" className="text-sm">
+                      Send shipping notification email to customer
+                    </label>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button
+                    variant="outline"
+                    onClick={() => setShipDialogOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleMarkShipped}
+                    disabled={shipping}
+                    className="gap-2"
+                  >
+                    {shipping ? (
+                      <>
+                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                        Shipping...
+                      </>
+                    ) : (
+                      <>
+                        <Truck className="h-4 w-4" />
+                        Mark as Shipped
+                      </>
+                    )}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          )}
+
+          {/* Status Update */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">Status:</span>
+            <Select
+              value={order.status}
+              onValueChange={handleStatusChange}
+              disabled={statusUpdating}
+            >
+              <SelectTrigger className="w-[200px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(ORDER_STATUS_LABELS).map(
+                  ([value, { label }]) => (
+                    <SelectItem key={value} value={value}>
+                      {label}
+                    </SelectItem>
+                  )
+                )}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </div>
 
@@ -241,6 +415,14 @@ export default function AdminOrderDetailPage({
             )}
             {order.profile?.phone && (
               <p className="text-muted-foreground">{order.profile.phone}</p>
+            )}
+            {order.profile && (
+              <Link
+                href={`/admin/users/${order.user_id}`}
+                className="mt-2 inline-block text-xs text-brand-primary hover:underline"
+              >
+                View customer profile &rarr;
+              </Link>
             )}
           </CardContent>
         </Card>
@@ -315,6 +497,79 @@ export default function AdminOrderDetailPage({
         </Card>
       </div>
 
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Admin Notes */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              Admin Notes
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <Textarea
+              placeholder="Add internal notes about this order..."
+              value={adminNotes}
+              onChange={(e) => setAdminNotes(e.target.value)}
+              rows={4}
+            />
+            <Button
+              size="sm"
+              onClick={handleSaveNotes}
+              disabled={savingNotes}
+              className="gap-2"
+            >
+              {savingNotes ? (
+                <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+              ) : (
+                <Save className="h-3.5 w-3.5" />
+              )}
+              Save Notes
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Tracking Number */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Truck className="h-4 w-4" />
+              Tracking Information
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="space-y-2">
+              <Label>Tracking Number</Label>
+              <Input
+                placeholder="Enter tracking number..."
+                value={trackingNumber}
+                onChange={(e) => setTrackingNumber(e.target.value)}
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                onClick={handleSaveTracking}
+                disabled={savingTracking}
+                className="gap-2"
+              >
+                {savingTracking ? (
+                  <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                ) : (
+                  <Save className="h-3.5 w-3.5" />
+                )}
+                Save Tracking
+              </Button>
+            </div>
+            {order.shipped_at && (
+              <p className="text-xs text-muted-foreground">
+                Shipped on {formatDateTime(order.shipped_at)}
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
       {/* Customer Notes */}
       {order.notes && (
         <Card>
@@ -328,6 +583,86 @@ export default function AdminOrderDetailPage({
           </CardContent>
         </Card>
       )}
+
+      {/* Email Actions */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Mail className="h-4 w-4" />
+            Email Actions
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="mb-4 text-sm text-muted-foreground">
+            Send automated emails to the customer ({order.profile?.email ?? 'no email'})
+          </p>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <Button
+              variant="outline"
+              className="h-auto flex-col gap-2 py-4"
+              disabled={sendingEmail !== null}
+              onClick={() => handleSendEmail('confirmation')}
+            >
+              {sendingEmail === 'confirmation' ? (
+                <div className="h-5 w-5 animate-spin rounded-full border-2 border-brand-primary border-t-transparent" />
+              ) : emailSuccess === 'confirmation' ? (
+                <CheckCircle className="h-5 w-5 text-green-500" />
+              ) : (
+                <Package className="h-5 w-5 text-blue-500" />
+              )}
+              <span className="text-xs font-medium">Order Confirmation</span>
+            </Button>
+
+            <Button
+              variant="outline"
+              className="h-auto flex-col gap-2 py-4"
+              disabled={sendingEmail !== null}
+              onClick={() => handleSendEmail('payment')}
+            >
+              {sendingEmail === 'payment' ? (
+                <div className="h-5 w-5 animate-spin rounded-full border-2 border-brand-primary border-t-transparent" />
+              ) : emailSuccess === 'payment' ? (
+                <CheckCircle className="h-5 w-5 text-green-500" />
+              ) : (
+                <CreditCard className="h-5 w-5 text-green-500" />
+              )}
+              <span className="text-xs font-medium">Payment Received</span>
+            </Button>
+
+            <Button
+              variant="outline"
+              className="h-auto flex-col gap-2 py-4"
+              disabled={sendingEmail !== null}
+              onClick={() => handleSendEmail('proof')}
+            >
+              {sendingEmail === 'proof' ? (
+                <div className="h-5 w-5 animate-spin rounded-full border-2 border-brand-primary border-t-transparent" />
+              ) : emailSuccess === 'proof' ? (
+                <CheckCircle className="h-5 w-5 text-green-500" />
+              ) : (
+                <Eye className="h-5 w-5 text-purple-500" />
+              )}
+              <span className="text-xs font-medium">Proof Ready</span>
+            </Button>
+
+            <Button
+              variant="outline"
+              className="h-auto flex-col gap-2 py-4"
+              disabled={sendingEmail !== null}
+              onClick={() => handleSendEmail('shipped')}
+            >
+              {sendingEmail === 'shipped' ? (
+                <div className="h-5 w-5 animate-spin rounded-full border-2 border-brand-primary border-t-transparent" />
+              ) : emailSuccess === 'shipped' ? (
+                <CheckCircle className="h-5 w-5 text-green-500" />
+              ) : (
+                <Truck className="h-5 w-5 text-orange-500" />
+              )}
+              <span className="text-xs font-medium">Order Shipped</span>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Order Items */}
       <Card>
@@ -423,12 +758,20 @@ export default function AdminOrderDetailPage({
                         <td className="px-4 py-3 text-right">
                           <div className="flex items-center justify-end gap-1">
                             {item.design && (
-                              <Button size="sm" variant="ghost" title="View Design">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                title="View Design"
+                              >
                                 <Eye className="h-3.5 w-3.5" />
                               </Button>
                             )}
                             {item.proofs && item.proofs.length > 0 && (
-                              <Button size="sm" variant="ghost" title="View Proofs">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                title="View Proofs"
+                              >
                                 <FileText className="h-3.5 w-3.5" />
                               </Button>
                             )}
@@ -532,6 +875,107 @@ export default function AdminOrderDetailPage({
           </CardContent>
         </Card>
       )}
+
+      {/* Order Timeline */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Clock className="h-4 w-4" />
+            Order Timeline
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="relative space-y-0">
+            {/* Created event */}
+            <TimelineEvent
+              icon={<Package className="h-3.5 w-3.5" />}
+              title="Order Created"
+              subtitle={order.order_number}
+              timestamp={order.created_at}
+              isLast={history.length === 0}
+              color="bg-gray-500"
+            />
+
+            {/* Status history from DB */}
+            {history.map((entry, i) => {
+              const statusLabel =
+                ORDER_STATUS_LABELS[entry.status]?.label ?? entry.status
+              const iconMap: Record<string, React.ReactNode> = {
+                paid: <CreditCard className="h-3.5 w-3.5" />,
+                in_production: <AlertCircle className="h-3.5 w-3.5" />,
+                completed: <CheckCircle className="h-3.5 w-3.5" />,
+                cancelled: <AlertCircle className="h-3.5 w-3.5" />,
+              }
+              const colorMap: Record<string, string> = {
+                paid: 'bg-blue-500',
+                in_production: 'bg-purple-500',
+                completed: 'bg-green-500',
+                cancelled: 'bg-red-500',
+              }
+              return (
+                <TimelineEvent
+                  key={entry.id}
+                  icon={
+                    iconMap[entry.status] ?? (
+                      <Clock className="h-3.5 w-3.5" />
+                    )
+                  }
+                  title={`Status changed to ${statusLabel}`}
+                  subtitle={entry.notes || undefined}
+                  timestamp={entry.created_at}
+                  isLast={i === history.length - 1}
+                  color={colorMap[entry.status] ?? 'bg-gray-500'}
+                />
+              )
+            })}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+function TimelineEvent({
+  icon,
+  title,
+  subtitle,
+  timestamp,
+  isLast,
+  color = 'bg-gray-500',
+}: {
+  icon: React.ReactNode
+  title: string
+  subtitle?: string
+  timestamp: string
+  isFirst?: boolean
+  isLast?: boolean
+  color?: string
+}) {
+  return (
+    <div className="relative flex gap-4 pb-6 last:pb-0">
+      {/* Vertical line */}
+      {!isLast && (
+        <div className="absolute left-[15px] top-8 bottom-0 w-0.5 bg-gray-200" />
+      )}
+      {/* Dot / icon */}
+      <div
+        className={cn(
+          'relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-white',
+          color
+        )}
+      >
+        {icon}
+      </div>
+      {/* Content */}
+      <div className="pt-1">
+        <p className="text-sm font-medium text-gray-900">{title}</p>
+        {subtitle && (
+          <p className="text-xs text-muted-foreground">{subtitle}</p>
+        )}
+        <p className="mt-0.5 text-xs text-muted-foreground">
+          {formatDateTime(timestamp)}
+        </p>
+      </div>
     </div>
   )
 }

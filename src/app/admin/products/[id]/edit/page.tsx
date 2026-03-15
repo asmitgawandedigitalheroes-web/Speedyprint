@@ -40,6 +40,7 @@ interface TemplateForm {
   id?: string
   name: string
   description: string
+  image_url: string
   print_width_mm: number
   print_height_mm: number
   bleed_mm: number
@@ -60,6 +61,7 @@ interface PricingRuleForm {
 const emptyTemplate: TemplateForm = {
   name: '',
   description: '',
+  image_url: '',
   print_width_mm: 100,
   print_height_mm: 100,
   bleed_mm: 3,
@@ -207,6 +209,7 @@ export default function AdminProductEditPage({
         product_group_id: id,
         name: editingTemplate.name,
         description: editingTemplate.description || null,
+        image_url: editingTemplate.image_url || null,
         print_width_mm: editingTemplate.print_width_mm,
         print_height_mm: editingTemplate.print_height_mm,
         bleed_mm: editingTemplate.bleed_mm,
@@ -552,6 +555,24 @@ export default function AdminProductEditPage({
                   />
                 </div>
 
+                <div className="space-y-1">
+                  <Label className="text-xs">Template Image URL</Label>
+                  <Input
+                    value={editingTemplate.image_url}
+                    onChange={(e) =>
+                      setEditingTemplate((prev) =>
+                        prev
+                          ? { ...prev, image_url: e.target.value }
+                          : prev
+                      )
+                    }
+                    placeholder="e.g., /images/products/template-variant.jpg"
+                  />
+                  <p className="text-[10px] text-muted-foreground">
+                    Image shown on product page when this template is selected
+                  </p>
+                </div>
+
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                   <div className="space-y-1">
                     <Label className="text-xs">Width (mm)</Label>
@@ -723,6 +744,7 @@ export default function AdminProductEditPage({
                           id: tmpl.id,
                           name: tmpl.name,
                           description: tmpl.description || '',
+                          image_url: tmpl.image_url || '',
                           print_width_mm: tmpl.print_width_mm,
                           print_height_mm: tmpl.print_height_mm,
                           bleed_mm: tmpl.bleed_mm,

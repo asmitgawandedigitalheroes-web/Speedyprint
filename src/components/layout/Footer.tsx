@@ -1,7 +1,10 @@
+'use client'
+
 import Link from 'next/link'
 import Image from 'next/image'
 import { Facebook, Instagram, Linkedin, Mail, Phone, MapPin, Clock } from 'lucide-react'
 import { SITE_NAME, WHATSAPP_URL } from '@/lib/utils/constants'
+import { useSiteSettings } from '@/hooks/useSiteSettings'
 
 const QUICK_LINKS = [
   { href: '/', label: 'Home' },
@@ -21,14 +24,28 @@ const PRODUCT_LINKS = [
   { href: '/products?division=stamps', label: 'Specialty & 3D Domed' },
 ]
 
-const SOCIAL_LINKS = [
-  { href: 'https://facebook.com/speedyprint', icon: Facebook, label: 'Facebook' },
-  { href: 'https://instagram.com/speedyprint', icon: Instagram, label: 'Instagram' },
-  { href: 'https://linkedin.com/company/speedyprint', icon: Linkedin, label: 'LinkedIn' },
-]
-
 export function Footer() {
+  const { settings } = useSiteSettings()
   const currentYear = new Date().getFullYear()
+
+  // Dynamic values with fallbacks
+  const companyEmail = settings.company_email || 'info@speedyprint.co.za'
+  const companyPhone = settings.company_phone || '+27 (0) 12 345 6789'
+  const companyAddress = settings.company_address || 'Cape Town, South Africa'
+  const whatsappNumber = settings.whatsapp_number
+  const whatsappUrl = whatsappNumber
+    ? `https://wa.me/${whatsappNumber.replace(/[^0-9]/g, '')}`
+    : WHATSAPP_URL
+  const facebookUrl = settings.social_facebook || 'https://facebook.com/speedyprint'
+  const instagramUrl = settings.social_instagram || 'https://instagram.com/speedyprint'
+  const linkedinUrl = settings.social_twitter || 'https://linkedin.com/company/speedyprint'
+  const siteName = settings.site_name || SITE_NAME
+
+  const SOCIAL_LINKS = [
+    { href: facebookUrl, icon: Facebook, label: 'Facebook' },
+    { href: instagramUrl, icon: Instagram, label: 'Instagram' },
+    { href: linkedinUrl, icon: Linkedin, label: 'LinkedIn' },
+  ]
 
   return (
     <footer className="bg-brand-secondary text-white">
@@ -39,7 +56,7 @@ export function Footer() {
             <Link href="/" className="inline-block">
               <Image
                 src="/images/logo.png"
-                alt={SITE_NAME}
+                alt={siteName}
                 width={160}
                 height={40}
                 className="h-10 w-auto brightness-0 invert"
@@ -112,24 +129,24 @@ export function Footer() {
               <li className="flex items-start gap-2">
                 <Mail className="mt-0.5 h-4 w-4 shrink-0 text-brand-primary" />
                 <a
-                  href="mailto:info@speedyprint.co.za"
+                  href={`mailto:${companyEmail}`}
                   className="transition-colors hover:text-white"
                 >
-                  info@speedyprint.co.za
+                  {companyEmail}
                 </a>
               </li>
               <li className="flex items-start gap-2">
                 <Phone className="mt-0.5 h-4 w-4 shrink-0 text-brand-primary" />
                 <a
-                  href="tel:+27123456789"
+                  href={`tel:${companyPhone.replace(/[^+0-9]/g, '')}`}
                   className="transition-colors hover:text-white"
                 >
-                  +27 (0) 12 345 6789
+                  {companyPhone}
                 </a>
               </li>
               <li className="flex items-start gap-2">
                 <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-brand-primary" />
-                <span>Cape Town, South Africa</span>
+                <span>{companyAddress}</span>
               </li>
               <li className="flex items-start gap-2">
                 <Clock className="mt-0.5 h-4 w-4 shrink-0 text-brand-primary" />
@@ -137,7 +154,7 @@ export function Footer() {
               </li>
             </ul>
             <a
-              href={WHATSAPP_URL}
+              href={whatsappUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="mt-4 inline-flex items-center gap-2 rounded-md bg-[#25D366] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#20BD5A]"
@@ -151,7 +168,7 @@ export function Footer() {
         <div className="mt-10 border-t border-white/10 pt-6">
           <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
             <p className="text-sm text-white/50">
-              &copy; {currentYear} {SITE_NAME}. All rights reserved.
+              &copy; {currentYear} {siteName}. All rights reserved.
             </p>
             <div className="flex gap-6">
               <Link

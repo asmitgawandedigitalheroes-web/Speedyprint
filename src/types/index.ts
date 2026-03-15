@@ -52,6 +52,7 @@ export interface ProductTemplate {
   safe_zone_mm: number
   dpi: number
   panels: unknown[]
+  image_url: string | null
   is_active: boolean
   created_at: string
   parameters?: TemplateParameter[]
@@ -111,6 +112,10 @@ export interface Order {
   created_at: string
   paid_at: string | null
   completed_at: string | null
+  tracking_number?: string | null
+  admin_notes?: string | null
+  approved_at?: string | null
+  shipped_at?: string | null
   items?: OrderItem[]
   profile?: Profile
 }
@@ -223,6 +228,22 @@ export interface Testimonial {
   rating: number
   review_text: string
   featured: boolean
+  created_at: string
+}
+
+// Admin types
+export interface SiteSetting {
+  key: string
+  value: string
+  updated_at: string
+}
+
+export interface OrderStatusHistory {
+  id: string
+  order_id: string
+  status: string
+  notes: string | null
+  changed_by: string | null
   created_at: string
 }
 

@@ -1,10 +1,9 @@
 import { notFound } from 'next/navigation'
-import Image from 'next/image'
 import { createClient } from '@/lib/supabase/server'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { DIVISIONS, SITE_URL, SITE_NAME } from '@/lib/utils/constants'
-import { ProductConfigurator } from './ProductConfigurator'
+import { ProductDetailClient } from './ProductDetailClient'
 import { ProductJsonLd, BreadcrumbJsonLd } from '@/components/seo/JsonLd'
 import type { ProductGroup, ProductTemplate, TemplateParameter, PricingRule } from '@/types'
 
@@ -136,58 +135,33 @@ export default async function ProductPage({ params }: ProductPageProps) {
         <span className="text-brand-black">{typedProduct.name}</span>
       </nav>
 
-      <div className="grid grid-cols-1 gap-12 lg:grid-cols-2">
-        {/* Left: Product image / visual */}
-        <div>
-          <div
-            className={`relative flex h-80 items-center justify-center rounded-xl bg-gradient-to-br ${gradient} lg:h-[480px] overflow-hidden`}
-          >
-            {typedProduct.image_url ? (
-              <Image
-                src={typedProduct.image_url}
-                alt={typedProduct.name}
-                fill
-                sizes="(max-width: 1024px) 100vw, 50vw"
-                className="object-cover rounded-xl"
-                priority
-              />
-            ) : (
-              <span className="text-8xl font-bold text-white/20 select-none">
-                {typedProduct.name.charAt(0)}
-              </span>
-            )}
-          </div>
-        </div>
-
-        {/* Right: Product details and configurator */}
-        <div>
-          {/* Header */}
-          <div className="mb-6">
-            {division && (
-              <Badge variant="secondary" className="mb-3">
-                {division.name}
-              </Badge>
-            )}
-            <h1 className="text-3xl font-bold text-brand-black">
-              {typedProduct.name}
-            </h1>
-            {typedProduct.description && (
-              <p className="mt-3 text-brand-gray-medium leading-relaxed">
-                {typedProduct.description}
-              </p>
-            )}
-          </div>
-
-          <Separator className="my-6" />
-
-          {/* Interactive configurator (client component) */}
-          <ProductConfigurator
-            productGroupId={typedProduct.id}
-            templates={templates}
-            pricingRules={pricingRules}
-          />
-        </div>
+      {/* Product header */}
+      <div className="mb-8">
+        {division && (
+          <Badge variant="secondary" className="mb-3">
+            {division.name}
+          </Badge>
+        )}
+        <h1 className="text-3xl font-bold text-brand-black">
+          {typedProduct.name}
+        </h1>
+        {typedProduct.description && (
+          <p className="mt-3 text-brand-gray-medium leading-relaxed">
+            {typedProduct.description}
+          </p>
+        )}
       </div>
+
+      <Separator className="mb-8" />
+
+      {/* Product image + configurator (client) */}
+      <ProductDetailClient
+        product={typedProduct}
+        templates={templates}
+        pricingRules={pricingRules}
+        divisionName={division?.name ?? null}
+        gradient={gradient}
+      />
     </div>
   )
 }

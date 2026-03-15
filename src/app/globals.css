@@ -32,6 +32,26 @@
   --radius-card: 8px;
   --radius-button: 6px;
   --radius-hero: 12px;
+
+  /* shadcn/ui standard variables (required for Select, Dialog, Sheet, etc.) */
+  --color-background: #FFFFFF;
+  --color-foreground: #1A1A1A;
+  --color-card: #FFFFFF;
+  --color-card-foreground: #1A1A1A;
+  --color-popover: #FFFFFF;
+  --color-popover-foreground: #1A1A1A;
+  --color-primary: #FF6B00;
+  --color-primary-foreground: #FFFFFF;
+  --color-secondary: #F5F5F5;
+  --color-secondary-foreground: #1A1A1A;
+  --color-muted: #F5F5F5;
+  --color-muted-foreground: #6B7280;
+  --color-accent: #F5F5F5;
+  --color-accent-foreground: #1A1A1A;
+  --color-destructive: #EF4444;
+  --color-border: #E0E0E0;
+  --color-input: #E0E0E0;
+  --color-ring: #FF6B00;
 }
 
 @layer base {

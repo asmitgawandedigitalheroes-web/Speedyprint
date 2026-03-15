@@ -20,11 +20,13 @@ interface ProductConfiguratorProps {
   productGroupId: string
   templates: (ProductTemplate & { template_parameters: TemplateParameter[] })[]
   pricingRules: PricingRule[]
+  onTemplateChange?: (templateId: string) => void
 }
 
 export function ProductConfigurator({
   productGroupId,
   templates,
+  onTemplateChange: onTemplateChangeCallback,
 }: ProductConfiguratorProps) {
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>(
     templates[0]?.id ?? ''
@@ -67,6 +69,7 @@ export function ProductConfigurator({
       }
     }
     setParamValues(defaults)
+    onTemplateChangeCallback?.(templateId)
   }
 
   function handleParamChange(key: string, value: string) {
