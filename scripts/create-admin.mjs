@@ -5,9 +5,8 @@
 
 import { createClient } from '@supabase/supabase-js'
 
-const SUPABASE_URL = 'https://rphstskwjtbxgtjnwuzm.supabase.co'
-const SERVICE_ROLE_KEY =
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJwaHN0c2t3anRieGd0am53dXptIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MzM3Njc4MCwiZXhwIjoyMDg4OTUyNzgwfQ.wsUIiOxi65lquwQTqPeLoP7FjSS6jxzwiYuKC0zHw0g'
+const SUPABASE_URL = process.env.SUPABASE_URL
+const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 
 const ADMIN_EMAIL = 'superadmin@speedyprint.com'
 const ADMIN_PASSWORD = 'Test@1234#'
