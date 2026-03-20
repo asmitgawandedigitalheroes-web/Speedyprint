@@ -72,57 +72,58 @@ export class ZoomPlugin implements IPluginTempl {
   // --- Public API ---
 
   /**
-   * Zoom in by one step.
+   * Zoom in by one step, keeping the design centered in the viewport.
    */
   zoomIn(): void {
-    const center = this.canvas.getCenterPoint()
     const newZoom = Math.min(this.canvas.getZoom() + ZOOM_STEP, MAX_ZOOM)
-    this.canvas.zoomToPoint(center, newZoom)
+    this._applyZoomCentered(newZoom)
     this._updateZoom(newZoom)
   }
 
   /**
-   * Zoom out by one step.
+   * Zoom out by one step, keeping the design centered in the viewport.
    */
   zoomOut(): void {
-    const center = this.canvas.getCenterPoint()
     const newZoom = Math.max(this.canvas.getZoom() - ZOOM_STEP, MIN_ZOOM)
-    this.canvas.zoomToPoint(center, newZoom)
+    this._applyZoomCentered(newZoom)
     this._updateZoom(newZoom)
   }
 
   /**
-   * Set zoom to a specific level.
+   * Set zoom to a specific level, keeping the design centered in the viewport.
    */
   setZoom(level: number): void {
-    const center = this.canvas.getCenterPoint()
     const clampedZoom = Math.min(Math.max(level, MIN_ZOOM), MAX_ZOOM)
-    this.canvas.zoomToPoint(center, clampedZoom)
+    this._applyZoomCentered(clampedZoom)
     this._updateZoom(clampedZoom)
   }
 
   /**
    * Fit the canvas to the container.
+   * The canvas HTML element IS the viewport (sized to match the container),
+   * so we use canvas.width/height directly to compute the fit zoom.
    */
   zoomToFit(): void {
     const zones = this.zones
-    const container = this.containerEl
-    if (!zones || !container) return
+    if (!zones) return
 
-    const containerWidth = container.clientWidth - 40
-    const containerHeight = container.clientHeight - 40
+    // canvas.width/height are the CSS-pixel dimensions of the canvas element,
+    // which are kept in sync with the container via ResizeObserver.
+    const vpW = this.canvas.width
+    const vpH = this.canvas.height
 
-    const canvasWidth = zones.bleedPx.width
-    const canvasHeight = zones.bleedPx.height
+    if (!vpW || !vpH || vpW <= 0 || vpH <= 0) return
 
-    const scaleX = containerWidth / canvasWidth
-    const scaleY = containerHeight / canvasHeight
-    const newZoom = Math.min(scaleX, scaleY, 1)
+    const designW = zones.bleedPx.width
+    const designH = zones.bleedPx.height
 
-    const vpWidth = containerWidth
-    const vpHeight = containerHeight
-    const offsetX = (vpWidth - canvasWidth * newZoom) / 2
-    const offsetY = (vpHeight - canvasHeight * newZoom) / 2
+    const padding = 40
+    const scaleX = (vpW - padding) / designW
+    const scaleY = (vpH - padding) / designH
+    const newZoom = Math.min(Math.max(Math.min(scaleX, scaleY), MIN_ZOOM), MAX_ZOOM)
+
+    const offsetX = (vpW - designW * newZoom) / 2
+    const offsetY = (vpH - designH * newZoom) / 2
 
     this.canvas.setViewportTransform([newZoom, 0, 0, newZoom, offsetX, offsetY])
     this._updateZoom(newZoom)
@@ -179,7 +180,36 @@ export class ZoomPlugin implements IPluginTempl {
 
     const point = new Point(evt.offsetX, evt.offsetY)
     this.canvas.zoomToPoint(point, newZoom)
+
+    // Clamp pan so at least a portion of the design remains visible
+    this._clampViewport(newZoom)
     this._updateZoom(newZoom)
+  }
+
+  /**
+   * Clamp viewport transform so the design area never goes fully off-screen.
+   * Leaves a 40px margin so the user can always grab it and pan back.
+   */
+  private _clampViewport(zoom: number): void {
+    if (!this.zones) return
+    const vpt = this.canvas.viewportTransform
+    if (!vpt) return
+
+    const vpW = this.canvas.width
+    const vpH = this.canvas.height
+    const designW = this.zones.bleedPx.width * zoom
+    const designH = this.zones.bleedPx.height * zoom
+    const MARGIN = 40
+
+    // vpt[4] = offsetX, vpt[5] = offsetY
+    // Max offset: design left edge can go at most (vpW - MARGIN) right
+    // Min offset: design right edge must stay at least MARGIN from left edge
+    vpt[4] = Math.min(vpt[4], vpW - MARGIN)
+    vpt[4] = Math.max(vpt[4], -(designW - MARGIN))
+    vpt[5] = Math.min(vpt[5], vpH - MARGIN)
+    vpt[5] = Math.max(vpt[5], -(designH - MARGIN))
+
+    this.canvas.requestRenderAll()
   }
 
   private _onMouseDown = (opt: { e: MouseEvent }): void => {
@@ -254,6 +284,29 @@ export class ZoomPlugin implements IPluginTempl {
   }
 
   // --- Private ---
+
+  /**
+   * Apply zoom while keeping the design centered in the viewport.
+   * Used by zoomIn/zoomOut/setZoom buttons so the design never drifts off-screen.
+   */
+  private _applyZoomCentered(zoom: number): void {
+    const vpW = this.canvas.width
+    const vpH = this.canvas.height
+    if (!vpW || !vpH) return
+
+    if (this.zones) {
+      const designW = this.zones.bleedPx.width
+      const designH = this.zones.bleedPx.height
+      const offsetX = (vpW - designW * zoom) / 2
+      const offsetY = (vpH - designH * zoom) / 2
+      this.canvas.setViewportTransform([zoom, 0, 0, zoom, offsetX, offsetY])
+    } else {
+      // Fallback: zoom to canvas center
+      const cx = vpW / 2
+      const cy = vpH / 2
+      this.canvas.zoomToPoint(new Point(cx, cy), zoom)
+    }
+  }
 
   private _updateZoom(zoom: number): void {
     const store = useEditorStore.getState()

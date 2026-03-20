@@ -40,6 +40,23 @@ export interface ProductGroup {
   templates?: ProductTemplate[]
 }
 
+// Dimension constraints stored in template_json
+export interface TemplateDimensionConstraints {
+  min_width_mm?: number
+  max_width_mm?: number
+  width_step_mm?: number
+  min_height_mm?: number
+  max_height_mm?: number
+  height_step_mm?: number
+}
+
+// Sponsor/logo zones stored in template_json (for events division)
+export interface SponsorZone {
+  key: string
+  label: string
+  description?: string
+}
+
 export interface ProductTemplate {
   id: string
   product_group_id: string
@@ -57,6 +74,27 @@ export interface ProductTemplate {
   created_at: string
   parameters?: TemplateParameter[]
   product_group?: ProductGroup
+}
+
+// Helper to extract dimension constraints from template_json
+export function getDimensionConstraints(template: ProductTemplate): TemplateDimensionConstraints | null {
+  const tj = template.template_json as Record<string, unknown>
+  if (!tj?.min_width_mm && !tj?.max_width_mm && !tj?.min_height_mm && !tj?.max_height_mm) return null
+  return {
+    min_width_mm: tj.min_width_mm as number | undefined,
+    max_width_mm: tj.max_width_mm as number | undefined,
+    width_step_mm: (tj.width_step_mm as number | undefined) ?? 1,
+    min_height_mm: tj.min_height_mm as number | undefined,
+    max_height_mm: tj.max_height_mm as number | undefined,
+    height_step_mm: (tj.height_step_mm as number | undefined) ?? 1,
+  }
+}
+
+// Helper to extract sponsor zones from template_json
+export function getSponsorZones(template: ProductTemplate): SponsorZone[] {
+  const tj = template.template_json as Record<string, unknown>
+  if (!Array.isArray(tj?.sponsor_zones)) return []
+  return tj.sponsor_zones as SponsorZone[]
 }
 
 export interface TemplateParameter {
@@ -178,6 +216,27 @@ export interface Proof {
   admin_notes: string | null
   created_at: string
   responded_at: string | null
+  approved_by: string | null
+  approved_ip: string | null
+}
+
+export type ProofAuditAction =
+  | 'proof_created'
+  | 'proof_approved'
+  | 'revision_requested'
+  | 'production_generated'
+
+export interface ProofAuditLog {
+  id: string
+  proof_id: string
+  order_item_id: string
+  action: ProofAuditAction
+  actor_id: string | null
+  actor_role: UserRole | 'system' | null
+  notes: string | null
+  client_ip: string | null
+  metadata: Record<string, unknown>
+  created_at: string
 }
 
 export interface ProductionFile {

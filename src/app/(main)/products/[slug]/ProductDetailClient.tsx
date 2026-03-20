@@ -9,6 +9,7 @@ import type {
   ProductTemplate,
   TemplateParameter,
   PricingRule,
+  Division,
 } from '@/types'
 
 type TemplateWithParams = ProductTemplate & {
@@ -20,6 +21,7 @@ interface ProductDetailClientProps {
   templates: TemplateWithParams[]
   pricingRules: PricingRule[]
   divisionName: string | null
+  division: Division
   gradient: string
 }
 
@@ -28,6 +30,7 @@ export function ProductDetailClient({
   templates,
   pricingRules,
   divisionName,
+  division,
   gradient,
 }: ProductDetailClientProps) {
   const [activeImageUrl, setActiveImageUrl] = useState<string | null>(
@@ -118,6 +121,7 @@ export function ProductDetailClient({
       <div>
         <ProductConfigurator
           productGroupId={product.id}
+          division={division}
           templates={templates}
           pricingRules={pricingRules}
           onTemplateChange={handleTemplateChange}

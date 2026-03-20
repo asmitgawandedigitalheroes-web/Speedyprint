@@ -4,6 +4,7 @@
 
 import { IText, Shadow, type Canvas as FabricCanvas } from 'fabric'
 import type { IPluginTempl, IEditor } from '../types'
+import { getSafeZoneCenter } from '../canvas-utils'
 
 const TEXT_PRESETS = {
   heading: { fontSize: 48, fontWeight: 'bold', fontFamily: 'Montserrat' },
@@ -29,9 +30,11 @@ export class TextPlugin implements IPluginTempl {
     this._saveHistory()
 
     const zones = this._getZones()
+    const { x: centerX, y: centerY } = getSafeZoneCenter(this.canvas, zones)
+
     const itext = new IText(text, {
-      left: zones ? zones.safePx.left + zones.safePx.width / 2 : 200,
-      top: zones ? zones.safePx.top + zones.safePx.height / 2 : 200,
+      left: centerX,
+      top: centerY,
       originX: 'center',
       originY: 'center',
       fontFamily: 'Inter',

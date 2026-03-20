@@ -26,6 +26,7 @@ import {
   ZoomIn,
   ZoomOut,
   Maximize,
+  TableProperties,
 } from 'lucide-react'
 import type { ProductTemplate } from '@/types'
 
@@ -178,6 +179,23 @@ export function TopBar({
           </Button>
 
           <Separator orientation="vertical" className="h-5" />
+
+          {/* Batch CSV Upload — only for event products (race bibs, MTB boards, etc.) */}
+          {template.product_group?.division === 'events' && (
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => router.push(`/designer/${template.id}/csv`)}
+                title="Batch CSV Variable Data Upload"
+                className="border-orange-200 text-orange-600 hover:bg-orange-50 hover:border-orange-400"
+              >
+                <TableProperties className="size-4" />
+                Batch CSV
+              </Button>
+              <Separator orientation="vertical" className="h-5" />
+            </>
+          )}
 
           <Button
             variant="outline"

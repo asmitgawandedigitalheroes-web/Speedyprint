@@ -67,6 +67,25 @@ export async function updateSession(request: NextRequest) {
       url.pathname = '/'
       return NextResponse.redirect(url)
     }
+
+    // Production staff: restrict to production-related routes only
+    const PRODUCTION_STAFF_ALLOWED = [
+      '/admin',
+      '/admin/orders',
+      '/admin/production',
+      '/admin/proofs',
+      '/admin/csv',
+    ]
+    if (profile.role === 'production_staff') {
+      const allowed = PRODUCTION_STAFF_ALLOWED.some(
+        (allowed) => pathname === allowed || pathname.startsWith(allowed + '/')
+      )
+      if (!allowed) {
+        const url = request.nextUrl.clone()
+        url.pathname = '/admin/production'
+        return NextResponse.redirect(url)
+      }
+    }
   }
 
   // Redirect logged-in users away from auth pages

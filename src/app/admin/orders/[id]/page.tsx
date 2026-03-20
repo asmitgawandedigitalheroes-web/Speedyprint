@@ -16,6 +16,9 @@ import {
   CreditCard,
   Save,
   AlertCircle,
+  Archive,
+  Table,
+  Printer,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -55,6 +58,7 @@ import type {
   OrderStatus,
   OrderStatusHistory,
 } from '@/types'
+import { AdminProofPanel } from '@/components/admin/ProofPanel'
 
 interface OrderDetail extends Omit<Order, 'profile'> {
   profile: Profile | null
@@ -91,6 +95,90 @@ export default function AdminOrderDetailPage({
   const [shipTracking, setShipTracking] = useState('')
   const [shipSendEmail, setShipSendEmail] = useState(true)
   const [shipping, setShipping] = useState(false)
+
+  // ZIP download
+  const [downloadingZip, setDownloadingZip] = useState(false)
+
+  // Production file generation
+  const [generatingProduction, setGeneratingProduction] = useState(false)
+  const [productionResult, setProductionResult] = useState<{
+    files_generated: number
+    errors: string[]
+  } | null>(null)
+
+  // CSV viewer
+  const [csvJobData, setCsvJobData] = useState<{ headers: string[]; rows: string[][]; filename?: string; totalRows?: number } | null>(null)
+  const [csvViewerOpen, setCsvViewerOpen] = useState(false)
+
+  const handleGenerateProduction = async () => {
+    setGeneratingProduction(true)
+    setProductionResult(null)
+    try {
+      const res = await fetch(`/api/admin/orders/${id}/production`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ formats: ['pdf'] }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        alert(`Generation failed: ${data.error || 'Unknown error'}`)
+        return
+      }
+      setProductionResult({ files_generated: data.files_generated, errors: data.errors ?? [] })
+
+      // Refresh files list
+      const filesRes = await fetch(`/api/admin/orders/${id}/files`)
+      if (filesRes.ok) setFiles(await filesRes.json())
+    } catch (err) {
+      console.error('Production generation error:', err)
+      alert('Failed to generate production files')
+    } finally {
+      setGeneratingProduction(false)
+    }
+  }
+
+  const handleDownloadZip = async () => {
+    setDownloadingZip(true)
+    try {
+      const res = await fetch(`/api/admin/orders/${id}/files`, { method: 'POST' })
+      if (!res.ok) {
+        const data = await res.json()
+        alert(`Failed to generate ZIP: ${data.error || 'Unknown error'}`)
+        return
+      }
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${order?.order_number || id}_production_files.zip`
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch (err) {
+      console.error('ZIP download error:', err)
+      alert('Failed to download ZIP')
+    } finally {
+      setDownloadingZip(false)
+    }
+  }
+
+  const handleViewCsvData = async (csvJobId: string) => {
+    try {
+      const res = await fetch(`/api/admin/csv/${csvJobId}`)
+      if (!res.ok) {
+        const data = await res.json()
+        alert(data.error ?? 'Failed to load CSV data')
+        return
+      }
+      const data = await res.json()
+      if (data.headers?.length > 0) {
+        setCsvJobData({ headers: data.headers, rows: data.rows, filename: data.filename, totalRows: data.pagination.total })
+        setCsvViewerOpen(true)
+      }
+    } catch (err) {
+      console.error('CSV load error:', err)
+      alert('Failed to load CSV data')
+    }
+  }
 
   const fetchOrder = useCallback(async () => {
     try {
@@ -302,7 +390,38 @@ export default function AdminOrderDetailPage({
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Generate production files */}
+          <Button
+            variant="outline"
+            className="gap-2"
+            onClick={handleGenerateProduction}
+            disabled={generatingProduction}
+            title="Generate print-ready PDFs with bleed"
+          >
+            {generatingProduction ? (
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-400 border-t-transparent" />
+            ) : (
+              <Printer className="h-4 w-4" />
+            )}
+            Generate Production Files
+          </Button>
+
+          {/* Download all files as ZIP */}
+          <Button
+            variant="outline"
+            className="gap-2"
+            onClick={handleDownloadZip}
+            disabled={downloadingZip}
+          >
+            {downloadingZip ? (
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-400 border-t-transparent" />
+            ) : (
+              <Archive className="h-4 w-4" />
+            )}
+            Download ZIP
+          </Button>
+
           {/* Mark as Shipped */}
           {order.status !== 'completed' && order.status !== 'cancelled' && (
             <Dialog open={shipDialogOpen} onOpenChange={setShipDialogOpen}>
@@ -394,6 +513,39 @@ export default function AdminOrderDetailPage({
           </div>
         </div>
       </div>
+
+      {/* Production result banner */}
+      {productionResult && (
+        <div
+          className={cn(
+            'rounded-lg border p-4 text-sm',
+            productionResult.errors.length > 0
+              ? 'border-yellow-200 bg-yellow-50 text-yellow-800'
+              : 'border-green-200 bg-green-50 text-green-800'
+          )}
+        >
+          <div className="flex items-start gap-3">
+            {productionResult.errors.length > 0 ? (
+              <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
+            ) : (
+              <CheckCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
+            )}
+            <div>
+              <p className="font-medium">
+                {productionResult.files_generated} production file(s) generated
+                {productionResult.errors.length > 0 && ` · ${productionResult.errors.length} error(s)`}
+              </p>
+              {productionResult.errors.length > 0 && (
+                <ul className="mt-1 list-inside list-disc space-y-0.5 text-xs">
+                  {productionResult.errors.slice(0, 5).map((e, i) => (
+                    <li key={i}>{e}</li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Customer Info */}
@@ -761,9 +913,26 @@ export default function AdminOrderDetailPage({
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                title="View Design"
+                                title="Preview Design"
+                                asChild
                               >
-                                <Eye className="h-3.5 w-3.5" />
+                                <a
+                                  href={`/designer/${item.product_template_id}?designId=${item.design_id}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                >
+                                  <Eye className="h-3.5 w-3.5" />
+                                </a>
+                              </Button>
+                            )}
+                            {item.csv_job_id && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                title="View CSV Data"
+                                onClick={() => handleViewCsvData(item.csv_job_id!)}
+                              >
+                                <Table className="h-3.5 w-3.5" />
                               </Button>
                             )}
                             {item.proofs && item.proofs.length > 0 && (
@@ -771,17 +940,13 @@ export default function AdminOrderDetailPage({
                                 size="sm"
                                 variant="ghost"
                                 title="View Proofs"
+                                asChild
                               >
-                                <FileText className="h-3.5 w-3.5" />
+                                <a href="#proof-management">
+                                  <FileText className="h-3.5 w-3.5" />
+                                </a>
                               </Button>
                             )}
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              title="Download Production Files"
-                            >
-                              <Download className="h-3.5 w-3.5" />
-                            </Button>
                           </div>
                         </td>
                       </tr>
@@ -802,6 +967,17 @@ export default function AdminOrderDetailPage({
           </div>
         </CardContent>
       </Card>
+
+      {/* Proof Management */}
+      {order.items && order.items.length > 0 && (
+        <div id="proof-management">
+          <AdminProofPanel
+            orderId={id}
+            orderItems={order.items}
+            onRefresh={fetchOrder}
+          />
+        </div>
+      )}
 
       {/* Production Files */}
       {(files.productionFiles.length > 0 ||
@@ -874,6 +1050,51 @@ export default function AdminOrderDetailPage({
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {/* CSV Data Viewer Modal */}
+      {csvViewerOpen && csvJobData && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="max-h-[80vh] w-full max-w-4xl overflow-hidden rounded-xl bg-white shadow-xl">
+            <div className="flex items-center justify-between border-b p-4">
+              <div className="flex items-center gap-2">
+                <Table className="h-5 w-5 text-muted-foreground" />
+                <h3 className="font-semibold">CSV Variable Data</h3>
+                {csvJobData.filename && (
+                  <span className="text-xs text-muted-foreground font-mono">{csvJobData.filename}</span>
+                )}
+                <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-muted-foreground">
+                  {csvJobData.totalRows ?? csvJobData.rows.length} rows
+                </span>
+              </div>
+              <Button size="sm" variant="ghost" onClick={() => setCsvViewerOpen(false)}>
+                ✕
+              </Button>
+            </div>
+            <div className="overflow-auto p-4" style={{ maxHeight: 'calc(80vh - 64px)' }}>
+              <table className="w-full text-sm">
+                <thead className="sticky top-0 bg-gray-50">
+                  <tr>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">#</th>
+                    {csvJobData.headers.filter((h) => !h.startsWith('_')).map((h) => (
+                      <th key={h} className="px-3 py-2 text-left text-xs font-medium text-muted-foreground whitespace-nowrap">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {csvJobData.rows.map((row, i) => (
+                    <tr key={i} className="hover:bg-gray-50">
+                      <td className="px-3 py-2 text-xs text-muted-foreground">{i + 1}</td>
+                      {row.filter((_, j) => !csvJobData.headers[j]?.startsWith('_')).map((cell, j) => (
+                        <td key={j} className="px-3 py-2 whitespace-nowrap">{cell}</td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Order Timeline */}

@@ -289,7 +289,8 @@ export function useDesigner() {
     }
   }, [state.template, state.isDirty, state.design, user, backupToLocalStorage, saveDesign])
 
-  // --- Warn before leaving with unsaved changes ---
+  // --- Window event listeners: beforeunload warning + reconnect sync ---
+  // Merged into one effect to keep the hook count stable.
 
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -299,9 +300,21 @@ export function useDesigner() {
       }
     }
 
+    // When the browser comes back online, push any pending changes to the server
+    const handleOnline = () => {
+      if (state.isDirty && state.design && user) {
+        saveDesign()
+      }
+    }
+
     window.addEventListener('beforeunload', handleBeforeUnload)
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
-  }, [state.isDirty, backupToLocalStorage])
+    window.addEventListener('online', handleOnline)
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload)
+      window.removeEventListener('online', handleOnline)
+    }
+  }, [state.isDirty, state.design, user, backupToLocalStorage, saveDesign])
 
   return {
     state,

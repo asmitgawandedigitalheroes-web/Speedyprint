@@ -12,6 +12,7 @@ import {
   type Canvas as FabricCanvas,
 } from 'fabric'
 import { useEditorStore } from '../store'
+import { getSafeZoneCenter } from '../canvas-utils'
 import type { IPluginTempl, IEditor } from '../types'
 
 type ShapeType = 'rect' | 'circle' | 'triangle' | 'line' | 'polygon' | 'star' | 'arrow' | 'rounded-rect'
@@ -35,8 +36,7 @@ export class ShapePlugin implements IPluginTempl {
     this._saveHistory()
 
     const zones = this._getZones()
-    const centerX = zones ? zones.safePx.left + zones.safePx.width / 2 : 200
-    const centerY = zones ? zones.safePx.top + zones.safePx.height / 2 : 200
+    const { x: centerX, y: centerY } = getSafeZoneCenter(this.canvas, zones)
 
     const defaults = {
       left: centerX,

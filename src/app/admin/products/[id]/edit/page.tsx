@@ -47,6 +47,15 @@ interface TemplateForm {
   safe_zone_mm: number
   dpi: number
   is_active: boolean
+  // Adjustable dimensions (stored in template_json)
+  min_width_mm: string
+  max_width_mm: string
+  width_step_mm: string
+  min_height_mm: string
+  max_height_mm: string
+  height_step_mm: string
+  // Sponsor zones (stored in template_json as JSON)
+  sponsor_zones_json: string
 }
 
 interface PricingRuleForm {
@@ -68,6 +77,38 @@ const emptyTemplate: TemplateForm = {
   safe_zone_mm: 5,
   dpi: 300,
   is_active: true,
+  min_width_mm: '',
+  max_width_mm: '',
+  width_step_mm: '1',
+  min_height_mm: '',
+  max_height_mm: '',
+  height_step_mm: '1',
+  sponsor_zones_json: '[]',
+}
+
+function templateToForm(tmpl: ProductTemplate): TemplateForm {
+  const tj = (tmpl.template_json ?? {}) as Record<string, unknown>
+  return {
+    id: tmpl.id,
+    name: tmpl.name,
+    description: tmpl.description || '',
+    image_url: tmpl.image_url || '',
+    print_width_mm: tmpl.print_width_mm,
+    print_height_mm: tmpl.print_height_mm,
+    bleed_mm: tmpl.bleed_mm,
+    safe_zone_mm: tmpl.safe_zone_mm,
+    dpi: tmpl.dpi,
+    is_active: tmpl.is_active,
+    min_width_mm: tj.min_width_mm != null ? String(tj.min_width_mm) : '',
+    max_width_mm: tj.max_width_mm != null ? String(tj.max_width_mm) : '',
+    width_step_mm: tj.width_step_mm != null ? String(tj.width_step_mm) : '1',
+    min_height_mm: tj.min_height_mm != null ? String(tj.min_height_mm) : '',
+    max_height_mm: tj.max_height_mm != null ? String(tj.max_height_mm) : '',
+    height_step_mm: tj.height_step_mm != null ? String(tj.height_step_mm) : '1',
+    sponsor_zones_json: Array.isArray(tj.sponsor_zones)
+      ? JSON.stringify(tj.sponsor_zones, null, 2)
+      : '[]',
+  }
 }
 
 const emptyPricingRule: PricingRuleForm = {
@@ -205,6 +246,19 @@ export default function AdminProductEditPage({
 
     try {
       const supabase = createClient()
+      // Build template_json from dimension constraints + sponsor zones
+      const templateJson: Record<string, unknown> = {}
+      if (editingTemplate.min_width_mm) templateJson.min_width_mm = parseFloat(editingTemplate.min_width_mm)
+      if (editingTemplate.max_width_mm) templateJson.max_width_mm = parseFloat(editingTemplate.max_width_mm)
+      if (editingTemplate.width_step_mm) templateJson.width_step_mm = parseFloat(editingTemplate.width_step_mm)
+      if (editingTemplate.min_height_mm) templateJson.min_height_mm = parseFloat(editingTemplate.min_height_mm)
+      if (editingTemplate.max_height_mm) templateJson.max_height_mm = parseFloat(editingTemplate.max_height_mm)
+      if (editingTemplate.height_step_mm) templateJson.height_step_mm = parseFloat(editingTemplate.height_step_mm)
+      try {
+        const zones = JSON.parse(editingTemplate.sponsor_zones_json)
+        if (Array.isArray(zones) && zones.length > 0) templateJson.sponsor_zones = zones
+      } catch { /* ignore invalid JSON */ }
+
       const templateData = {
         product_group_id: id,
         name: editingTemplate.name,
@@ -216,7 +270,7 @@ export default function AdminProductEditPage({
         safe_zone_mm: editingTemplate.safe_zone_mm,
         dpi: editingTemplate.dpi,
         is_active: editingTemplate.is_active,
-        template_json: {},
+        template_json: templateJson,
         panels: [],
       }
 
@@ -682,6 +736,71 @@ export default function AdminProductEditPage({
                   </div>
                 </div>
 
+                {/* Adjustable Dimensions */}
+                <div className="space-y-2 rounded-lg border border-dashed border-gray-300 p-3">
+                  <p className="text-xs font-semibold text-brand-gray-medium uppercase tracking-wider">
+                    Adjustable Dimensions (optional)
+                  </p>
+                  <p className="text-[10px] text-muted-foreground">
+                    Leave blank to use fixed dimensions above. Fill in to let customers resize within these limits.
+                  </p>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="space-y-1">
+                      <Label className="text-[11px]">Min Width (mm)</Label>
+                      <Input type="number" min={1} placeholder="e.g. 50"
+                        value={editingTemplate.min_width_mm}
+                        onChange={(e) => setEditingTemplate((p) => p ? { ...p, min_width_mm: e.target.value } : p)} />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[11px]">Max Width (mm)</Label>
+                      <Input type="number" min={1} placeholder="e.g. 300"
+                        value={editingTemplate.max_width_mm}
+                        onChange={(e) => setEditingTemplate((p) => p ? { ...p, max_width_mm: e.target.value } : p)} />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[11px]">Step (mm)</Label>
+                      <Input type="number" min={1} placeholder="1"
+                        value={editingTemplate.width_step_mm}
+                        onChange={(e) => setEditingTemplate((p) => p ? { ...p, width_step_mm: e.target.value } : p)} />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[11px]">Min Height (mm)</Label>
+                      <Input type="number" min={1} placeholder="e.g. 30"
+                        value={editingTemplate.min_height_mm}
+                        onChange={(e) => setEditingTemplate((p) => p ? { ...p, min_height_mm: e.target.value } : p)} />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[11px]">Max Height (mm)</Label>
+                      <Input type="number" min={1} placeholder="e.g. 200"
+                        value={editingTemplate.max_height_mm}
+                        onChange={(e) => setEditingTemplate((p) => p ? { ...p, max_height_mm: e.target.value } : p)} />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[11px]">Step (mm)</Label>
+                      <Input type="number" min={1} placeholder="1"
+                        value={editingTemplate.height_step_mm}
+                        onChange={(e) => setEditingTemplate((p) => p ? { ...p, height_step_mm: e.target.value } : p)} />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Sponsor Zones */}
+                <div className="space-y-2 rounded-lg border border-dashed border-gray-300 p-3">
+                  <p className="text-xs font-semibold text-brand-gray-medium uppercase tracking-wider">
+                    Sponsor / Logo Zones (optional)
+                  </p>
+                  <p className="text-[10px] text-muted-foreground">
+                    JSON array of zones for event products. Each zone: <code>{`{"key":"sponsor_top","label":"Top Sponsor","description":"..."}`}</code>
+                  </p>
+                  <textarea
+                    rows={4}
+                    value={editingTemplate.sponsor_zones_json}
+                    onChange={(e) => setEditingTemplate((p) => p ? { ...p, sponsor_zones_json: e.target.value } : p)}
+                    className="w-full rounded-md border border-input bg-transparent px-3 py-2 font-mono text-xs focus-visible:border-ring focus-visible:outline-none"
+                    placeholder={'[\n  {"key":"sponsor_front","label":"Front Sponsor","description":"Logo on front"}\n]'}
+                  />
+                </div>
+
                 <div className="flex gap-2">
                   <Button
                     size="sm"
@@ -739,20 +858,7 @@ export default function AdminProductEditPage({
                     <Button
                       size="sm"
                       variant="ghost"
-                      onClick={() =>
-                        setEditingTemplate({
-                          id: tmpl.id,
-                          name: tmpl.name,
-                          description: tmpl.description || '',
-                          image_url: tmpl.image_url || '',
-                          print_width_mm: tmpl.print_width_mm,
-                          print_height_mm: tmpl.print_height_mm,
-                          bleed_mm: tmpl.bleed_mm,
-                          safe_zone_mm: tmpl.safe_zone_mm,
-                          dpi: tmpl.dpi,
-                          is_active: tmpl.is_active,
-                        })
-                      }
+                      onClick={() => setEditingTemplate(templateToForm(tmpl))}
                     >
                       <Pencil className="h-3.5 w-3.5" />
                     </Button>

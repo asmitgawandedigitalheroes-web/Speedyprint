@@ -1,7 +1,56 @@
 import type { CanvasZones } from './canvas-utils'
 import { isZoneGuide } from './canvas-utils'
 
+/**
+ * A locked rectangular zone in canvas-pixel coordinates.
+ * Objects cannot be placed overlapping these areas.
+ */
+export interface LockedZonePx {
+  left: number
+  top: number
+  width: number
+  height: number
+  label?: string
+}
+
 const SNAP_THRESHOLD = 5 // pixels
+
+// ---------------------------------------------------------------------------
+// Guide-line cache — pre-allocate Line objects per canvas so we never call
+// canvas.add() / canvas.remove() during drag (those are expensive and cause
+// the jitter / double-render effect the user sees).
+// ---------------------------------------------------------------------------
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const _guideCache = new Map<object, any[]>()
+const MAX_GUIDE_LINES = 6 // matches the maximum output of getSnapLines()
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function _getOrCreateGuides(fabric: any, canvas: any): any[] {
+  const cached = _guideCache.get(canvas)
+  if (cached) return cached
+
+  const lines: unknown[] = []
+  for (let i = 0; i < MAX_GUIDE_LINES; i++) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const line = new fabric.Line([0, 0, 0, 0], {
+      stroke: '#3b82f6',
+      strokeWidth: 1,
+      strokeDashArray: [4, 4],
+      selectable: false,
+      evented: false,
+      excludeFromExport: true,
+      name: '__alignment_guide',
+      visible: false,
+    })
+    canvas.add(line)
+    lines.push(line)
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  _guideCache.set(canvas, lines as any[])
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return lines as any[]
+}
 
 interface SnapLine {
   orientation: 'horizontal' | 'vertical'
@@ -48,7 +97,7 @@ function snapToLine(
 
 /**
  * Draw alignment guide lines on the canvas when snapping.
- * Creates temporary lines that should be removed after object:modified.
+ * Reuses pre-allocated Line objects — never adds/removes during drag.
  */
 export function drawAlignmentGuides(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -57,50 +106,93 @@ export function drawAlignmentGuides(
   canvas: any,
   snappedLines: SnapLine[]
 ): void {
-  // Remove existing guides
-  clearAlignmentGuides(canvas)
+  const guides = _getOrCreateGuides(fabric, canvas)
 
-  snappedLines.forEach((line) => {
-    const coords =
-      line.orientation === 'vertical'
-        ? [line.position, 0, line.position, canvas.height]
-        : [0, line.position, canvas.width, line.position]
-
-    const guideLine = new fabric.Line(coords, {
-      stroke: '#3b82f6',
-      strokeWidth: 1,
-      strokeDashArray: [4, 4],
-      selectable: false,
-      evented: false,
-      excludeFromExport: true,
-      name: '__alignment_guide',
-    })
-
-    canvas.add(guideLine)
+  // Update coordinates and visibility — no canvas.add / canvas.remove
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  guides.forEach((guide: any, i: number) => {
+    if (i < snappedLines.length) {
+      const sl = snappedLines[i]
+      if (sl.orientation === 'vertical') {
+        guide.set({ x1: sl.position, y1: 0, x2: sl.position, y2: canvas.height, visible: true })
+      } else {
+        guide.set({ x1: 0, y1: sl.position, x2: canvas.width, y2: sl.position, visible: true })
+      }
+    } else {
+      guide.set({ visible: false })
+    }
   })
 
-  canvas.renderAll()
+  canvas.requestRenderAll()
 }
 
 /**
- * Remove all alignment guide lines from the canvas.
+ * Hide all alignment guide lines (does NOT remove them from the canvas).
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function clearAlignmentGuides(canvas: any): void {
-  const guides = canvas
+  const cached = _guideCache.get(canvas)
+  if (cached) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    cached.forEach((guide: any) => guide.set({ visible: false }))
+    return
+  }
+
+  // Fallback for any legacy guides that might exist (e.g. from a previous session)
+  canvas
     .getObjects()
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .filter((obj: any) => obj.name === '__alignment_guide')
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  guides.forEach((guide: any) => canvas.remove(guide))
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .forEach((guide: any) => canvas.remove(guide))
 }
 
 /**
+ * Eagerly pre-allocate guide lines for a canvas.
+ * Call this once when the fabric module and canvas are ready so the first drag
+ * never triggers canvas.add() mid-gesture.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function initGuideLines(fabric: any, canvas: any): void {
+  _getOrCreateGuides(fabric, canvas)
+}
+
+/**
+ * Permanently remove pre-allocated guide lines and clear the cache.
+ * Call this when the canvas / plugin is being destroyed.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function destroyGuideLines(canvas: any): void {
+  const cached = _guideCache.get(canvas)
+  if (cached) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    cached.forEach((guide: any) => canvas.remove(guide))
+    _guideCache.delete(canvas)
+  }
+}
+
+/**
+ * Check whether two axis-aligned bounding rects overlap.
+ */
+function rectsOverlap(
+  r1: { left: number; top: number; width: number; height: number },
+  r2: { left: number; top: number; width: number; height: number }
+): boolean {
+  return !(
+    r1.left + r1.width <= r2.left ||
+    r2.left + r2.width <= r1.left ||
+    r1.top + r1.height <= r2.top ||
+    r2.top + r2.height <= r1.top
+  )
+}
+
+
+/**
  * Enforce constraints on the active object:
- * 1. Prevent objects from going outside the safe zone.
- * 2. Snap objects that are close to edges or center lines.
+ * 1. Prevent objects from going outside the bleed zone (hard boundary).
+ * 2. Snap objects that are close to safe zone edges or center lines.
  * 3. Show alignment guides when snapping.
+ * 4. Push objects out of template-defined locked zones.
  *
  * Should be called on `object:moving` and `object:modified` events.
  */
@@ -111,7 +203,8 @@ export function enforceConstraints(
   canvas: any,
   zones: CanvasZones,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  event?: { target?: any }
+  event?: { target?: any },
+  lockedZones?: LockedZonePx[]
 ): void {
   const obj = event?.target || canvas.getActiveObject()
   if (!obj) return
@@ -185,15 +278,67 @@ export function enforceConstraints(
     }
   }
 
-  // --- Clamp within safe zone (prevent going outside) ---
-  const clampedLeft = Math.max(
-    safePx.left + offsetLeft,
-    Math.min(newLeft, safePx.left + safePx.width - objWidth + offsetLeft)
+  // --- Clamp within bleed zone (hard outer boundary — objects may extend into bleed but not beyond) ---
+  const { bleedPx } = zones
+  let clampedLeft = Math.max(
+    bleedPx.left + offsetLeft,
+    Math.min(newLeft, bleedPx.left + bleedPx.width - objWidth + offsetLeft)
   )
-  const clampedTop = Math.max(
-    safePx.top + offsetTop,
-    Math.min(newTop, safePx.top + safePx.height - objHeight + offsetTop)
+  let clampedTop = Math.max(
+    bleedPx.top + offsetTop,
+    Math.min(newTop, bleedPx.top + bleedPx.height - objHeight + offsetTop)
   )
+
+  // --- Push out of locked zones ---
+  if (lockedZones && lockedZones.length > 0) {
+    for (const zone of lockedZones) {
+      const currentBound = {
+        left: clampedLeft - offsetLeft,
+        top: clampedTop - offsetTop,
+        width: objWidth,
+        height: objHeight,
+      }
+      if (!rectsOverlap(currentBound, zone)) continue
+
+      // Try all 4 exit directions — pick the one that, after bleed re-clamp,
+      // no longer overlaps the zone (minimum displacement wins).
+      const candidates: { left: number; top: number }[] = [
+        { left: zone.left - objWidth + offsetLeft,       top: clampedTop },              // exit left
+        { left: zone.left + zone.width + offsetLeft,     top: clampedTop },              // exit right
+        { left: clampedLeft,                             top: zone.top - objHeight + offsetTop }, // exit up
+        { left: clampedLeft,                             top: zone.top + zone.height + offsetTop }, // exit down
+      ]
+
+      let bestLeft = clampedLeft
+      let bestTop = clampedTop
+      let bestDist = Infinity
+
+      for (const cand of candidates) {
+        // Apply bleed clamp to the candidate
+        const cl = Math.max(
+          bleedPx.left + offsetLeft,
+          Math.min(cand.left, bleedPx.left + bleedPx.width - objWidth + offsetLeft)
+        )
+        const ct = Math.max(
+          bleedPx.top + offsetTop,
+          Math.min(cand.top, bleedPx.top + bleedPx.height - objHeight + offsetTop)
+        )
+        // Accept only if the object no longer overlaps after the clamp
+        const newBound = { left: cl - offsetLeft, top: ct - offsetTop, width: objWidth, height: objHeight }
+        if (!rectsOverlap(newBound, zone)) {
+          const dist = Math.abs(cl - clampedLeft) + Math.abs(ct - clampedTop)
+          if (dist < bestDist) {
+            bestDist = dist
+            bestLeft = cl
+            bestTop = ct
+          }
+        }
+      }
+
+      clampedLeft = bestLeft
+      clampedTop = bestTop
+    }
+  }
 
   obj.set({ left: clampedLeft, top: clampedTop })
   obj.setCoords()
@@ -222,17 +367,17 @@ export function enforceScaleConstraints(
     return
   }
 
-  const { safePx } = zones
+  const { bleedPx } = zones
   const bound = obj.getBoundingRect()
 
-  // If the scaled object exceeds the safe zone, limit the scale
-  if (bound.width > safePx.width) {
-    const maxScaleX = (safePx.width / (obj.width * (obj.scaleX || 1))) * (obj.scaleX || 1)
+  // If the scaled object exceeds the bleed zone, limit the scale
+  if (bound.width > bleedPx.width) {
+    const maxScaleX = (bleedPx.width / (obj.width * (obj.scaleX || 1))) * (obj.scaleX || 1)
     obj.set({ scaleX: maxScaleX })
   }
 
-  if (bound.height > safePx.height) {
-    const maxScaleY = (safePx.height / (obj.height * (obj.scaleY || 1))) * (obj.scaleY || 1)
+  if (bound.height > bleedPx.height) {
+    const maxScaleY = (bleedPx.height / (obj.height * (obj.scaleY || 1))) * (obj.scaleY || 1)
     obj.set({ scaleY: maxScaleY })
   }
 

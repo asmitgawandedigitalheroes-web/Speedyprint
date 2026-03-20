@@ -38,10 +38,55 @@ export const ZONE_GUIDE_NAMES = [
 export type ZoneGuideName = (typeof ZONE_GUIDE_NAMES)[number]
 
 /**
+ * All internal (non-user) object names used by the designer.
+ */
+export const INTERNAL_OBJECT_NAMES = [
+  '__bleed_zone',
+  '__trim_zone',
+  '__safe_zone',
+  '__print_bg',
+  '__artboard_handle',
+  '__alignment_guide',
+  '__grid_line',
+  '__watermark',
+  '__locked_zone',
+] as const
+
+/**
  * Check whether a Fabric object is one of the non-selectable zone guides.
  */
 export function isZoneGuide(obj: { name?: string }): boolean {
   return ZONE_GUIDE_NAMES.includes(obj.name as ZoneGuideName)
+}
+
+/**
+ * Check whether a Fabric object is any internal (non-user) object.
+ */
+export function isInternalObject(obj: { name?: string }): boolean {
+  return INTERNAL_OBJECT_NAMES.includes(obj.name as (typeof INTERNAL_OBJECT_NAMES)[number])
+}
+
+/**
+ * Get the center of the safe zone by reading the actual __safe_zone fabric object.
+ * Falls back to zones data if the object is not found.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function getSafeZoneCenter(canvas: any, zones: CanvasZones | null): { x: number; y: number } {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const safeRect = canvas.getObjects().find((obj: any) => obj.name === '__safe_zone')
+  if (safeRect) {
+    return {
+      x: (safeRect.left as number) + (safeRect.width as number) / 2,
+      y: (safeRect.top as number) + (safeRect.height as number) / 2,
+    }
+  }
+  if (zones) {
+    return {
+      x: zones.safePx.left + zones.safePx.width / 2,
+      y: zones.safePx.top + zones.safePx.height / 2,
+    }
+  }
+  return { x: 200, y: 200 }
 }
 
 // --- Zone Rectangle Creation ---
@@ -246,10 +291,48 @@ export async function loadCanvasJSON(
   callback?.()
 }
 
+// --- Hide / Show Zone Guides for Export ---
+
+/**
+ * Hide all zone guide objects and the artboard handle so they don't appear
+ * in toDataURL() renders (preview, export, thumbnail).
+ * Returns the list of hidden objects so they can be restored.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function hideZoneGuides(canvas: any): any[] {
+  const hidden: unknown[] = []
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  canvas.getObjects().forEach((obj: any) => {
+    if (
+      isZoneGuide(obj) ||
+      obj.name === '__print_bg' ||
+      obj.name === '__artboard_handle' ||
+      obj.name === '__alignment_guide'
+    ) {
+      if (obj.visible !== false) {
+        obj.set({ visible: false })
+        hidden.push(obj)
+      }
+    }
+  })
+  canvas.renderAll()
+  return hidden
+}
+
+/**
+ * Restore previously hidden zone guide objects.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function showZoneGuides(hidden: any[]): void {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  hidden.forEach((obj: any) => obj.set({ visible: true }))
+}
+
 // --- Thumbnail Generation ---
 
 /**
  * Generate a thumbnail data URL from the canvas.
+ * Hides zone guides before rendering and restores them after.
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function generateThumbnail(canvas: any, maxSize: number = 400): string {
@@ -257,9 +340,18 @@ export function generateThumbnail(canvas: any, maxSize: number = 400): string {
   const height = canvas.height
   const scale = Math.min(maxSize / width, maxSize / height, 1)
 
-  return canvas.toDataURL({
+  // Hide zone guides so they don't appear in the thumbnail
+  const hidden = hideZoneGuides(canvas)
+
+  const dataUrl = canvas.toDataURL({
     format: 'png',
     quality: 0.8,
     multiplier: scale,
   })
+
+  // Restore zone guides
+  showZoneGuides(hidden)
+  canvas.renderAll()
+
+  return dataUrl
 }

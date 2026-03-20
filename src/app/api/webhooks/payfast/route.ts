@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { generateSignature, PAYFAST_CONFIG, PAYFAST_IPS } from '@/lib/payfast/config'
+import { sendPaymentReceived } from '@/lib/email/resend'
+import type { Order } from '@/types'
 
 export async function POST(req: NextRequest) {
   try {
@@ -64,6 +66,21 @@ export async function POST(req: NextRequest) {
         status: 'paid',
         notes: `Payment received via PayFast (${pfPaymentId})`,
       })
+
+      // Send payment received email to customer
+      try {
+        const { data: orderWithProfile } = await supabase
+          .from('orders')
+          .select('*, profile:profiles!orders_user_id_fkey(email)')
+          .eq('id', paymentId)
+          .single()
+        const customerEmail = (orderWithProfile as any)?.profile?.email
+        if (orderWithProfile && customerEmail) {
+          await sendPaymentReceived(orderWithProfile as unknown as Order, customerEmail)
+        }
+      } catch (emailErr) {
+        console.error('PayFast: payment email error:', emailErr)
+      }
 
       console.log(`PayFast ITN: Order ${paymentId} marked as paid`)
     } else if (paymentStatus === 'CANCELLED') {

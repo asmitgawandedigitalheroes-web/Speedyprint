@@ -1,5 +1,10 @@
 'use client'
 
+// Top-level import is safe: this file is only loaded via next/dynamic with ssr:false,
+// so it never executes on the server. This eliminates the async gap from
+// `await import('fabric')` that caused React Strict Mode to cancel initialization.
+import * as fabric from 'fabric'
+
 import {
   useRef,
   useEffect,
@@ -10,7 +15,7 @@ import {
 } from 'react'
 import type { ProductTemplate } from '@/types'
 import type { DesignerCanvasRef } from '@/hooks/useDesigner'
-import { getCanvasJSON, loadCanvasJSON } from '@/lib/designer/canvas-utils'
+import { getCanvasJSON, loadCanvasJSON, getSafeZoneCenter, hideZoneGuides, showZoneGuides } from '@/lib/designer/canvas-utils'
 import { loadGoogleFonts, GOOGLE_FONTS } from '@/lib/designer/fonts'
 import { cn } from '@/lib/utils'
 import { Editor } from '@/lib/designer/editor'
@@ -65,22 +70,30 @@ const DesignerCanvasInner = forwardRef<DesignerCanvasRef, DesignerCanvasProps>(
     const fabricRef = useRef<any>(null)
     const containerRef = useRef<HTMLDivElement>(null)
     const [isDragOver, setIsDragOver] = useState(false)
+    const [initError, setInitError] = useState<string | null>(null)
+    const [artboardLocked, setArtboardLocked] = useState(false)
 
     const zoom = useEditorStore((s) => s.zoom)
     const isReady = useEditorStore((s) => s.isReady)
 
     // --- Initialize Fabric Canvas + Editor ---
 
+    // Reset store on every mount so Fast Refresh doesn't leave stale isReady=true
+    // with no actual canvas underneath.
+    useEffect(() => {
+      useEditorStore.getState().reset()
+    }, [])
+
     useEffect(() => {
       let mounted = true
+      let containerRo: ResizeObserver | null = null
 
       async function initFabric() {
         try {
+          if (!mounted || !canvasElRef.current) return
+
           // Load Google Fonts before initializing canvas
           loadGoogleFonts(GOOGLE_FONTS)
-
-          const fabric = await import('fabric')
-          if (!mounted || !canvasElRef.current) return
 
           fabricRef.current = fabric
 
@@ -123,6 +136,10 @@ const DesignerCanvasInner = forwardRef<DesignerCanvasRef, DesignerCanvasProps>(
           await editor.use(ImportPlugin)
           await editor.use(WatermarkPlugin)
 
+          // Guard: React Strict Mode cleanup may have fired and disposed the canvas
+          // during the awaits above. Abort before touching the now-invalid canvas.
+          if (!mounted) return
+
           // Initialize zones
           const zonePlugin = editor.getPlugin<ZonePlugin>('ZonePlugin')
           const zones = zonePlugin.initZones(fabric, template)
@@ -130,12 +147,26 @@ const DesignerCanvasInner = forwardRef<DesignerCanvasRef, DesignerCanvasProps>(
           // Configure snap plugin
           const snapPlugin = editor.getPlugin<SnapPlugin>('SnapPlugin')
           snapPlugin.setZonesAndFabric(zones, fabric)
+          snapPlugin.setLockedZones(zonePlugin.getLockedZones())
 
           // Configure zoom plugin
           const zoomPlugin = editor.getPlugin<ZoomPlugin>('ZoomPlugin')
           zoomPlugin.setZones(zones)
           if (containerRef.current) {
             zoomPlugin.setContainer(containerRef.current)
+          }
+
+          // Resize canvas HTML element to fill the container so the viewport
+          // transform can zoom/pan the design content within the full viewport.
+          // initializeCanvas() sets canvas to design dimensions (e.g. 393×204) —
+          // we override that here so the canvas IS the viewport.
+          if (containerRef.current) {
+            const { clientWidth: cw, clientHeight: ch } = containerRef.current
+            if (cw > 0 && ch > 0) {
+              canvas.setDimensions({ width: cw, height: ch })
+              // Fit immediately — canvas dimensions are now correct
+              zoomPlugin.zoomToFit()
+            }
           }
 
           // --- Canvas Event Handlers ---
@@ -199,19 +230,51 @@ const DesignerCanvasInner = forwardRef<DesignerCanvasRef, DesignerCanvasProps>(
             history.saveState()
           }
 
-          // Fit canvas to container
-          zoomPlugin.zoomToFit()
+          // Guard: if this effect run was superseded (e.g. React Strict Mode double-invoke
+          // ran the cleanup, disposing the canvas), abort before touching shared store.
+          if (!mounted) return
 
-          // Set store references
+          // Set store references first so toolbar becomes active
           const store = useEditorStore.getState()
           store.setEditor(editor)
           store.setIsReady(true)
+
+          // Second fit after React re-renders and browser paints the final layout.
+          // Handles cases where the container size wasn't fully settled at init time.
+          requestAnimationFrame(() => {
+            if (!mounted) return
+            if (containerRef.current) {
+              const { clientWidth: cw, clientHeight: ch } = containerRef.current
+              if (cw > 0 && ch > 0) {
+                canvas.setDimensions({ width: cw, height: ch })
+                zoomPlugin.zoomToFit()
+              }
+            }
+          })
+
+          // Use ResizeObserver to keep canvas HTML dimensions synced with the container
+          // and call zoomToFit whenever the container resizes (initial load + panel toggles).
+          if (containerRef.current) {
+            containerRo = new ResizeObserver((entries) => {
+              const entry = entries[0]
+              if (!entry || !mounted) return
+              const { width, height } = entry.contentRect
+              if (width > 0 && height > 0) {
+                canvas.setDimensions({ width, height })
+                zoomPlugin.zoomToFit()
+              }
+            })
+            containerRo.observe(containerRef.current)
+          }
           store.setCanvasDimensions({
             width: zones.bleedPx.width,
             height: zones.bleedPx.height,
           })
         } catch (err) {
           console.error('[DesignerCanvas] initFabric failed:', err)
+          if (mounted) {
+            setInitError(err instanceof Error ? err.message : String(err))
+          }
         }
       }
 
@@ -219,6 +282,7 @@ const DesignerCanvasInner = forwardRef<DesignerCanvasRef, DesignerCanvasProps>(
 
       return () => {
         mounted = false
+        containerRo?.disconnect()
         if (editorRef.current) {
           editorRef.current.destroy()
           editorRef.current = null
@@ -248,7 +312,7 @@ const DesignerCanvasInner = forwardRef<DesignerCanvasRef, DesignerCanvasProps>(
     }, [])
 
     const handleDrop = useCallback(
-      (e: React.DragEvent) => {
+      async (e: React.DragEvent) => {
         e.preventDefault()
         e.stopPropagation()
         setIsDragOver(false)
@@ -257,15 +321,25 @@ const DesignerCanvasInner = forwardRef<DesignerCanvasRef, DesignerCanvasProps>(
         if (!files || files.length === 0) return
 
         const file = files[0]
-        const validTypes = ['image/png', 'image/jpeg', 'image/svg+xml']
-        if (!validTypes.includes(file.type)) return
+        const validTypes = ['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml', 'application/pdf']
+        const ext = '.' + file.name.split('.').pop()?.toLowerCase()
+        const validExts = ['.png', '.jpg', '.jpeg', '.webp', '.svg', '.pdf']
+        if (!validTypes.includes(file.type) && !validExts.includes(ext)) return
 
-        const reader = new FileReader()
-        reader.onload = () => {
-          const dataUrl = reader.result as string
-          addImageInternal(dataUrl)
+        // PDFs: route through ImportPlugin (renders first page as canvas image)
+        const isPdf = file.type === 'application/pdf' || ext === '.pdf'
+        if (isPdf) {
+          const editor = editorRef.current
+          if (!editor) return
+          const plugin = editor.getPlugin<{ importFile: (f: File) => Promise<void> }>('ImportPlugin')
+          if (plugin) await plugin.importFile(file)
+          return
         }
-        reader.readAsDataURL(file)
+
+        // Images: use smartUpload (local for small files, CDN for large)
+        const { smartUpload } = await import('@/lib/upload')
+        const url = await smartUpload(file)
+        addImageInternal(url)
       },
       // eslint-disable-next-line react-hooks/exhaustive-deps
       []
@@ -291,9 +365,10 @@ const DesignerCanvasInner = forwardRef<DesignerCanvasRef, DesignerCanvasProps>(
           const imgElement = new Image()
           imgElement.crossOrigin = 'anonymous'
           imgElement.onload = () => {
+            const { x: imgCx, y: imgCy } = getSafeZoneCenter(canvas, zones)
             const fabricImage = new fabric.FabricImage(imgElement, {
-              left: zones.safePx.left + zones.safePx.width / 2,
-              top: zones.safePx.top + zones.safePx.height / 2,
+              left: imgCx,
+              top: imgCy,
               originX: 'center',
               originY: 'center',
               ...options,
@@ -338,9 +413,11 @@ const DesignerCanvasInner = forwardRef<DesignerCanvasRef, DesignerCanvasProps>(
           const history = editor.getPlugin<HistoryPlugin>('HistoryPlugin')
           history.saveState()
 
+          const { x: cx, y: cy } = getSafeZoneCenter(canvas, zones)
+
           const text = new fabric.IText('Edit this text', {
-            left: zones.safePx.left + zones.safePx.width / 2,
-            top: zones.safePx.top + zones.safePx.height / 2,
+            left: cx,
+            top: cy,
             originX: 'center',
             originY: 'center',
             fontFamily: 'Inter',
@@ -368,8 +445,7 @@ const DesignerCanvasInner = forwardRef<DesignerCanvasRef, DesignerCanvasProps>(
           const history = editor.getPlugin<HistoryPlugin>('HistoryPlugin')
           history.saveState()
 
-          const centerX = zones.safePx.left + zones.safePx.width / 2
-          const centerY = zones.safePx.top + zones.safePx.height / 2
+          const { x: centerX, y: centerY } = getSafeZoneCenter(canvas, zones)
 
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           let shape: any
@@ -429,11 +505,16 @@ const DesignerCanvasInner = forwardRef<DesignerCanvasRef, DesignerCanvasProps>(
         },
         exportImage: (format: string = 'png') => {
           if (!canvasRef.current) return ''
-          return canvasRef.current.toDataURL({
+          // Hide zone guides so they don't appear in exports
+          const hidden = hideZoneGuides(canvasRef.current)
+          const dataUrl = canvasRef.current.toDataURL({
             format,
             quality: 1,
             multiplier: 1,
           })
+          showZoneGuides(hidden)
+          canvasRef.current.renderAll()
+          return dataUrl
         },
         zoomIn: () => {
           const zoomPlugin = editorRef.current?.getPlugin<ZoomPlugin>('ZoomPlugin')
@@ -467,6 +548,39 @@ const DesignerCanvasInner = forwardRef<DesignerCanvasRef, DesignerCanvasProps>(
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
       >
+        {/* Artboard lock/unlock button */}
+        <div className="absolute top-3 left-3 z-10">
+          <button
+            type="button"
+            title={artboardLocked ? 'Unlock artboard to move it' : 'Lock artboard in place'}
+            className={cn(
+              'inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium shadow-sm transition-colors',
+              artboardLocked
+                ? 'bg-background text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                : 'bg-violet-50 border-violet-300 text-violet-700 hover:bg-violet-100'
+            )}
+            onClick={() => {
+              const editor = editorRef.current
+              if (!editor) return
+              const zonePlugin = editor.getPlugin<ZonePlugin>('ZonePlugin')
+              zonePlugin.toggleArtboardLock()
+              setArtboardLocked(zonePlugin.isArtboardLocked())
+            }}
+          >
+            {artboardLocked ? (
+              <>
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                Locked
+              </>
+            ) : (
+              <>
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/></svg>
+                Unlocked — drag to move
+              </>
+            )}
+          </button>
+        </div>
+
         {/* Zoom controls */}
         <div className="absolute top-3 right-3 z-10 flex items-center gap-1 rounded-lg border bg-background p-1 shadow-sm">
           <button
@@ -516,8 +630,24 @@ const DesignerCanvasInner = forwardRef<DesignerCanvasRef, DesignerCanvasProps>(
           </div>
         )}
 
+        {/* Canvas error */}
+        {initError && (
+          <div className="absolute inset-0 z-20 flex items-center justify-center bg-background/90">
+            <div className="flex flex-col items-center gap-3 rounded-lg border border-destructive/50 bg-background p-6 text-center max-w-md">
+              <span className="text-sm font-semibold text-destructive">Canvas failed to initialize</span>
+              <span className="text-xs text-muted-foreground break-all">{initError}</span>
+              <button
+                className="text-xs underline text-primary"
+                onClick={() => { setInitError(null); window.location.reload() }}
+              >
+                Reload page
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Canvas status */}
-        {!isReady && (
+        {!isReady && !initError && (
           <div className="absolute inset-0 z-20 flex items-center justify-center bg-background/80">
             <div className="flex items-center gap-2 text-muted-foreground">
               <div className="size-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
@@ -526,10 +656,8 @@ const DesignerCanvasInner = forwardRef<DesignerCanvasRef, DesignerCanvasProps>(
           </div>
         )}
 
-        {/* Canvas element */}
-        <div className="flex h-full w-full items-center justify-center p-5">
-          <canvas ref={canvasElRef} />
-        </div>
+        {/* Canvas element — fills container; viewport transform handles zoom/pan */}
+        <canvas ref={canvasElRef} />
       </div>
     )
   }

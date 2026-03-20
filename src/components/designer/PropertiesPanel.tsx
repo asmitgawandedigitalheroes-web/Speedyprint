@@ -76,6 +76,7 @@ export function PropertiesPanel({
   className,
 }: PropertiesPanelProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const editor = useEditorStore((s) => s.editor)
 
   // Object transform properties
   const [posX, setPosX] = useState(0)
@@ -219,12 +220,25 @@ export function PropertiesPanel({
   // --- Replace Image ---
 
   const handleReplaceImage = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0]
       if (!file || !selectedObject) return
+      e.target.value = ''
 
-      const reader = new FileReader()
-      reader.onload = () => {
+      const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')
+
+      if (isPdf) {
+        // PDFs: route through ImportPlugin (renders first page as image)
+        if (!editor) return
+        const plugin = editor.getPlugin<{ importFile: (f: File) => Promise<void> }>('ImportPlugin')
+        if (plugin) await plugin.importFile(file)
+        return
+      }
+
+      // Images: use smartUpload (local for small, CDN for large), then swap element
+      try {
+        const { smartUpload } = await import('@/lib/upload')
+        const url = await smartUpload(file)
         const imgElement = new Image()
         imgElement.crossOrigin = 'anonymous'
         imgElement.onload = () => {
@@ -233,13 +247,25 @@ export function PropertiesPanel({
           canvas?.renderAll()
           onObjectModified?.()
         }
-        imgElement.src = reader.result as string
+        imgElement.src = url
+      } catch {
+        // Fallback to local data URL
+        const reader = new FileReader()
+        reader.onload = () => {
+          const imgElement = new Image()
+          imgElement.crossOrigin = 'anonymous'
+          imgElement.onload = () => {
+            selectedObject.setElement(imgElement)
+            const canvas = canvasRef.current?.getCanvas()
+            canvas?.renderAll()
+            onObjectModified?.()
+          }
+          imgElement.src = reader.result as string
+        }
+        reader.readAsDataURL(file)
       }
-      reader.readAsDataURL(file)
-
-      e.target.value = ''
     },
-    [selectedObject, canvasRef, onObjectModified]
+    [selectedObject, canvasRef, onObjectModified, editor]
   )
 
   // --- Render ---
@@ -532,7 +558,7 @@ export function PropertiesPanel({
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/png,image/jpeg,image/svg+xml"
+            accept="image/png,image/jpeg,image/webp,image/svg+xml,application/pdf"
             className="hidden"
             onChange={handleReplaceImage}
           />

@@ -160,6 +160,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
         templates={templates}
         pricingRules={pricingRules}
         divisionName={division?.name ?? null}
+        division={typedProduct.division}
         gradient={gradient}
       />
     </div>

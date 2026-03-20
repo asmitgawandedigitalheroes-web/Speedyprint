@@ -7,7 +7,7 @@ import { SA_PROVINCES } from '@/lib/utils/constants'
 import { toast } from 'sonner'
 
 export default function ProfilePage() {
-  const { user, refreshProfile } = useAuth()
+  const { user, refreshProfile, updatePassword } = useAuth()
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState({
     full_name: user?.full_name || '',
@@ -19,6 +19,12 @@ export default function ProfilePage() {
     province: user?.province || '',
     postal_code: user?.postal_code || '',
   })
+
+  // Password change state
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [passwordError, setPasswordError] = useState('')
+  const [changingPassword, setChangingPassword] = useState(false)
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }))
@@ -41,12 +47,39 @@ export default function ProfilePage() {
     setSaving(false)
   }
 
+  const handlePasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setPasswordError('')
+
+    if (newPassword.length < 8) {
+      setPasswordError('Password must be at least 8 characters.')
+      return
+    }
+    if (newPassword !== confirmPassword) {
+      setPasswordError('Passwords do not match.')
+      return
+    }
+
+    setChangingPassword(true)
+    const { error } = await updatePassword(newPassword)
+    setChangingPassword(false)
+
+    if (error) {
+      toast.error(error)
+    } else {
+      toast.success('Password changed successfully')
+      setNewPassword('')
+      setConfirmPassword('')
+    }
+  }
+
   if (!user) return null
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6 lg:px-8">
-      <h1 className="mb-6 text-2xl font-bold text-brand-black">My Profile</h1>
+    <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6 lg:px-8 space-y-8">
+      <h1 className="text-2xl font-bold text-brand-black">My Profile</h1>
 
+      {/* ── Profile Info ──────────────────────────────────────────────────── */}
       <form onSubmit={handleSubmit} className="space-y-6 rounded-lg border border-brand-gray-light bg-white p-6">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
@@ -113,6 +146,54 @@ export default function ProfilePage() {
           className="rounded-lg bg-brand-red px-6 py-2.5 font-medium text-white transition hover:bg-brand-red-light disabled:opacity-50"
         >
           {saving ? 'Saving...' : 'Save Changes'}
+        </button>
+      </form>
+
+      {/* ── Change Password ───────────────────────────────────────────────── */}
+      <form onSubmit={handlePasswordChange} className="space-y-5 rounded-lg border border-brand-gray-light bg-white p-6">
+        <div>
+          <h2 className="text-lg font-semibold text-brand-black">Change Password</h2>
+          <p className="mt-0.5 text-sm text-brand-gray-medium">
+            Leave blank if you don&apos;t want to change your password.
+          </p>
+        </div>
+
+        <hr className="border-brand-gray-light" />
+
+        <div>
+          <label className="mb-1 block text-sm font-medium text-brand-gray">New Password</label>
+          <input
+            type="password"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            placeholder="Minimum 8 characters"
+            autoComplete="new-password"
+            className="w-full rounded-lg border border-brand-gray-light px-3 py-2 focus:border-brand-red focus:outline-none"
+          />
+        </div>
+
+        <div>
+          <label className="mb-1 block text-sm font-medium text-brand-gray">Confirm New Password</label>
+          <input
+            type="password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            placeholder="Repeat new password"
+            autoComplete="new-password"
+            className="w-full rounded-lg border border-brand-gray-light px-3 py-2 focus:border-brand-red focus:outline-none"
+          />
+        </div>
+
+        {passwordError && (
+          <p className="text-sm text-red-600">{passwordError}</p>
+        )}
+
+        <button
+          type="submit"
+          disabled={changingPassword || !newPassword}
+          className="rounded-lg bg-brand-red px-6 py-2.5 font-medium text-white transition hover:bg-brand-red-light disabled:opacity-50"
+        >
+          {changingPassword ? 'Updating...' : 'Update Password'}
         </button>
       </form>
     </div>

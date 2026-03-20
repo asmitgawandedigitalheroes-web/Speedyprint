@@ -4,6 +4,7 @@
 
 import { FabricImage, type Canvas as FabricCanvas } from 'fabric'
 import type { IPluginTempl, IEditor } from '../types'
+import { getSafeZoneCenter } from '../canvas-utils'
 
 interface QROptions {
   size?: number
@@ -59,9 +60,10 @@ export class QRCodePlugin implements IPluginTempl {
         imgElement.src = dataUrl
       })
 
+      const { x: qrCenterX, y: qrCenterY } = getSafeZoneCenter(this.canvas, zones)
       const fabricImage = new FabricImage(imgElement, {
-        left: zones ? zones.safePx.left + zones.safePx.width / 2 : 200,
-        top: zones ? zones.safePx.top + zones.safePx.height / 2 : 200,
+        left: qrCenterX,
+        top: qrCenterY,
         originX: 'center',
         originY: 'center',
       })

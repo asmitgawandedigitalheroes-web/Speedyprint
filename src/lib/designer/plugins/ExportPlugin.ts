@@ -4,6 +4,7 @@
 
 import type { Canvas as FabricCanvas } from 'fabric'
 import type { IPluginTempl, IEditor } from '../types'
+import { hideZoneGuides, showZoneGuides } from '../canvas-utils'
 
 interface ExportOptions {
   format?: 'png' | 'jpeg' | 'svg'
@@ -24,6 +25,7 @@ export class ExportPlugin implements IPluginTempl {
 
   /**
    * Export canvas as a data URL.
+   * Hides zone guides before rendering and restores them after.
    */
   exportDataURL(options: ExportOptions = {}): string {
     const {
@@ -32,11 +34,20 @@ export class ExportPlugin implements IPluginTempl {
       multiplier = 1,
     } = options
 
-    return this.canvas.toDataURL({
+    // Hide zone guides so they don't appear in the export
+    const hidden = hideZoneGuides(this.canvas)
+
+    const dataUrl = this.canvas.toDataURL({
       format: format === 'svg' ? 'png' : format,
       quality,
       multiplier,
     })
+
+    // Restore zone guides
+    showZoneGuides(hidden)
+    this.canvas.renderAll()
+
+    return dataUrl
   }
 
   /**
@@ -57,9 +68,14 @@ export class ExportPlugin implements IPluginTempl {
 
   /**
    * Export as SVG string.
+   * Hides zone guides before rendering and restores them after.
    */
   exportSVG(): string {
-    return this.canvas.toSVG()
+    const hidden = hideZoneGuides(this.canvas)
+    const svg = this.canvas.toSVG()
+    showZoneGuides(hidden)
+    this.canvas.renderAll()
+    return svg
   }
 
   /**

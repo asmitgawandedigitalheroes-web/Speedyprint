@@ -14,6 +14,7 @@ interface AuthState {
   register: (email: string, password: string, fullName: string, companyName?: string) => Promise<{ error: string | null }>
   logout: () => Promise<void>
   resetPassword: (email: string) => Promise<{ error: string | null }>
+  updatePassword: (newPassword: string) => Promise<{ error: string | null }>
   refreshProfile: () => Promise<void>
 }
 
@@ -110,6 +111,12 @@ export const useAuth = create<AuthState>()(
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
           redirectTo: `${window.location.origin}/reset-password`,
         })
+        return { error: error?.message || null }
+      },
+
+      updatePassword: async (newPassword) => {
+        const supabase = createClient()
+        const { error } = await supabase.auth.updateUser({ password: newPassword })
         return { error: error?.message || null }
       },
 

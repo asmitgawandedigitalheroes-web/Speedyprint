@@ -1,11 +1,12 @@
 import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
+  serverExternalPackages: ['@napi-rs/canvas'],
   images: {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'rphstskwjtbxgtjnwuzm.supabase.co',
+        hostname: 'atqjywawohnhvlnggozu.supabase.co',
         pathname: '/storage/v1/object/public/**',
       },
     ],

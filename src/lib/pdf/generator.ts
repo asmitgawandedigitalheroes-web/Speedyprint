@@ -1,0 +1,335 @@
+import { PDFDocument, rgb, degrees, StandardFonts } from 'pdf-lib'
+
+const MM_TO_POINTS = 2.8346
+
+interface CanvasObject {
+  type: string
+  left?: number
+  top?: number
+  width?: number
+  height?: number
+  scaleX?: number
+  scaleY?: number
+  angle?: number
+  fill?: string | null
+  stroke?: string | null
+  strokeWidth?: number
+  opacity?: number
+  visible?: boolean
+  // Text
+  text?: string
+  fontSize?: number
+  fontFamily?: string
+  fontWeight?: string | number
+  fontStyle?: string
+  textAlign?: string
+  lineHeight?: number
+  // Image
+  src?: string
+  // Circle
+  radius?: number
+  // Group children
+  objects?: CanvasObject[]
+}
+
+interface CanvasJSON {
+  objects?: CanvasObject[]
+  width?: number
+  height?: number
+  background?: string
+}
+
+export interface PrintSpecs {
+  print_width_mm: number
+  print_height_mm: number
+  bleed_mm: number
+}
+
+export interface GenerateOptions {
+  /** Adds a red "PROOF" watermark diagonal across the page */
+  isProof?: boolean
+  /** Whether to include bleed area in the output dimensions (default true) */
+  includeBleed?: boolean
+}
+
+// ─── Color helpers ───────────────────────────────────────────────────────────
+
+function parseColor(color: string | undefined | null): [number, number, number] {
+  if (!color || color === 'transparent' || color === 'rgba(0,0,0,0)') return [0, 0, 0]
+
+  if (color.startsWith('#')) {
+    const hex = color.slice(1)
+    const full = hex.length === 3 ? hex.split('').map((c) => c + c).join('') : hex
+    return [
+      parseInt(full.slice(0, 2), 16) / 255,
+      parseInt(full.slice(2, 4), 16) / 255,
+      parseInt(full.slice(4, 6), 16) / 255,
+    ]
+  }
+
+  const m = color.match(/rgba?\((\d+(?:\.\d+)?),\s*(\d+(?:\.\d+)?),\s*(\d+(?:\.\d+)?)/)
+  if (m) return [parseFloat(m[1]) / 255, parseFloat(m[2]) / 255, parseFloat(m[3]) / 255]
+
+  const named: Record<string, [number, number, number]> = {
+    black: [0, 0, 0], white: [1, 1, 1], red: [1, 0, 0],
+    blue: [0, 0, 1], green: [0, 0.5, 0], yellow: [1, 1, 0],
+    gray: [0.5, 0.5, 0.5], grey: [0.5, 0.5, 0.5],
+  }
+  return named[color.toLowerCase()] ?? [0, 0, 0]
+}
+
+function parseOpacity(color: string | undefined | null, objOpacity: number): number {
+  if (!color) return objOpacity
+  const m = color.match(/rgba\(\d+,\s*\d+,\s*\d+,\s*(\d+(?:\.\d+)?)\)/)
+  if (m) return parseFloat(m[1]) * objOpacity
+  return objOpacity
+}
+
+// ─── Main export ─────────────────────────────────────────────────────────────
+
+/**
+ * Generate a print-ready PDF from a Fabric.js canvas JSON.
+ * Handles: text (Textbox / IText), Image, Rect, Circle, Line, Group.
+ */
+export async function generatePDF(
+  canvasJSON: CanvasJSON,
+  printSpecs: PrintSpecs,
+  options: GenerateOptions = {}
+): Promise<Uint8Array> {
+  const { print_width_mm, print_height_mm, bleed_mm } = printSpecs
+  const { isProof = false, includeBleed = true } = options
+
+  const bleedMM = includeBleed ? bleed_mm : 0
+  const pageW_pt = (print_width_mm + bleedMM * 2) * MM_TO_POINTS
+  const pageH_pt = (print_height_mm + bleedMM * 2) * MM_TO_POINTS
+  const bleedOffset_pt = bleedMM * MM_TO_POINTS
+
+  const canvasW = canvasJSON.width ?? 800
+  const canvasH = canvasJSON.height ?? 600
+  const scaleX = (print_width_mm * MM_TO_POINTS) / canvasW
+  const scaleY = (print_height_mm * MM_TO_POINTS) / canvasH
+
+  const pdfDoc = await PDFDocument.create()
+  const page = pdfDoc.addPage([pageW_pt, pageH_pt])
+
+  // Background fill
+  if (canvasJSON.background && canvasJSON.background !== 'transparent') {
+    const [r, g, b] = parseColor(canvasJSON.background)
+    page.drawRectangle({ x: 0, y: 0, width: pageW_pt, height: pageH_pt, color: rgb(r, g, b) })
+  }
+
+  const fonts = {
+    regular: await pdfDoc.embedFont(StandardFonts.Helvetica),
+    bold: await pdfDoc.embedFont(StandardFonts.HelveticaBold),
+    italic: await pdfDoc.embedFont(StandardFonts.HelveticaOblique),
+    boldItalic: await pdfDoc.embedFont(StandardFonts.HelveticaBoldOblique),
+  }
+
+  for (const obj of canvasJSON.objects ?? []) {
+    if (obj.visible === false) continue
+    await renderObject(obj, pdfDoc, page, scaleX, scaleY, bleedOffset_pt, pageH_pt, fonts)
+  }
+
+  // Proof watermark
+  if (isProof) {
+    const wFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold)
+    const label = 'PROOF – NOT FOR PRODUCTION'
+    const wSize = pageW_pt * 0.06
+    const wWidth = wFont.widthOfTextAtSize(label, wSize)
+    page.drawText(label, {
+      x: (pageW_pt - wWidth) / 2,
+      y: pageH_pt / 2,
+      size: wSize,
+      font: wFont,
+      color: rgb(0.9, 0, 0),
+      opacity: 0.35,
+      rotate: degrees(45),
+    })
+  }
+
+  return pdfDoc.save()
+}
+
+// ─── Object renderer ─────────────────────────────────────────────────────────
+
+async function renderObject(
+  obj: CanvasObject,
+  pdfDoc: PDFDocument,
+  page: ReturnType<PDFDocument['addPage']>,
+  scaleX: number,
+  scaleY: number,
+  bleedOffset: number,
+  pageH: number,
+  fonts: Record<string, Awaited<ReturnType<PDFDocument['embedFont']>>>
+) {
+  const sx = (obj.scaleX ?? 1) * scaleX
+  const sy = (obj.scaleY ?? 1) * scaleY
+  const left = obj.left ?? 0
+  const top = obj.top ?? 0
+  const objW = (obj.width ?? 0) * sx
+  const objH = (obj.height ?? 0) * sy
+  const opacity = obj.opacity ?? 1
+  const type = (obj.type ?? '').toLowerCase()
+  // PDF y=0 is bottom; fabric y=0 is top → flip
+  const pdfX = left * scaleX + bleedOffset
+  const pdfY = pageH - (top * scaleY + objH + bleedOffset)
+  const rot = obj.angle ? degrees(-obj.angle) : undefined
+
+  if (type === 'group') {
+    for (const child of obj.objects ?? []) {
+      await renderObject(
+        { ...child, left: left + (child.left ?? 0), top: top + (child.top ?? 0) },
+        pdfDoc, page, scaleX, scaleY, bleedOffset, pageH, fonts
+      )
+    }
+    return
+  }
+
+  if (type === 'textbox' || type === 'itext' || type === 'text') {
+    const text = obj.text ?? ''
+    if (!text.trim()) return
+
+    const rawSize = (obj.fontSize ?? 16) * sy
+    const isBold = obj.fontWeight === 'bold' || String(obj.fontWeight) === '700' || obj.fontWeight === 700
+    const isItalic = obj.fontStyle === 'italic' || obj.fontStyle === 'oblique'
+    const font =
+      isBold && isItalic ? fonts.boldItalic
+      : isBold ? fonts.bold
+      : isItalic ? fonts.italic
+      : fonts.regular
+
+    const fillColor = obj.fill as string | undefined
+    const [r, g, b] = parseColor(fillColor)
+    const colorOpacity = parseOpacity(fillColor, opacity)
+    const lineHeightPt = rawSize * (obj.lineHeight ?? 1.16)
+    const lines = text.split('\n')
+
+    lines.forEach((line, i) => {
+      if (!line) return
+      page.drawText(line, {
+        x: pdfX,
+        y: pdfY + objH - rawSize - i * lineHeightPt,
+        size: rawSize,
+        font,
+        color: rgb(r, g, b),
+        opacity: colorOpacity,
+        ...(rot ? { rotate: rot } : {}),
+        maxWidth: objW > 0 ? objW : undefined,
+      })
+    })
+    return
+  }
+
+  if (type === 'rect') {
+    const [fr, fg, fb] = parseColor(obj.fill as string)
+    const [sr, sg, sb] = parseColor(obj.stroke as string)
+    const hasFill = !!obj.fill && obj.fill !== 'transparent'
+    const hasStroke = !!obj.stroke && obj.stroke !== 'transparent'
+    page.drawRectangle({
+      x: pdfX, y: pdfY, width: objW, height: objH,
+      color: hasFill ? rgb(fr, fg, fb) : undefined,
+      borderWidth: hasStroke ? (obj.strokeWidth ?? 1) * Math.min(scaleX, scaleY) : 0,
+      borderColor: hasStroke ? rgb(sr, sg, sb) : undefined,
+      opacity,
+      ...(rot ? { rotate: rot } : {}),
+    })
+    return
+  }
+
+  if (type === 'circle') {
+    const radius = (obj.radius ?? 50) * Math.min(sx, sy)
+    const [fr, fg, fb] = parseColor(obj.fill as string)
+    const [sr, sg, sb] = parseColor(obj.stroke as string)
+    const hasFill = !!obj.fill && obj.fill !== 'transparent'
+    const hasStroke = !!obj.stroke && obj.stroke !== 'transparent'
+    page.drawEllipse({
+      x: pdfX + radius, y: pdfY + radius,
+      xScale: radius, yScale: radius,
+      color: hasFill ? rgb(fr, fg, fb) : undefined,
+      borderWidth: hasStroke ? (obj.strokeWidth ?? 1) * Math.min(scaleX, scaleY) : 0,
+      borderColor: hasStroke ? rgb(sr, sg, sb) : undefined,
+      opacity,
+    })
+    return
+  }
+
+  if (type === 'line') {
+    const [sr, sg, sb] = parseColor(obj.stroke as string)
+    if (obj.stroke && obj.stroke !== 'transparent') {
+      page.drawLine({
+        start: { x: pdfX, y: pdfY + objH },
+        end: { x: pdfX + objW, y: pdfY },
+        thickness: (obj.strokeWidth ?? 1) * Math.min(scaleX, scaleY),
+        color: rgb(sr, sg, sb),
+        opacity,
+      })
+    }
+    return
+  }
+
+  if (type === 'image') {
+    const src = obj.src
+    if (!src) return
+    try {
+      let imageData: ArrayBuffer
+      if (src.startsWith('data:')) {
+        const b64 = src.split(',')[1]
+        imageData = Buffer.from(b64, 'base64').buffer as ArrayBuffer
+      } else {
+        const res = await fetch(src)
+        if (!res.ok) return
+        imageData = await res.arrayBuffer()
+      }
+
+      const isPng = src.startsWith('data:image/png') || /\.png(\?|$)/i.test(src)
+      let img
+      try {
+        img = isPng ? await pdfDoc.embedPng(imageData) : await pdfDoc.embedJpg(imageData)
+      } catch {
+        try {
+          img = isPng ? await pdfDoc.embedJpg(imageData) : await pdfDoc.embedPng(imageData)
+        } catch {
+          return
+        }
+      }
+
+      page.drawImage(img, {
+        x: pdfX, y: pdfY, width: objW, height: objH,
+        opacity,
+        ...(rot ? { rotate: rot } : {}),
+      })
+    } catch (err) {
+      console.error('[PDF] Image embed error:', err)
+    }
+  }
+}
+
+// ─── Variable data merge ──────────────────────────────────────────────────────
+
+/**
+ * Deep-clone a canvas JSON and replace {{placeholder}} patterns in all
+ * text objects with values from `variables`.
+ *
+ * @param canvasJSON  Original Fabric.js canvas JSON
+ * @param variables   Map of placeholder key → replacement value
+ */
+export function mergeVariables(
+  canvasJSON: CanvasJSON,
+  variables: Record<string, string>
+): CanvasJSON {
+  const json = JSON.parse(JSON.stringify(canvasJSON)) as CanvasJSON
+
+  function processObject(obj: CanvasObject) {
+    if (obj.text) {
+      let t = obj.text
+      for (const [key, val] of Object.entries(variables)) {
+        t = t.replaceAll(`{{${key}}}`, val)
+      }
+      obj.text = t
+    }
+    if (obj.objects) obj.objects.forEach(processObject)
+  }
+
+  json.objects?.forEach(processObject)
+  return json
+}

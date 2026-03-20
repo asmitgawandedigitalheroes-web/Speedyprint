@@ -8,6 +8,8 @@ import {
   orderShippedTemplate,
   welcomeTemplate,
   contactFormTemplate,
+  adminProofApprovedTemplate,
+  adminRevisionRequestedTemplate,
 } from './templates'
 
 let _resend: Resend | null = null
@@ -88,5 +90,23 @@ export async function sendContactFormEmail(
     replyTo: email,
     subject: `Contact Form: ${subject}`,
     html: contactFormTemplate(name, email, subject, message),
+  })
+}
+
+export async function sendAdminProofApproved(orderNumber: string, productName: string) {
+  return getResend().emails.send({
+    from: FROM,
+    to: ADMIN_EMAIL,
+    subject: `✅ Proof Approved — Order #${orderNumber}`,
+    html: adminProofApprovedTemplate(orderNumber, productName),
+  })
+}
+
+export async function sendAdminRevisionRequested(orderNumber: string, customerNotes: string) {
+  return getResend().emails.send({
+    from: FROM,
+    to: ADMIN_EMAIL,
+    subject: `🔄 Revision Requested — Order #${orderNumber}`,
+    html: adminRevisionRequestedTemplate(orderNumber, customerNotes),
   })
 }

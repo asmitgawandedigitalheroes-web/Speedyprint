@@ -4,6 +4,7 @@
 
 import { FabricImage, type Canvas as FabricCanvas } from 'fabric'
 import type { IPluginTempl, IEditor } from '../types'
+import { getSafeZoneCenter } from '../canvas-utils'
 
 type BarcodeFormat = 'CODE128' | 'EAN13' | 'UPC' | 'CODE39' | 'ITF14' | 'MSI'
 
@@ -75,9 +76,10 @@ export class BarcodePlugin implements IPluginTempl {
         imgElement.src = dataUrl
       })
 
+      const { x: barCenterX, y: barCenterY } = getSafeZoneCenter(this.canvas, zones)
       const fabricImage = new FabricImage(imgElement, {
-        left: zones ? zones.safePx.left + zones.safePx.width / 2 : 200,
-        top: zones ? zones.safePx.top + zones.safePx.height / 2 : 200,
+        left: barCenterX,
+        top: barCenterY,
         originX: 'center',
         originY: 'center',
       })

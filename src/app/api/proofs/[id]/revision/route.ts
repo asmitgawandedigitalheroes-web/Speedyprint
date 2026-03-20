@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
+import { sendAdminRevisionRequested } from '@/lib/email/resend'
+import { logProofAudit, getClientIp } from '@/lib/proofAudit'
 
 export async function POST(
   request: NextRequest,
@@ -37,6 +39,34 @@ export async function POST(
 
   // Update order item status
   await admin.from('order_items').update({ status: 'pending_proof' }).eq('id', proof.order_item_id)
+
+  // ── Audit log ─────────────────────────────────────────────────────────────
+  await logProofAudit({
+    proof_id:      id,
+    order_item_id: proof.order_item_id,
+    action:        'revision_requested',
+    actor_id:      user.id,
+    actor_role:    'customer',
+    notes:         body.notes,
+    client_ip:     getClientIp(request.headers),
+    metadata:      { version: proof.version },
+  })
+
+  // ── Notify admin about the revision request ────────────────────────────────
+  try {
+    const { data: item } = await admin
+      .from('order_items')
+      .select('order:orders(order_number)')
+      .eq('id', proof.order_item_id)
+      .single()
+
+    const orderNum = (item?.order as any)?.order_number
+    if (orderNum) {
+      await sendAdminRevisionRequested(orderNum, body.notes)
+    }
+  } catch (emailErr) {
+    console.error('[Revision] Admin notification error:', emailErr)
+  }
 
   return NextResponse.json(proof)
 }

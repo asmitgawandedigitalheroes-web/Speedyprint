@@ -4,7 +4,7 @@
  */
 
 import type { Canvas as FabricCanvas } from 'fabric'
-import { getCanvasJSON, loadCanvasJSON, isZoneGuide } from '../canvas-utils'
+import { getCanvasJSON, loadCanvasJSON, isInternalObject } from '../canvas-utils'
 import { useEditorStore } from '../store'
 import type { IPluginTempl, IEditor, IShortcut } from '../types'
 
@@ -53,7 +53,7 @@ export class HistoryPlugin implements IPluginTempl {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private _onAdded = (e: any): void => {
-    if (!this.isUndoRedo && e.target && !isZoneGuide(e.target) && e.target.name !== '__print_bg') {
+    if (!this.isUndoRedo && e.target && !isInternalObject(e.target)) {
       // Don't save state for zone guides being re-added
       this.saveState()
     }

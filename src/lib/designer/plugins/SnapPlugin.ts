@@ -9,6 +9,9 @@ import {
   enforceConstraints,
   enforceScaleConstraints,
   clearAlignmentGuides,
+  destroyGuideLines,
+  initGuideLines,
+  type LockedZonePx,
 } from '../constraints'
 import type { IPluginTempl, IEditor } from '../types'
 
@@ -19,6 +22,7 @@ export class SnapPlugin implements IPluginTempl {
 
   private enabled = true
   private zones: CanvasZones | null = null
+  private lockedZones: LockedZonePx[] = []
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private fabricModule: any = null
 
@@ -37,6 +41,8 @@ export class SnapPlugin implements IPluginTempl {
     this.canvas.off('object:moving', this._onMoving as unknown as (e: unknown) => void)
     this.canvas.off('object:scaling', this._onScaling as unknown as (e: unknown) => void)
     this.canvas.off('object:modified', this._onModified)
+    // Remove pre-allocated guide lines and free the cache entry
+    destroyGuideLines(this.canvas)
   }
 
   /**
@@ -46,6 +52,15 @@ export class SnapPlugin implements IPluginTempl {
   setZonesAndFabric(zones: CanvasZones, fabricModule: any): void {
     this.zones = zones
     this.fabricModule = fabricModule
+    // Eagerly pre-create guide lines so the first drag never triggers canvas.add()
+    initGuideLines(fabricModule, this.canvas)
+  }
+
+  /**
+   * Set template-defined locked zones for element-level enforcement.
+   */
+  setLockedZones(zones: LockedZonePx[]): void {
+    this.lockedZones = zones
   }
 
   /**
@@ -85,7 +100,7 @@ export class SnapPlugin implements IPluginTempl {
 
   private _onMoving = (e: { target?: unknown }): void => {
     if (!this.enabled || !this.zones || !this.fabricModule) return
-    enforceConstraints(this.fabricModule, this.canvas, this.zones, e)
+    enforceConstraints(this.fabricModule, this.canvas, this.zones, e, this.lockedZones)
   }
 
   private _onScaling = (e: { target?: unknown }): void => {

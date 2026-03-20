@@ -85,6 +85,31 @@ export function welcomeTemplate(name: string): string {
   `)
 }
 
+export function adminProofApprovedTemplate(orderNumber: string, productName: string): string {
+  return emailWrapper(`
+    <h2 style="color:#1A1A1A;margin:0 0 16px;">✅ Proof Approved</h2>
+    <p style="color:#6B7280;line-height:1.6;">A customer has approved their proof for order <strong>#${orderNumber}</strong>.</p>
+    <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:16px;margin:24px 0;">
+      <p style="margin:0;font-size:14px;color:#166534;"><strong>Product:</strong> ${productName}</p>
+    </div>
+    <p style="color:#6B7280;line-height:1.6;">The order item status has been updated to <strong>In Production</strong>. Production files have been generated and are ready for download in the admin dashboard.</p>
+    <a href="${SITE_URL}/admin/orders" style="display:inline-block;background:#FF6B00;color:#ffffff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;margin-top:16px;">View Order</a>
+  `)
+}
+
+export function adminRevisionRequestedTemplate(orderNumber: string, customerNotes: string): string {
+  return emailWrapper(`
+    <h2 style="color:#1A1A1A;margin:0 0 16px;">🔄 Revision Requested</h2>
+    <p style="color:#6B7280;line-height:1.6;">A customer has requested a revision for order <strong>#${orderNumber}</strong>.</p>
+    <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:16px;margin:24px 0;">
+      <p style="margin:0 0 8px;font-size:14px;font-weight:600;color:#9a3412;">Customer Notes:</p>
+      <p style="margin:0;color:#6B7280;font-style:italic;">${customerNotes}</p>
+    </div>
+    <p style="color:#6B7280;line-height:1.6;">Please review the feedback, make the necessary changes, and upload a new proof version.</p>
+    <a href="${SITE_URL}/admin/orders" style="display:inline-block;background:#FF6B00;color:#ffffff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;margin-top:16px;">Go to Orders</a>
+  `)
+}
+
 export function contactFormTemplate(name: string, email: string, subject: string, message: string): string {
   return emailWrapper(`
     <h2 style="color:#1A1A1A;margin:0 0 16px;">New Contact Form Submission</h2>

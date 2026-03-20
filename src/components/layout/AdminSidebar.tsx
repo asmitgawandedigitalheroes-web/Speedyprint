@@ -15,26 +15,41 @@ import {
   ChevronLeft,
   PenSquare,
   MessageSquareQuote,
+  Palette,
+  TableProperties,
+  ShieldCheck,
+  Printer,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { SITE_NAME } from '@/lib/utils/constants'
+import { useAuth } from '@/hooks/useAuth'
 
-const ADMIN_NAV = [
-  { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/admin/orders', label: 'Orders', icon: ShoppingCart },
-  { href: '/admin/products', label: 'Products', icon: Package },
-  { href: '/admin/templates', label: 'Templates', icon: FileText },
-  { href: '/admin/blog', label: 'Blog', icon: PenSquare },
-  { href: '/admin/testimonials', label: 'Testimonials', icon: MessageSquareQuote },
-  { href: '/admin/users', label: 'Users', icon: Users },
-  { href: '/admin/settings', label: 'Settings', icon: Settings },
+const ALL_NAV = [
+  { href: '/admin', label: 'Dashboard', icon: LayoutDashboard, staffAllowed: true },
+  { href: '/admin/orders', label: 'Orders', icon: ShoppingCart, staffAllowed: true },
+  { href: '/admin/products', label: 'Products', icon: Package, staffAllowed: false },
+  { href: '/admin/templates', label: 'Templates', icon: FileText, staffAllowed: false },
+  { href: '/admin/designs', label: 'Designs', icon: Palette, staffAllowed: false },
+  { href: '/admin/csv', label: 'CSV Jobs', icon: TableProperties, staffAllowed: true },
+  { href: '/admin/proofs', label: 'Proofs', icon: ShieldCheck, staffAllowed: true },
+  { href: '/admin/production', label: 'Production', icon: Printer, staffAllowed: true },
+  { href: '/admin/blog', label: 'Blog', icon: PenSquare, staffAllowed: false },
+  { href: '/admin/testimonials', label: 'Testimonials', icon: MessageSquareQuote, staffAllowed: false },
+  { href: '/admin/users', label: 'Users', icon: Users, staffAllowed: false },
+  { href: '/admin/settings', label: 'Settings', icon: Settings, staffAllowed: false },
 ]
 
 export function AdminSidebar() {
   const pathname = usePathname()
+  const { user } = useAuth()
   const [collapsed, setCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
+
+  const isProductionStaff = user?.role === 'production_staff'
+  const ADMIN_NAV = isProductionStaff
+    ? ALL_NAV.filter((item) => item.staffAllowed)
+    : ALL_NAV
 
   const isActive = (href: string) => {
     if (href === '/admin') return pathname === '/admin'

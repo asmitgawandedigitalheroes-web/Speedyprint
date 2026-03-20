@@ -4,7 +4,7 @@
  */
 
 import { ActiveSelection, type Canvas as FabricCanvas, type FabricObject } from 'fabric'
-import { isZoneGuide } from '../canvas-utils'
+import { isInternalObject } from '../canvas-utils'
 import type { IPluginTempl, IEditor, IShortcut, IContextMenuItem } from '../types'
 
 const PASTE_OFFSET = 20
@@ -103,8 +103,7 @@ export class CopyPastePlugin implements IPluginTempl {
       .getObjects()
       .filter(
         (obj: FabricObject) =>
-          !isZoneGuide(obj as { name?: string }) &&
-          (obj as unknown as { name?: string }).name !== '__print_bg' &&
+          !isInternalObject(obj as { name?: string }) &&
           obj.selectable !== false
       )
 
@@ -218,7 +217,7 @@ export class CopyPastePlugin implements IPluginTempl {
     }
 
     activeObjects.forEach((obj) => {
-      if (!isZoneGuide(obj as { name?: string }) && (obj as unknown as { name?: string }).name !== '__print_bg') {
+      if (!isInternalObject(obj as { name?: string })) {
         this.canvas.remove(obj)
       }
     })

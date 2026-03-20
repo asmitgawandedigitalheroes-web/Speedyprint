@@ -4,6 +4,7 @@
 
 import { FabricImage, type Canvas as FabricCanvas, type FabricObject, filters } from 'fabric'
 import type { IPluginTempl, IEditor } from '../types'
+import { getSafeZoneCenter } from '../canvas-utils'
 
 interface FilterPreset {
   name: string
@@ -46,9 +47,10 @@ export class ImagePlugin implements IPluginTempl {
         imgElement.src = url
       })
 
+      const { x: imgCenterX, y: imgCenterY } = getSafeZoneCenter(this.canvas, zones)
       const fabricImage = new FabricImage(imgElement, {
-        left: zones ? zones.safePx.left + zones.safePx.width / 2 : 200,
-        top: zones ? zones.safePx.top + zones.safePx.height / 2 : 200,
+        left: imgCenterX,
+        top: imgCenterY,
         originX: 'center',
         originY: 'center',
       })
