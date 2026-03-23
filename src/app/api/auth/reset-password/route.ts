@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendPasswordResetEmail } from '@/lib/email/resend'
 import { rateLimit } from '@/lib/rateLimit'
-import { SITE_URL } from '@/lib/utils/constants'
 
 export async function POST(request: NextRequest) {
   const ip =
@@ -15,31 +14,46 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Too many requests. Please wait before trying again.' }, { status: 429 })
   }
 
-  const { email } = await request.json()
+  let email: string
+  try {
+    const body = await request.json()
+    email = body?.email
+  } catch {
+    return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
+  }
+
   if (!email) {
     return NextResponse.json({ error: 'Email is required' }, { status: 400 })
   }
 
-  const admin = createAdminClient()
+  const origin = new URL(request.url).origin
 
-  // Generate the reset link via Supabase Admin — this creates a valid one-time token
-  const { data, error } = await admin.auth.admin.generateLink({
-    type: 'recovery',
-    email,
-    options: {
-      redirectTo: `${SITE_URL}/api/auth/callback?next=/reset-password%3Ftype%3Drecovery`,
-    },
-  })
+  try {
+    const admin = createAdminClient()
 
-  if (error) {
-    // Don't expose whether the email exists — always return success to prevent enumeration
-    console.error('[ResetPassword] generateLink error:', error.message)
+    // Generate the reset link via Supabase Admin — this creates a valid one-time token
+    const { data, error } = await admin.auth.admin.generateLink({
+      type: 'recovery',
+      email,
+      options: {
+        redirectTo: `${origin}/api/auth/callback?next=/reset-password%3Ftype%3Drecovery`,
+      },
+    })
+
+    if (error) {
+      // Don't expose whether the email exists — always return success to prevent enumeration
+      console.error('[ResetPassword] generateLink error:', error.message)
+      return NextResponse.json({ success: true })
+    }
+
+    // Send via Resend using the generated action link
+    const resetLink = data.properties.action_link
+    await sendPasswordResetEmail(email, resetLink)
+  } catch (err) {
+    console.error('[ResetPassword] Unexpected error:', err)
+    // Still return success to avoid leaking info
     return NextResponse.json({ success: true })
   }
-
-  // Send via Resend using the generated action link
-  const resetLink = data.properties.action_link
-  await sendPasswordResetEmail(email, resetLink)
 
   return NextResponse.json({ success: true })
 }
