@@ -4,7 +4,7 @@ import { useState, type FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { toast } from 'sonner'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Mail } from 'lucide-react'
 
 import { useAuth } from '@/hooks/useAuth'
 import { SITE_NAME } from '@/lib/utils/constants'
@@ -22,6 +22,7 @@ export default function RegisterPage() {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [emailSent, setEmailSent] = useState(false)
 
   function validate(): boolean {
     const newErrors: Record<string, string> = {}
@@ -51,7 +52,7 @@ export default function RegisterPage() {
 
     if (!validate()) return
 
-    const { error } = await register(
+    const { error, emailConfirmationRequired } = await register(
       email,
       password,
       fullName.trim(),
@@ -63,8 +64,38 @@ export default function RegisterPage() {
       return
     }
 
+    if (emailConfirmationRequired) {
+      setEmailSent(true)
+      return
+    }
+
     toast.success('Account created successfully!')
     router.push('/account')
+  }
+
+  if (emailSent) {
+    return (
+      <div className="space-y-6 text-center">
+        <div className="flex justify-center">
+          <div className="rounded-full bg-brand-red/10 p-4">
+            <Mail className="h-8 w-8 text-brand-red" />
+          </div>
+        </div>
+        <div className="space-y-2">
+          <h1 className="text-2xl font-bold text-brand-black">Check your email</h1>
+          <p className="text-brand-gray-medium">
+            We sent a confirmation link to <span className="font-medium text-brand-black">{email}</span>.
+            Click the link to activate your account.
+          </p>
+        </div>
+        <p className="text-sm text-brand-gray-medium">
+          Already confirmed?{' '}
+          <Link href="/login" className="font-medium text-brand-red hover:text-brand-red-dark transition-colors">
+            Sign in
+          </Link>
+        </p>
+      </div>
+    )
   }
 
   return (

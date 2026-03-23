@@ -1,11 +1,15 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { requireAdmin } from '@/lib/supabase/requireAdmin'
 
 /**
  * GET /api/admin/dashboard
  * Full pipeline stats: Quote → Order → Artwork → Proof → Production → Completed
  */
-export async function GET() {
+export async function GET(_req: NextRequest) {
+  const { error, status } = await requireAdmin()
+  if (error) return NextResponse.json({ error }, { status })
+
   try {
     const supabase = createAdminClient()
 

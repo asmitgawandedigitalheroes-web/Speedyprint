@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { requireAdmin } from '@/lib/supabase/requireAdmin'
 
 /**
  * GET /api/admin/orders
@@ -11,6 +12,9 @@ import { createAdminClient } from '@/lib/supabase/admin'
  *   item_count, proof_summary, production_file_count, ready_for_production, divisions[]
  */
 export async function GET(request: NextRequest) {
+  const { error, status } = await requireAdmin()
+  if (error) return NextResponse.json({ error }, { status })
+
   try {
     const supabase = createAdminClient()
     const { searchParams } = new URL(request.url)

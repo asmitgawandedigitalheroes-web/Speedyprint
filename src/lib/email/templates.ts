@@ -110,6 +110,16 @@ export function adminRevisionRequestedTemplate(orderNumber: string, customerNote
   `)
 }
 
+export function passwordResetTemplate(resetLink: string): string {
+  return emailWrapper(`
+    <h2 style="color:#1A1A1A;margin:0 0 16px;">Reset Your Password</h2>
+    <p style="color:#6B7280;line-height:1.6;">We received a request to reset the password for your ${SITE_NAME} account. Click the button below to choose a new password.</p>
+    <a href="${resetLink}" style="display:inline-block;background:#FF6B00;color:#ffffff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;margin-top:16px;">Reset Password</a>
+    <p style="color:#6B7280;line-height:1.6;margin-top:24px;font-size:14px;">This link expires in <strong>1 hour</strong>. If you didn't request a password reset, you can safely ignore this email — your password will not change.</p>
+    <p style="color:#9CA3AF;font-size:12px;margin-top:16px;">If the button doesn't work, copy and paste this link into your browser:<br><span style="color:#FF6B00;word-break:break-all;">${resetLink}</span></p>
+  `)
+}
+
 export function contactFormTemplate(name: string, email: string, subject: string, message: string): string {
   return emailWrapper(`
     <h2 style="color:#1A1A1A;margin:0 0 16px;">New Contact Form Submission</h2>

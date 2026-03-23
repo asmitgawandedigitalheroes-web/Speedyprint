@@ -26,9 +26,12 @@ export default function ResetPasswordPage() {
   const [saving, setSaving] = useState(false)
   const [passwordError, setPasswordError] = useState('')
 
-  // Listen for Supabase PASSWORD_RECOVERY event — fires when user
-  // arrives via the reset-password email link
+  // Detect recovery mode: check URL param (PKCE flow) or auth event (implicit flow)
   useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('type') === 'recovery') {
+      setMode('update')
+    }
+
     const supabase = createClient()
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'PASSWORD_RECOVERY') {

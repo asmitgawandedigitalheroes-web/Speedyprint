@@ -10,6 +10,7 @@ import {
   contactFormTemplate,
   adminProofApprovedTemplate,
   adminRevisionRequestedTemplate,
+  passwordResetTemplate,
 } from './templates'
 
 let _resend: Resend | null = null
@@ -21,6 +22,15 @@ function getResend() {
 }
 const FROM = process.env.EMAIL_FROM || 'SpeedyPrint <noreply@speedyprint.co.za>'
 const ADMIN_EMAIL = 'info@speedyprint.co.za'
+
+export async function sendPasswordResetEmail(email: string, resetLink: string) {
+  return getResend().emails.send({
+    from: FROM,
+    to: email,
+    subject: 'Reset your SpeedyPrint password',
+    html: passwordResetTemplate(resetLink),
+  })
+}
 
 export async function sendOrderConfirmation(order: Order, email: string) {
   return getResend().emails.send({

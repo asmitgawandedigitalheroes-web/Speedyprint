@@ -11,7 +11,7 @@ interface AuthState {
   isAuthenticated: boolean
   setUser: (user: Profile | null) => void
   login: (email: string, password: string) => Promise<{ error: string | null }>
-  register: (email: string, password: string, fullName: string, companyName?: string) => Promise<{ error: string | null }>
+  register: (email: string, password: string, fullName: string, companyName?: string) => Promise<{ error: string | null; emailConfirmationRequired?: boolean }>
   logout: () => Promise<void>
   resetPassword: (email: string) => Promise<{ error: string | null }>
   updatePassword: (newPassword: string) => Promise<{ error: string | null }>
@@ -76,6 +76,12 @@ export const useAuth = create<AuthState>()(
         }
 
         if (data.user) {
+          // Email confirmation pending — session is null until user confirms
+          if (!data.session) {
+            set({ isLoading: false })
+            return { error: null, emailConfirmationRequired: true }
+          }
+
           // Update profile with company name if provided
           if (companyName) {
             await supabase
@@ -107,11 +113,16 @@ export const useAuth = create<AuthState>()(
       },
 
       resetPassword: async (email) => {
-        const supabase = createClient()
-        const { error } = await supabase.auth.resetPasswordForEmail(email, {
-          redirectTo: `${window.location.origin}/reset-password`,
+        const res = await fetch('/api/auth/reset-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email }),
         })
-        return { error: error?.message || null }
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}))
+          return { error: data.error || 'Failed to send reset email' }
+        }
+        return { error: null }
       },
 
       updatePassword: async (newPassword) => {

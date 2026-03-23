@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { requireAdmin } from '@/lib/supabase/requireAdmin'
 
 // GET /api/admin/users — list users with pagination, search, role filter
 export async function GET(req: NextRequest) {
+  const { error, status } = await requireAdmin()
+  if (error) return NextResponse.json({ error }, { status })
+
   try {
     const url = new URL(req.url)
     const search = url.searchParams.get('search') ?? ''
