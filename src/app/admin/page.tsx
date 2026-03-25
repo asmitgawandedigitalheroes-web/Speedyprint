@@ -61,7 +61,7 @@ export default function AdminDashboardPage() {
       {/* Page Header */}
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+          <h1 className="text-2xl font-bold text-brand-text">Dashboard</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Full visibility from quote through to completion
           </p>

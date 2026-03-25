@@ -1,6 +1,6 @@
-export const SITE_NAME = 'SpeedyPrint'
-export const SITE_DESCRIPTION = 'Custom printing solutions for labels, laser cutting, event numbers, stamps, and more.'
-export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://speedyprint-v1.vercel.app'
+export const SITE_NAME = 'Speedy Labels'
+export const SITE_DESCRIPTION = 'Premium custom labels, stickers & decals — designed online, printed fast, delivered across South Africa.'
+export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://speedylabels.co.za'
 
 export const VAT_RATE = 0.15 // 15% South African VAT
 export const CURRENCY = 'ZAR'
@@ -58,9 +58,9 @@ export const FLAT_SHIPPING_RATE = 85 // R85
 
 // V2 Sticker/Label Divisions
 export const V2_DIVISIONS = [
-  { key: 'custom-stickers' as const, name: 'Custom Stickers', description: 'High-quality custom stickers for any purpose', icon: 'Star', color: '#FF6B00' },
-  { key: 'product-labels' as const, name: 'Product Labels', description: 'Professional labels for your products', icon: 'Tag', color: '#1E3A5F' },
-  { key: 'vehicle-decals' as const, name: 'Vehicle & Fleet Decals', description: 'Durable decals for vehicles and fleets', icon: 'Truck', color: '#00C853' },
+  { key: 'custom-stickers' as const, name: 'Custom Stickers', description: 'High-quality custom stickers for any purpose', icon: 'Star', color: '#FF5C00' },
+  { key: 'product-labels' as const, name: 'Product Labels', description: 'Professional labels for your products', icon: 'Tag', color: '#1E293B' },
+  { key: 'vehicle-decals' as const, name: 'Vehicle & Fleet Decals', description: 'Durable decals for vehicles and fleets', icon: 'Truck', color: '#14B8A6' },
   { key: 'window-wall' as const, name: 'Window & Wall Graphics', description: 'Eye-catching window and wall graphics', icon: 'Layout', color: '#8B5CF6' },
   { key: 'specialty-3d' as const, name: 'Specialty & 3D Domed', description: 'Premium 3D domed stickers and specialty items', icon: 'Diamond', color: '#EC4899' },
 ]

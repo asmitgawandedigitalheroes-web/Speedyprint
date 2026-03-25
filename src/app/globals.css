@@ -1,29 +1,29 @@
 @import "tailwindcss";
 
 @theme {
-  /* V2 Primary Palette */
-  --color-brand-primary: #FF6B00;
-  --color-brand-primary-light: #FF8A3D;
-  --color-brand-primary-dark: #E05E00;
-  --color-brand-secondary: #1E3A5F;
-  --color-brand-secondary-light: #2A4F7F;
-  --color-brand-accent: #00C853;
-  --color-brand-text: #1A1A1A;
-  --color-brand-text-muted: #6B7280;
-  --color-brand-bg: #F5F5F5;
+  /* Boutique Industrial Brand Colors */
+  --color-brand-primary: #FF5C00;
+  --color-brand-primary-light: #FF7A33;
+  --color-brand-primary-dark: #E04D00;
+  --color-brand-secondary: #1E293B;
+  --color-brand-secondary-light: #334155;
+  --color-brand-accent: #14B8A6;
+  --color-brand-text: #1E293B;
+  --color-brand-text-muted: #64748B;
+  --color-brand-bg: #F8FAFC;
   --color-brand-surface: #FFFFFF;
 
   /* Legacy aliases (admin pages + backward compat) */
-  --color-brand-red: #FF6B00;
-  --color-brand-red-light: #FF8A3D;
-  --color-brand-red-dark: #E05E00;
-  --color-brand-black: #1A1A1A;
+  --color-brand-red: #FF5C00;
+  --color-brand-red-light: #FF7A33;
+  --color-brand-red-dark: #E04D00;
+  --color-brand-black: #1E293B;
   --color-brand-yellow: #FFC107;
   --color-brand-yellow-light: #FFD54F;
   --color-brand-white: #FFFFFF;
-  --color-brand-gray: #333333;
-  --color-brand-gray-light: #E0E0E0;
-  --color-brand-gray-medium: #6B7280;
+  --color-brand-gray: #1E293B;
+  --color-brand-gray-light: #E2E8F0;
+  --color-brand-gray-medium: #64748B;
 
   --font-heading: 'Poppins', system-ui, sans-serif;
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
@@ -35,23 +35,23 @@
 
   /* shadcn/ui standard variables (required for Select, Dialog, Sheet, etc.) */
   --color-background: #FFFFFF;
-  --color-foreground: #1A1A1A;
+  --color-foreground: #1E293B;
   --color-card: #FFFFFF;
-  --color-card-foreground: #1A1A1A;
+  --color-card-foreground: #1E293B;
   --color-popover: #FFFFFF;
-  --color-popover-foreground: #1A1A1A;
-  --color-primary: #FF6B00;
+  --color-popover-foreground: #1E293B;
+  --color-primary: #FF5C00;
   --color-primary-foreground: #FFFFFF;
-  --color-secondary: #F5F5F5;
-  --color-secondary-foreground: #1A1A1A;
-  --color-muted: #F5F5F5;
-  --color-muted-foreground: #6B7280;
-  --color-accent: #F5F5F5;
-  --color-accent-foreground: #1A1A1A;
+  --color-secondary: #F8FAFC;
+  --color-secondary-foreground: #1E293B;
+  --color-muted: #F8FAFC;
+  --color-muted-foreground: #64748B;
+  --color-accent: #F8FAFC;
+  --color-accent-foreground: #1E293B;
   --color-destructive: #EF4444;
-  --color-border: #E0E0E0;
-  --color-input: #E0E0E0;
-  --color-ring: #FF6B00;
+  --color-border: #E2E8F0;
+  --color-input: #E2E8F0;
+  --color-ring: #FF5C00;
 }
 
 @layer base {

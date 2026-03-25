@@ -68,7 +68,7 @@ export default function AdminSettingsPage() {
     <div className="mx-auto max-w-3xl space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Site Settings</h1>
+          <h1 className="text-2xl font-bold text-brand-text">Site Settings</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Manage your business information, shipping, and branding
           </p>
@@ -96,7 +96,7 @@ export default function AdminSettingsPage() {
                 id="site_name"
                 value={settings.site_name || ''}
                 onChange={(e) => updateSetting('site_name', e.target.value)}
-                placeholder="SpeedyPrint"
+                placeholder="Speedy Labels"
               />
             </div>
             <div className="space-y-2">
@@ -135,7 +135,7 @@ export default function AdminSettingsPage() {
                 id="company_email"
                 value={settings.company_email || ''}
                 onChange={(e) => updateSetting('company_email', e.target.value)}
-                placeholder="info@speedyprint.co.za"
+                placeholder="info@speedylabels.co.za"
                 type="email"
               />
             </div>

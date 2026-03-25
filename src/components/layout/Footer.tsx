@@ -29,7 +29,7 @@ export function Footer() {
   const currentYear = new Date().getFullYear()
 
   // Dynamic values with fallbacks
-  const companyEmail = settings.company_email || 'info@speedyprint.co.za'
+  const companyEmail = settings.company_email || 'info@speedylabels.co.za'
   const companyPhone = settings.company_phone || '+27 (0) 12 345 6789'
   const companyAddress = settings.company_address || 'Cape Town, South Africa'
   const whatsappNumber = settings.whatsapp_number
@@ -59,7 +59,7 @@ export function Footer() {
                 alt={siteName}
                 width={160}
                 height={40}
-                className="h-10 w-auto brightness-0 invert"
+                className="h-10 w-auto"
               />
             </Link>
             <p className="mt-4 text-sm text-white/70">
@@ -84,8 +84,9 @@ export function Footer() {
 
           {/* Quick Links */}
           <div>
-            <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-brand-primary">
-              Quick Links
+            <div className="mb-3 h-0.5 w-6 rounded-full bg-brand-primary" />
+            <h3 className="mb-4 text-sm font-semibold text-white">
+              Quick links
             </h3>
             <ul className="space-y-2">
               {QUICK_LINKS.map((link) => (
@@ -103,7 +104,8 @@ export function Footer() {
 
           {/* Products */}
           <div>
-            <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-brand-primary">
+            <div className="mb-3 h-0.5 w-6 rounded-full bg-brand-primary" />
+            <h3 className="mb-4 text-sm font-semibold text-white">
               Products
             </h3>
             <ul className="space-y-2">
@@ -122,8 +124,9 @@ export function Footer() {
 
           {/* Contact Info */}
           <div>
-            <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-brand-primary">
-              Contact Us
+            <div className="mb-3 h-0.5 w-6 rounded-full bg-brand-primary" />
+            <h3 className="mb-4 text-sm font-semibold text-white">
+              Contact us
             </h3>
             <ul className="space-y-3 text-sm text-white/70">
               <li className="flex items-start gap-2">

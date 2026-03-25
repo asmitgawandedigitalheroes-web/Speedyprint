@@ -354,15 +354,15 @@ export default function CSVUploadPage() {
       {/* Back */}
       <Link
         href={`/designer/${templateId}`}
-        className="mb-6 inline-flex items-center gap-1 text-sm text-brand-gray-medium hover:text-brand-red"
+        className="mb-6 inline-flex items-center gap-1 text-sm text-brand-text-muted hover:text-brand-primary-darky"
       >
         ← Back to Designer
       </Link>
 
-      <h1 className="mb-1 text-2xl font-bold text-brand-black">CSV Variable Data Upload</h1>
-      <p className="mb-8 text-sm text-brand-gray-medium">
+      <h1 className="mb-1 text-2xl font-bold text-brand-text">CSV Variable Data Upload</h1>
+      <p className="mb-8 text-sm text-brand-text-muted">
         Batch-generate production files for{' '}
-        <span className="font-medium text-brand-black">{template?.name ?? '…'}</span>
+        <span className="font-medium text-brand-text">{template?.name ?? '…'}</span>
         {' '}— up to {MAX_ROWS_CLIENT.toLocaleString()} rows per upload.
       </p>
 
@@ -375,10 +375,10 @@ export default function CSVUploadPage() {
             <div key={s.key} className="flex flex-1 items-center last:flex-none">
               <div className="flex flex-col items-center">
                 <div className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold transition-colors
-                  ${done ? 'bg-green-500 text-white' : active ? 'bg-brand-red text-white' : 'bg-gray-200 text-gray-500'}`}>
+                  ${done ? 'bg-green-500 text-white' : active ? 'bg-brand-primary text-white' : 'bg-gray-200 text-gray-500'}`}>
                   {done ? '✓' : idx + 1}
                 </div>
-                <span className={`mt-1 whitespace-nowrap text-xs ${active ? 'font-semibold text-brand-red' : 'text-gray-400'}`}>
+                <span className={`mt-1 whitespace-nowrap text-xs ${active ? 'font-semibold text-brand-primary' : 'text-gray-400'}`}>
                   {s.label}
                 </span>
               </div>
@@ -398,11 +398,11 @@ export default function CSVUploadPage() {
           onDragLeave={() => setIsDragging(false)}
           onClick={() => document.getElementById('csv-input')?.click()}
           className={`flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-16 transition
-            ${isDragging ? 'border-brand-red bg-red-50' : 'border-brand-gray-light bg-white hover:border-brand-red'}`}
+            ${isDragging ? 'border-brand-primary bg-red-50' : 'border-gray-200 bg-white hover:border-brand-primary'}`}
         >
           <div className="text-5xl">📄</div>
-          <p className="mt-4 text-lg font-medium text-brand-black">Drag & drop your CSV file here</p>
-          <p className="mt-1 text-sm text-brand-gray-medium">or click to browse (.csv files only)</p>
+          <p className="mt-4 text-lg font-medium text-brand-text">Drag & drop your CSV file here</p>
+          <p className="mt-1 text-sm text-brand-text-muted">or click to browse (.csv files only)</p>
           <p className="mt-3 rounded-full bg-gray-100 px-3 py-1 text-xs text-gray-500">
             Max {MAX_ROWS_CLIENT.toLocaleString()} rows · Headers required in row 1
           </p>
@@ -434,9 +434,9 @@ export default function CSVUploadPage() {
 
           {/* ── Column Mapping ── */}
           {(stage === 'map' || stage === 'validate') && (
-            <div className="rounded-lg border border-brand-gray-light bg-white p-6">
-              <h2 className="mb-1 text-lg font-semibold text-brand-black">Map CSV Columns to Template Fields</h2>
-              <p className="mb-4 text-sm text-brand-gray-medium">
+            <div className="rounded-lg border border-gray-200 bg-white p-6">
+              <h2 className="mb-1 text-lg font-semibold text-brand-text">Map CSV Columns to Template Fields</h2>
+              <p className="mb-4 text-sm text-brand-text-muted">
                 Select which CSV column maps to each template field. Fields marked <span className="text-red-500">*</span> are required.
               </p>
 
@@ -448,7 +448,7 @@ export default function CSVUploadPage() {
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   {parameters.map((param) => (
                     <div key={param.id}>
-                      <label className="mb-1 block text-sm font-medium text-brand-black">
+                      <label className="mb-1 block text-sm font-medium text-brand-text">
                         {param.param_label}
                         {param.is_required && <span className="ml-1 text-red-500">*</span>}
                         <span className="ml-2 rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-500 capitalize">
@@ -458,7 +458,7 @@ export default function CSVUploadPage() {
                       <select
                         value={columnMapping[param.param_key] ?? ''}
                         onChange={(e) => setColumnMapping((prev) => ({ ...prev, [param.param_key]: e.target.value }))}
-                        className="w-full rounded-lg border border-brand-gray-light px-3 py-2 text-sm focus:border-brand-red focus:outline-none"
+                        className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-brand-primary focus:outline-none"
                       >
                         <option value="">— Select CSV Column —</option>
                         {parsed.headers.map((h) => <option key={h} value={h}>{h}</option>)}
@@ -470,18 +470,18 @@ export default function CSVUploadPage() {
 
               {/* Duplicate check selector */}
               <div className="mt-5 border-t border-gray-100 pt-4">
-                <label className="mb-1 block text-sm font-medium text-brand-black">
+                <label className="mb-1 block text-sm font-medium text-brand-text">
                   Duplicate detection column
                 </label>
                 <select
                   value={duplicateCheckColumn}
                   onChange={(e) => setDuplicateCheckColumn(e.target.value)}
-                  className="w-full rounded-lg border border-brand-gray-light px-3 py-2 text-sm focus:border-brand-red focus:outline-none sm:w-64"
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-brand-primary focus:outline-none sm:w-64"
                 >
                   <option value="">— None —</option>
                   {parsed.headers.map((h) => <option key={h} value={h}>{h}</option>)}
                 </select>
-                <p className="mt-1 text-xs text-brand-gray-medium">
+                <p className="mt-1 text-xs text-brand-text-muted">
                   Rows with the same value in this column will be flagged as duplicates (e.g. race number).
                 </p>
               </div>
@@ -490,16 +490,16 @@ export default function CSVUploadPage() {
 
           {/* ── Data Preview Table ── */}
           {(stage === 'map' || stage === 'validate') && (
-            <div className="overflow-x-auto rounded-lg border border-brand-gray-light bg-white">
-              <div className="border-b border-gray-100 px-4 py-2.5 text-sm font-medium text-brand-black">
-                Data Preview <span className="ml-1 font-normal text-brand-gray-medium">(first 10 rows)</span>
+            <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
+              <div className="border-b border-gray-100 px-4 py-2.5 text-sm font-medium text-brand-text">
+                Data Preview <span className="ml-1 font-normal text-brand-text-muted">(first 10 rows)</span>
               </div>
               <table className="w-full text-sm">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-3 py-2 text-left text-xs text-brand-gray-medium">#</th>
+                    <th className="px-3 py-2 text-left text-xs text-brand-text-muted">#</th>
                     {parsed.headers.map((h) => (
-                      <th key={h} className="px-3 py-2 text-left text-xs font-medium text-brand-gray-medium">{h}</th>
+                      <th key={h} className="px-3 py-2 text-left text-xs font-medium text-brand-text-muted">{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -520,7 +520,7 @@ export default function CSVUploadPage() {
                 </tbody>
               </table>
               {parsed.rowCount > 10 && (
-                <p className="border-t bg-gray-50 px-4 py-2 text-center text-xs text-brand-gray-medium">
+                <p className="border-t bg-gray-50 px-4 py-2 text-center text-xs text-brand-text-muted">
                   Showing 10 of {parsed.rowCount.toLocaleString()} rows
                 </p>
               )}
@@ -529,19 +529,19 @@ export default function CSVUploadPage() {
 
           {/* ── Validation Errors ── */}
           {stage === 'validate' && validationErrors.length > 0 && (
-            <div className="rounded-lg border border-red-200 bg-red-50 p-4">
+            <div className="rounded-lg border border-brand-primary-darky bg-brand-primary-light p-4">
               <div className="mb-3 flex items-center justify-between">
-                <h3 className="font-semibold text-red-800">
+                <h3 className="font-semibold text-brand-primary-darky">
                   {validationErrors.length} Validation Error{validationErrors.length !== 1 ? 's' : ''}
                 </h3>
-                <button onClick={() => setShowAllErrors((v) => !v)} className="text-xs text-red-600 underline">
+                <button onClick={() => setShowAllErrors((v) => !v)} className="text-xs text-brand-primary-darky underline">
                   {showAllErrors ? 'Show fewer' : `Show all ${validationErrors.length}`}
                 </button>
               </div>
               <ul className="max-h-48 space-y-1 overflow-y-auto">
                 {(showAllErrors ? validationErrors : validationErrors.slice(0, 5)).map((err, i) => (
-                  <li key={i} className="flex flex-wrap gap-2 text-sm text-red-700">
-                    <span className="shrink-0 rounded bg-red-100 px-1.5 py-0.5 font-mono text-xs">Row {err.row}</span>
+                  <li key={i} className="flex flex-wrap gap-2 text-sm text-brand-primary-darky">
+                    <span className="shrink-0 rounded bg-brand-primary-light px-1.5 py-0.5 font-mono text-xs">Row {err.row}</span>
                     <span className="font-medium">{err.column}:</span>
                     <span>{err.message}</span>
                   </li>
@@ -563,18 +563,18 @@ export default function CSVUploadPage() {
 
           {/* ── Processing progress ── */}
           {stage === 'processing' && (
-            <div className="rounded-lg border border-brand-gray-light bg-white p-6">
+            <div className="rounded-lg border border-gray-200 bg-white p-6">
               <div className="mb-2 flex items-center justify-between">
-                <p className="font-semibold text-brand-black">Generating production files…</p>
-                <span className="text-sm font-medium text-brand-red">{progress}%</span>
+                <p className="font-semibold text-brand-text">Generating production files…</p>
+                <span className="text-sm font-medium text-brand-primary-darky">{progress}%</span>
               </div>
               <div className="h-3 overflow-hidden rounded-full bg-gray-200">
                 <div
-                  className="h-full rounded-full bg-brand-red transition-all duration-500"
+                  className="h-full rounded-full bg-brand-primary transition-all duration-500"
                   style={{ width: `${progress}%` }}
                 />
               </div>
-              <p className="mt-2 text-sm text-brand-gray-medium">
+              <p className="mt-2 text-sm text-brand-text-muted">
                 {generatedCount.toLocaleString()} of {parsed.rowCount.toLocaleString()} files generated
                 <span className="ml-2 text-xs text-gray-400">· Processing runs in the background</span>
               </p>
@@ -585,11 +585,11 @@ export default function CSVUploadPage() {
           {stage === 'done' && (
             <div className="space-y-4">
               {/* Summary */}
-              <div className={`rounded-lg border p-6 ${errorCount === parsed.rowCount ? 'border-red-200 bg-red-50' : 'border-green-200 bg-green-50'}`}>
+              <div className={`rounded-lg border p-6 ${errorCount === parsed.rowCount ? 'border-brand-primary-darky bg-brand-primary-light' : 'border-green-200 bg-green-50'}`}>
                 <div className="flex items-start gap-4">
                   <span className="text-3xl">{errorCount === parsed.rowCount ? '❌' : generatedCount > 0 ? '🎉' : '⚠️'}</span>
                   <div className="flex-1">
-                    <h2 className="text-xl font-bold text-brand-black">
+                    <h2 className="text-xl font-bold text-brand-text">
                       {errorCount === parsed.rowCount
                         ? 'Generation Failed'
                         : errorCount > 0
@@ -603,8 +603,8 @@ export default function CSVUploadPage() {
                       </div>
                       {errorCount > 0 && (
                         <div>
-                          <span className="font-bold text-red-600">{errorCount.toLocaleString()}</span>
-                          <span className="text-red-500"> failed</span>
+                          <span className="font-bold text-brand-primary-darky">{errorCount.toLocaleString()}</span>
+                          <span className="text-brand-primary-darky"> failed</span>
                         </div>
                       )}
                       <div>
@@ -620,7 +620,7 @@ export default function CSVUploadPage() {
               {generatedCount > 0 && jobId && (
                 <a
                   href={`/api/csv/${jobId}/download`}
-                  className="flex w-full items-center justify-center gap-2 rounded-lg bg-brand-red py-3 text-center font-semibold text-white transition hover:bg-brand-red/90"
+                  className="flex w-full items-center justify-center gap-2 rounded-lg bg-brand-primary py-3 text-center font-semibold text-white transition hover:bg-brand-primary-darky/90"
                 >
                   ⬇ Download All {generatedCount.toLocaleString()} Production Files (ZIP)
                 </a>
@@ -628,19 +628,19 @@ export default function CSVUploadPage() {
 
               {/* Error log */}
               {jobErrors.length > 0 && (
-                <div className="rounded-lg border border-red-200 bg-white p-5">
+                <div className="rounded-lg border border-brand-primary-darky bg-white p-5">
                   <div className="mb-3 flex items-center justify-between">
-                    <h3 className="font-semibold text-red-700">
+                    <h3 className="font-semibold text-brand-primary-darky">
                       {jobErrors.length} Row{jobErrors.length !== 1 ? 's' : ''} Failed to Generate
                     </h3>
-                    <button onClick={downloadErrorCSV} className="text-sm text-brand-red underline hover:opacity-80">
+                    <button onClick={downloadErrorCSV} className="text-sm text-brand-primary-darky underline hover:opacity-80">
                       Download error log (.csv)
                     </button>
                   </div>
-                  <ul className="max-h-48 space-y-1 overflow-y-auto text-sm text-red-600">
+                  <ul className="max-h-48 space-y-1 overflow-y-auto text-sm text-brand-primary-darky">
                     {jobErrors.slice(0, 20).map((e, i) => (
                       <li key={i} className="flex gap-2">
-                        <span className="shrink-0 rounded bg-red-100 px-1.5 py-0.5 font-mono text-xs">Row {e.row}</span>
+                        <span className="shrink-0 rounded bg-brand-primary-light px-1.5 py-0.5 font-mono text-xs">Row {e.row}</span>
                         <span>{e.error}</span>
                       </li>
                     ))}
@@ -654,7 +654,7 @@ export default function CSVUploadPage() {
               {/* Start over */}
               <button
                 onClick={resetUpload}
-                className="w-full rounded-lg border border-brand-gray-light bg-white py-2.5 text-sm font-medium text-brand-gray-medium transition hover:border-brand-red hover:text-brand-red"
+                className="w-full rounded-lg border border-gray-200 bg-white py-2.5 text-sm font-medium text-brand-text-muted transition hover:border-brand-primary hover:text-brand-primary-darky"
               >
                 Upload Another CSV
               </button>
@@ -665,7 +665,7 @@ export default function CSVUploadPage() {
           {stage === 'map' && (
             <button
               onClick={handleValidate}
-              className="w-full rounded-lg bg-brand-red py-3 text-lg font-semibold text-white transition hover:bg-brand-red/90"
+              className="w-full rounded-lg bg-brand-primary py-3 text-lg font-semibold text-white transition hover:bg-brand-primary-darky/90"
             >
               Validate {parsed.rowCount.toLocaleString()} Rows →
             </button>
@@ -675,29 +675,29 @@ export default function CSVUploadPage() {
             validationErrors.length > 0 ? (
               <button
                 disabled
-                className="w-full cursor-not-allowed rounded-lg bg-brand-red/50 py-3 text-lg font-semibold text-white"
+                className="w-full cursor-not-allowed rounded-lg bg-brand-primary/50 py-3 text-lg font-semibold text-white"
               >
                 Fix {validationErrors.length} Error{validationErrors.length !== 1 ? 's' : ''} First
               </button>
             ) : (
               <div className="space-y-3">
-                <p className="text-center text-sm font-medium text-brand-gray-medium">Choose how to proceed:</p>
+                <p className="text-center text-sm font-medium text-brand-text-muted">Choose how to proceed:</p>
                 <div className="grid gap-3 sm:grid-cols-2">
                   {/* Option A: Sample Proof */}
                   <button
                     onClick={handleSampleProof}
                     disabled={generatingSample}
-                    className="flex flex-col items-center gap-2 rounded-xl border-2 border-brand-red bg-red-50 py-4 px-4 text-center transition hover:bg-red-100 disabled:opacity-60"
+                    className="flex flex-col items-center gap-2 rounded-xl border-2 border-brand-primary bg-red-50 py-4 px-4 text-center transition hover:bg-red-100 disabled:opacity-60"
                   >
                     {generatingSample ? (
                       <span className="text-2xl">⏳</span>
                     ) : (
                       <span className="text-2xl">🔍</span>
                     )}
-                    <span className="font-semibold text-brand-red">
+                    <span className="font-semibold text-brand-primary-darky">
                       {generatingSample ? 'Generating Sample…' : 'Preview Sample Proof'}
                     </span>
-                    <span className="text-xs text-brand-gray-medium">
+                    <span className="text-xs text-brand-text-muted">
                       Review first 5 entries before generating all {parsed.rowCount.toLocaleString()} files
                     </span>
                   </button>
@@ -705,11 +705,11 @@ export default function CSVUploadPage() {
                   <button
                     onClick={handleSubmit}
                     disabled={generatingSample}
-                    className="flex flex-col items-center gap-2 rounded-xl border-2 border-gray-300 bg-white py-4 px-4 text-center transition hover:border-brand-red hover:bg-gray-50 disabled:opacity-60"
+                    className="flex flex-col items-center gap-2 rounded-xl border-2 border-gray-300 bg-white py-4 px-4 text-center transition hover:border-brand-primary hover:bg-gray-50 disabled:opacity-60"
                   >
                     <span className="text-2xl">⚡</span>
-                    <span className="font-semibold text-brand-black">Generate All Files</span>
-                    <span className="text-xs text-brand-gray-medium">
+                    <span className="font-semibold text-brand-text">Generate All Files</span>
+                    <span className="text-xs text-brand-text-muted">
                       Skip preview and generate all {parsed.rowCount.toLocaleString()} production files now
                     </span>
                   </button>
@@ -735,11 +735,11 @@ export default function CSVUploadPage() {
               {/* PDF grid */}
               <div className={`grid gap-4 ${sampleUrls.length === 1 ? 'grid-cols-1 max-w-sm' : sampleUrls.length === 2 ? 'grid-cols-2' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'}`}>
                 {sampleUrls.map((url, i) => (
-                  <div key={i} className="overflow-hidden rounded-xl border border-brand-gray-light bg-white shadow-sm">
+                  <div key={i} className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
                     <div className="flex items-center justify-between border-b bg-gray-50 px-3 py-2">
-                      <span className="text-sm font-semibold text-brand-black">Row {i + 1}</span>
+                      <span className="text-sm font-semibold text-brand-text">Row {i + 1}</span>
                       <a href={url} target="_blank" rel="noopener noreferrer"
-                        className="text-xs text-brand-red hover:underline">
+                        className="text-xs text-brand-primary-darky hover:underline">
                         Open PDF ↗
                       </a>
                     </div>
@@ -762,12 +762,12 @@ export default function CSVUploadPage() {
                 </button>
                 <button
                   onClick={() => { setSampleUrls([]); setStage('validate') }}
-                  className="rounded-xl border-2 border-gray-300 px-6 py-3.5 text-sm font-semibold text-brand-gray-medium transition hover:border-brand-red hover:text-brand-red"
+                  className="rounded-xl border-2 border-gray-300 px-6 py-3.5 text-sm font-semibold text-brand-text-muted transition hover:border-brand-primary hover:text-brand-primary-darky"
                 >
                   ← Revise Mapping
                 </button>
               </div>
-              <p className="text-center text-xs text-brand-gray-medium">
+              <p className="text-center text-xs text-brand-text-muted">
                 The watermarked &ldquo;PROOF&rdquo; versions above will NOT be sent to print.
                 Full-resolution production files will be generated after approval.
               </p>

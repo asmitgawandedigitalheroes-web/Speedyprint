@@ -121,27 +121,27 @@ export default function ProofReviewPage() {
       <div className="mb-6">
         <Link
           href={`/account/orders/${orderId}`}
-          className="mb-4 inline-flex items-center gap-1.5 text-sm text-brand-gray-medium hover:text-brand-red"
+          className="mb-4 inline-flex items-center gap-1.5 text-sm text-brand-text-muted hover:text-brand-primary"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
           Back to Order
         </Link>
-        <h1 className="text-2xl font-bold text-brand-black">Proof Review</h1>
-        <p className="mt-1 text-sm text-brand-gray-medium">
+        <h1 className="text-2xl font-bold text-brand-text">Proof Review</h1>
+        <p className="mt-1 text-sm text-brand-text-muted">
           Review your design proof carefully before approving for production.
         </p>
       </div>
 
       {proofs.length === 0 ? (
-        <div className="rounded-xl border border-brand-gray-light bg-white p-12 text-center shadow-sm">
+        <div className="rounded-xl border border-gray-200 bg-white p-12 text-center shadow-sm">
           <FileText className="mx-auto mb-3 h-12 w-12 text-gray-300" />
-          <h2 className="text-lg font-semibold text-brand-black">No proof available yet</h2>
-          <p className="mt-2 text-brand-gray-medium">
+          <h2 className="text-lg font-semibold text-brand-text">No proof available yet</h2>
+          <p className="mt-2 text-brand-text-muted">
             Our team is preparing your proof. You&apos;ll receive an email when it&apos;s ready for review.
           </p>
           <button
             onClick={fetchProofs}
-            className="mt-4 inline-flex items-center gap-2 text-sm text-brand-red hover:underline"
+            className="mt-4 inline-flex items-center gap-2 text-sm text-brand-primary hover:underline"
           >
             <RefreshCw className="h-3.5 w-3.5" />
             Check again
@@ -167,19 +167,19 @@ export default function ProofReviewPage() {
             )}
 
             {/* Proof viewer card */}
-            <div className="overflow-hidden rounded-xl border border-brand-gray-light bg-white shadow-sm">
+            <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
               {/* Toolbar */}
               <div className="flex items-center justify-between border-b px-4 py-2.5">
                 <div className="flex items-center gap-1 rounded-lg bg-gray-100 p-0.5">
                   <button
                     onClick={() => setViewMode('pdf')}
-                    className={`rounded-md px-3 py-1 text-xs font-medium transition ${viewMode === 'pdf' ? 'bg-white shadow text-brand-black' : 'text-gray-500 hover:text-gray-700'}`}
+                    className={`rounded-md px-3 py-1 text-xs font-medium transition ${viewMode === 'pdf' ? 'bg-white shadow text-brand-text' : 'text-gray-500 hover:text-gray-700'}`}
                   >
                     PDF View
                   </button>
                   <button
                     onClick={() => setViewMode('image')}
-                    className={`rounded-md px-3 py-1 text-xs font-medium transition ${viewMode === 'image' ? 'bg-white shadow text-brand-black' : 'text-gray-500 hover:text-gray-700'}`}
+                    className={`rounded-md px-3 py-1 text-xs font-medium transition ${viewMode === 'image' ? 'bg-white shadow text-brand-text' : 'text-gray-500 hover:text-gray-700'}`}
                   >
                     Image View
                   </button>
@@ -190,7 +190,7 @@ export default function ProofReviewPage() {
                     target="_blank"
                     rel="noopener noreferrer"
                     download
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-brand-gray-light px-3 py-1.5 text-xs font-medium hover:border-brand-red hover:text-brand-red"
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium hover:border-brand-primary hover:text-brand-primary"
                   >
                     <Download className="h-3.5 w-3.5" />
                     Download Proof
@@ -215,7 +215,7 @@ export default function ProofReviewPage() {
                     />
                   )
                 ) : (
-                  <div className="text-center text-brand-gray-medium">
+                  <div className="text-center text-brand-text-muted">
                     <FileText className="mx-auto mb-2 h-12 w-12 opacity-30" />
                     <p className="text-sm">Proof preview not available</p>
                   </div>
@@ -226,14 +226,14 @@ export default function ProofReviewPage() {
               {selectedProof?.status === 'pending' && (
                 <div className="border-t p-5 space-y-4">
                   <div>
-                    <label className="mb-1.5 block text-sm font-medium text-brand-black">
-                      Notes <span className="font-normal text-brand-gray-medium">(required if requesting revision)</span>
+                    <label className="mb-1.5 block text-sm font-medium text-brand-text">
+                      Notes <span className="font-normal text-brand-text-muted">(required if requesting revision)</span>
                     </label>
                     <textarea
                       value={notes}
                       onChange={(e) => setNotes(e.target.value)}
                       placeholder="Describe any changes needed, or leave a message for our team..."
-                      className="w-full rounded-lg border border-brand-gray-light px-3 py-2.5 text-sm placeholder:text-gray-400 focus:border-brand-red focus:outline-none focus:ring-1 focus:ring-brand-red"
+                      className="w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm placeholder:text-gray-400 focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary"
                       rows={3}
                     />
                   </div>
@@ -263,7 +263,7 @@ export default function ProofReviewPage() {
                       Request Revision
                     </button>
                   </div>
-                  <p className="text-center text-xs text-brand-gray-medium">
+                  <p className="text-center text-xs text-brand-text-muted">
                     Once approved, your order will move to production. Revisions are free and unlimited.
                   </p>
                 </div>
@@ -307,8 +307,8 @@ export default function ProofReviewPage() {
 
           {/* Right — Version History */}
           <div className="space-y-4">
-            <div className="rounded-xl border border-brand-gray-light bg-white p-4 shadow-sm">
-              <h2 className="mb-3 text-base font-semibold text-brand-black">Version History</h2>
+            <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+              <h2 className="mb-3 text-base font-semibold text-brand-text">Version History</h2>
               <div className="space-y-2">
                 {proofs.map((proof) => {
                   const cfg = STATUS_CONFIG[proof.status] ?? STATUS_CONFIG['pending']
@@ -319,7 +319,7 @@ export default function ProofReviewPage() {
                       onClick={() => { setSelectedProof(proof); setNotes('') }}
                       className={`w-full rounded-xl border p-3 text-left transition-all ${
                         selectedProof?.id === proof.id
-                          ? 'border-brand-red bg-red-50 shadow-sm'
+                          ? 'border-brand-primary bg-red-50 shadow-sm'
                           : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                       }`}
                     >
@@ -332,7 +332,7 @@ export default function ProofReviewPage() {
                           }`}>
                             v{proof.version}
                           </div>
-                          <span className="text-sm font-medium text-brand-black">Version {proof.version}</span>
+                          <span className="text-sm font-medium text-brand-text">Version {proof.version}</span>
                         </div>
                         <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${cfg.bgColor} ${cfg.textColor}`}>
                           <Icon className="h-3 w-3" />
@@ -341,9 +341,9 @@ export default function ProofReviewPage() {
                            proof.status === 'revision_requested' ? 'Revision' : proof.status}
                         </span>
                       </div>
-                      <p className="mt-1.5 text-xs text-brand-gray-medium">{formatDateTime(proof.created_at)}</p>
+                      <p className="mt-1.5 text-xs text-brand-text-muted">{formatDateTime(proof.created_at)}</p>
                       {proof.customer_notes && (
-                        <p className="mt-1 truncate text-xs text-brand-gray-medium italic">
+                        <p className="mt-1 truncate text-xs text-brand-text-muted italic">
                           &ldquo;{proof.customer_notes}&rdquo;
                         </p>
                       )}
@@ -354,9 +354,9 @@ export default function ProofReviewPage() {
             </div>
 
             {/* Help card */}
-            <div className="rounded-xl border border-brand-gray-light bg-gray-50 p-4">
-              <h3 className="mb-2 text-sm font-semibold text-brand-black">How Proofing Works</h3>
-              <ol className="space-y-2 text-xs text-brand-gray-medium list-decimal list-inside">
+            <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+              <h3 className="mb-2 text-sm font-semibold text-brand-text">How Proofing Works</h3>
+              <ol className="space-y-2 text-xs text-brand-text-muted list-decimal list-inside">
                 <li>Review the proof carefully — check spelling, layout, and colours</li>
                 <li>Click <strong>Approve</strong> to start production, or <strong>Request Revision</strong> to request changes</li>
                 <li>Revisions are free — we&apos;ll send you an updated proof</li>

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, Fragment } from 'react'
 import Link from 'next/link'
 import { toast } from 'sonner'
 import type { CsvJobStatus } from '@/types'
@@ -92,8 +92,8 @@ export default function AdminCSVJobsPage() {
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-brand-black">CSV Batch Jobs</h1>
-          <p className="mt-1 text-sm text-brand-gray-medium">
+          <h1 className="text-2xl font-bold text-brand-text">CSV Batch Jobs</h1>
+          <p className="mt-1 text-sm text-brand-text-muted">
             All variable-data print jobs submitted by customers.
           </p>
         </div>
@@ -109,12 +109,12 @@ export default function AdminCSVJobsPage() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search by filename…"
-          className="rounded-lg border border-brand-gray-light px-3 py-2 text-sm focus:border-brand-red focus:outline-none w-64"
+          className="rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-brand-primary focus:outline-none w-64"
         />
         <select
           value={statusFilter}
           onChange={(e) => { setStatusFilter(e.target.value as CsvJobStatus | ''); setPage(1) }}
-          className="rounded-lg border border-brand-gray-light px-3 py-2 text-sm focus:border-brand-red focus:outline-none"
+          className="rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-brand-primary focus:outline-none"
         >
           {STATUS_OPTIONS.map((s) => (
             <option key={s} value={s}>{s === '' ? 'All statuses' : s.charAt(0).toUpperCase() + s.slice(1)}</option>
@@ -122,23 +122,23 @@ export default function AdminCSVJobsPage() {
         </select>
         <button
           type="submit"
-          className="rounded-lg bg-brand-red px-4 py-2 text-sm font-medium text-white hover:bg-brand-red/90"
+          className="rounded-lg bg-brand-primary px-4 py-2 text-sm font-medium text-white hover:bg-brand-primary/90"
         >
           Search
         </button>
         <button
           type="button"
           onClick={() => { setSearch(''); setStatusFilter(''); setPage(1) }}
-          className="rounded-lg border border-brand-gray-light px-4 py-2 text-sm text-brand-gray-medium hover:border-brand-red hover:text-brand-red"
+          className="rounded-lg border border-gray-200 px-4 py-2 text-sm text-brand-text-muted hover:border-brand-primary hover:text-brand-primary"
         >
           Clear
         </button>
       </form>
 
       {/* Table */}
-      <div className="overflow-x-auto rounded-xl border border-brand-gray-light bg-white shadow-sm">
+      <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white shadow-sm">
         <table className="w-full text-sm">
-          <thead className="bg-gray-50 text-xs font-medium uppercase tracking-wide text-brand-gray-medium">
+          <thead className="bg-gray-50 text-xs font-medium uppercase tracking-wide text-brand-text-muted">
             <tr>
               <th className="px-4 py-3 text-left">File / Customer</th>
               <th className="px-4 py-3 text-left">Template</th>
@@ -153,12 +153,12 @@ export default function AdminCSVJobsPage() {
           <tbody className="divide-y divide-gray-100">
             {loading && (
               <tr>
-                <td colSpan={8} className="px-4 py-12 text-center text-brand-gray-medium">Loading…</td>
+                <td colSpan={8} className="px-4 py-12 text-center text-brand-text-muted">Loading…</td>
               </tr>
             )}
             {!loading && jobs.length === 0 && (
               <tr>
-                <td colSpan={8} className="px-4 py-12 text-center text-brand-gray-medium">No jobs found.</td>
+                <td colSpan={8} className="px-4 py-12 text-center text-brand-text-muted">No jobs found.</td>
               </tr>
             )}
             {!loading && jobs.map((job) => {
@@ -167,14 +167,14 @@ export default function AdminCSVJobsPage() {
               const failedRows = job.error_log?.length ?? 0
 
               return (
-                <>
-                  <tr key={job.id} className="hover:bg-gray-50 transition-colors">
+                <Fragment key={job.id}>
+                  <tr className="hover:bg-gray-50 transition-colors">
                     {/* File + customer */}
                     <td className="px-4 py-3">
-                      <p className="max-w-[200px] truncate font-medium text-brand-black">
+                      <p className="max-w-[200px] truncate font-medium text-brand-text">
                         {job.original_filename ?? 'Unnamed file'}
                       </p>
-                      <p className="text-xs text-brand-gray-medium">
+                      <p className="text-xs text-brand-text-muted">
                         {job.profiles?.full_name ?? job.profiles?.email ?? job.user_id.slice(0, 8)}
                       </p>
                     </td>
@@ -184,7 +184,7 @@ export default function AdminCSVJobsPage() {
                       {templateId ? (
                         <Link
                           href={`/admin/products`}
-                          className="text-xs text-brand-red hover:underline"
+                          className="text-xs text-brand-primary hover:underline"
                         >
                           View template ↗
                         </Link>
@@ -221,10 +221,10 @@ export default function AdminCSVJobsPage() {
                     </td>
 
                     {/* Submitted */}
-                    <td className="px-4 py-3 text-xs text-brand-gray-medium">{fmt(job.created_at)}</td>
+                    <td className="px-4 py-3 text-xs text-brand-text-muted">{fmt(job.created_at)}</td>
 
                     {/* Completed */}
-                    <td className="px-4 py-3 text-xs text-brand-gray-medium">
+                    <td className="px-4 py-3 text-xs text-brand-text-muted">
                       {job.completed_at ? fmt(job.completed_at) : '—'}
                     </td>
 
@@ -234,7 +234,7 @@ export default function AdminCSVJobsPage() {
                         {job.status === 'completed' && (
                           <a
                             href={`/api/csv/${job.id}/download`}
-                            className="rounded bg-brand-red px-2.5 py-1 text-xs font-medium text-white hover:bg-brand-red/90"
+                            className="rounded bg-brand-primary px-2.5 py-1 text-xs font-medium text-white hover:bg-brand-primary/90"
                           >
                             ⬇ ZIP
                           </a>
@@ -268,7 +268,7 @@ export default function AdminCSVJobsPage() {
                       </td>
                     </tr>
                   )}
-                </>
+                </Fragment>
               )
             })}
           </tbody>
@@ -278,14 +278,14 @@ export default function AdminCSVJobsPage() {
       {/* Pagination */}
       {pagination.pages > 1 && (
         <div className="mt-4 flex items-center justify-between text-sm">
-          <p className="text-brand-gray-medium">
+          <p className="text-brand-text-muted">
             Showing {((page - 1) * pagination.limit) + 1}–{Math.min(page * pagination.limit, pagination.total)} of {pagination.total.toLocaleString()}
           </p>
           <div className="flex gap-2">
             <button
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page === 1}
-              className="rounded-lg border border-brand-gray-light px-3 py-1.5 disabled:opacity-40 hover:border-brand-red"
+              className="rounded-lg border border-gray-200 px-3 py-1.5 disabled:opacity-40 hover:border-brand-primary"
             >
               ← Prev
             </button>
@@ -295,7 +295,7 @@ export default function AdminCSVJobsPage() {
                 <button
                   key={p}
                   onClick={() => setPage(p)}
-                  className={`rounded-lg px-3 py-1.5 ${p === page ? 'bg-brand-red text-white' : 'border border-brand-gray-light hover:border-brand-red'}`}
+                  className={`rounded-lg px-3 py-1.5 ${p === page ? 'bg-brand-primary text-white' : 'border border-gray-200 hover:border-brand-primary'}`}
                 >
                   {p}
                 </button>
@@ -304,7 +304,7 @@ export default function AdminCSVJobsPage() {
             <button
               onClick={() => setPage((p) => Math.min(pagination.pages, p + 1))}
               disabled={page === pagination.pages}
-              className="rounded-lg border border-brand-gray-light px-3 py-1.5 disabled:opacity-40 hover:border-brand-red"
+              className="rounded-lg border border-gray-200 px-3 py-1.5 disabled:opacity-40 hover:border-brand-primary"
             >
               Next →
             </button>

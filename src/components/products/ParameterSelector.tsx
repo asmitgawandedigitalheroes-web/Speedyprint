@@ -33,7 +33,7 @@ export function ParameterSelector({
           <Label htmlFor={param.param_key}>
             {param.param_label}
             {param.is_required && (
-              <span className="ml-1 text-brand-red">*</span>
+              <span className="ml-1 text-brand-primary">*</span>
             )}
           </Label>
 
@@ -73,9 +73,9 @@ export function ParameterSelector({
                   step={rangeOpts.step ?? 1}
                   value={currentValue}
                   onChange={(e) => onChange(param.param_key, e.target.value)}
-                  className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-brand-gray-light accent-brand-red"
+                  className="h-2 w-full cursor-pointer appearance-none rounded-lg bg-gray-200 accent-brand-primary"
                 />
-                <span className="min-w-[3rem] text-right text-sm font-medium text-brand-black">
+                <span className="min-w-[3rem] text-right text-sm font-medium text-brand-text">
                   {currentValue}
                 </span>
               </div>

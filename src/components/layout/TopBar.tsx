@@ -12,10 +12,10 @@ export function TopBar() {
         </p>
         <div className="flex items-center gap-4">
           <Link
-            href="mailto:info@speedyprint.co.za"
+            href="mailto:info@speedylabels.co.za"
             className="text-xs text-white/80 transition-colors hover:text-white"
           >
-            info@speedyprint.co.za
+            info@speedylabels.co.za
           </Link>
           <span className="text-white/40">|</span>
           <Link

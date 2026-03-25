@@ -66,10 +66,10 @@ export function AdminSidebar() {
             href={item.href}
             onClick={() => setMobileOpen(false)}
             className={cn(
-              'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
+              'flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors',
               isActive(item.href)
-                ? 'bg-brand-red text-white'
-                : 'text-gray-600 hover:bg-gray-100 hover:text-brand-red'
+                ? 'bg-brand-primary text-white'
+                : 'text-brand-text-muted hover:bg-brand-bg hover:text-brand-primary'
             )}
             title={collapsed ? item.label : undefined}
           >
@@ -105,7 +105,7 @@ export function AdminSidebar() {
       {/* Sidebar */}
       <aside
         className={cn(
-          'fixed left-0 top-0 z-40 flex h-screen flex-col border-r border-brand-gray-light bg-white transition-all duration-300 lg:relative lg:z-auto',
+          'fixed left-0 top-0 z-40 flex h-screen flex-col border-r border-gray-200 bg-white transition-all duration-300 lg:relative lg:z-auto',
           collapsed ? 'w-[72px]' : 'w-64',
           mobileOpen
             ? 'translate-x-0'
@@ -113,10 +113,10 @@ export function AdminSidebar() {
         )}
       >
         {/* Header */}
-        <div className="flex h-16 items-center justify-between border-b border-brand-gray-light px-4">
+        <div className="flex h-16 items-center justify-between border-b border-gray-200 px-4">
           {!collapsed && (
             <Link href="/admin" className="flex items-center gap-2">
-              <span className="text-lg font-bold text-brand-red">
+              <span className="text-lg font-bold text-brand-primary">
                 {SITE_NAME}
               </span>
               <span className="text-xs font-medium text-gray-500">Admin</span>
@@ -144,11 +144,11 @@ export function AdminSidebar() {
         <div className="flex-1 overflow-y-auto">{navContent}</div>
 
         {/* Back to Site Link */}
-        <div className="border-t border-brand-gray-light px-3 py-4">
+        <div className="border-t border-gray-200 px-3 py-4">
           <Link
             href="/"
             className={cn(
-              'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-500 transition-colors hover:bg-gray-100 hover:text-brand-gray',
+              'flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium text-brand-text-muted transition-colors hover:bg-brand-bg hover:text-brand-primary',
               collapsed && 'justify-center'
             )}
             title={collapsed ? 'Back to site' : undefined}

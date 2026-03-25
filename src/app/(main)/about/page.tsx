@@ -1,10 +1,11 @@
 import type { Metadata } from 'next'
 import { SITE_NAME, SITE_URL } from '@/lib/utils/constants'
+import { Check } from 'lucide-react'
 
 export const metadata: Metadata = {
   title: `About ${SITE_NAME} | Custom Printing in South Africa`,
   description:
-    'Learn about SpeedyPrint — South Africa\'s custom printing platform with five specialized divisions: labels, laser cutting, event numbers, stamps, and trophies.',
+    "Learn about Speedy Labels — South Africa's custom printing platform with five specialized divisions: labels, laser cutting, event numbers, stamps, and trophies.",
   alternates: {
     canonical: `${SITE_URL}/about`,
   },
@@ -15,59 +16,89 @@ export const metadata: Metadata = {
   },
 }
 
+const DIVISIONS = [
+  { name: 'Speedy Labels', desc: 'Custom labels and stickers for any application' },
+  { name: 'Speedy Laser', desc: 'Precision laser-cut and engraved products' },
+  { name: 'Speedy Event Numbers', desc: 'Race bibs, event tags, and MTB boards' },
+  { name: 'Speedy Stamps', desc: 'Custom rubber stamps for businesses' },
+  { name: 'Speedy Trophies', desc: 'Branded coffee sleeves and trophies' },
+]
+
+const FEATURES = [
+  'Online design tools — no software needed',
+  'Digital proofing before production',
+  'CSV bulk upload for event products',
+  'Print-ready file generation',
+  'Fast turnaround times',
+]
+
 export default function AboutPage() {
   return (
-    <div className="mx-auto max-w-4xl px-4 py-16 sm:px-6 lg:px-8">
-      <h1 className="text-4xl font-bold text-brand-black">About {SITE_NAME}</h1>
+    <div className="bg-brand-bg min-h-screen">
+      {/* Page header */}
+      <div className="bg-brand-secondary">
+        <div className="mx-auto max-w-4xl px-4 py-16 text-center sm:px-6 lg:px-8">
+          <h1 className="font-heading text-4xl font-bold text-white">About {SITE_NAME}</h1>
+          <p className="mx-auto mt-4 max-w-2xl text-white/60">
+            South African printing business delivering custom solutions across five specialized divisions.
+          </p>
+        </div>
+      </div>
 
-      <div className="mt-8 space-y-8 text-lg leading-relaxed text-brand-gray">
-        <p>
-          SpeedyPrint is a South African printing business delivering custom printing solutions
-          across five specialized divisions. From event race bibs to laser-cut signage, custom labels
-          to branded coffee cup sleeves, we handle it all with precision and speed.
-        </p>
+      <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6 lg:px-8 space-y-6">
+        {/* Intro */}
+        <div className="rounded-md border border-gray-100 bg-white p-8">
+          <p className="text-brand-text-muted leading-relaxed">
+            Speedy Labels is a South African printing business delivering custom printing solutions
+            across five specialized divisions. From event race bibs to laser-cut signage, custom labels
+            to branded coffee cup sleeves, we handle it all with precision and speed.
+          </p>
+        </div>
 
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
-          <div className="rounded-xl border border-brand-gray-light bg-white p-6">
-            <h3 className="text-xl font-semibold text-brand-black">Our Mission</h3>
-            <p className="mt-3 text-base text-brand-gray-medium">
+        {/* Mission + Process */}
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div className="rounded-md border border-gray-100 bg-white p-6">
+            <div className="h-1 w-8 bg-brand-primary mb-4" />
+            <h3 className="font-heading text-lg font-semibold text-brand-text">Our mission</h3>
+            <p className="mt-3 text-sm text-brand-text-muted leading-relaxed">
               To make custom printing accessible, affordable, and effortless for businesses
               and event organizers across South Africa.
             </p>
           </div>
-          <div className="rounded-xl border border-brand-gray-light bg-white p-6">
-            <h3 className="text-xl font-semibold text-brand-black">Our Process</h3>
-            <p className="mt-3 text-base text-brand-gray-medium">
+          <div className="rounded-md border border-gray-100 bg-white p-6">
+            <div className="h-1 w-8 bg-brand-primary mb-4" />
+            <h3 className="font-heading text-lg font-semibold text-brand-text">Our process</h3>
+            <p className="mt-3 text-sm text-brand-text-muted leading-relaxed">
               Design online using our web-to-print tools, approve your digital proof,
               and we handle the rest — delivering production-ready files straight to press.
             </p>
           </div>
         </div>
 
-        <h2 className="text-2xl font-bold text-brand-black">Our Divisions</h2>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {[
-            { name: 'Speedy Labels', desc: 'Custom labels and stickers for any application' },
-            { name: 'Speedy Laser', desc: 'Precision laser-cut and engraved products' },
-            { name: 'Speedy Event Numbers', desc: 'Race bibs, event tags, and MTB boards' },
-            { name: 'Speedy Stamps', desc: 'Custom rubber stamps for businesses' },
-            { name: 'Speedy Trophies', desc: 'Branded coffee sleeves and trophies' },
-          ].map((div) => (
-            <div key={div.name} className="rounded-lg border border-brand-gray-light p-4">
-              <h3 className="font-semibold text-brand-red">{div.name}</h3>
-              <p className="mt-1 text-sm text-brand-gray-medium">{div.desc}</p>
-            </div>
-          ))}
+        {/* Divisions */}
+        <div>
+          <h2 className="font-heading text-2xl font-bold text-brand-text mb-4">Our divisions</h2>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {DIVISIONS.map((div) => (
+              <div key={div.name} className="rounded-md border border-gray-100 bg-white p-5">
+                <div className="h-1 w-6 bg-brand-primary mb-3" />
+                <h3 className="font-semibold text-brand-text">{div.name}</h3>
+                <p className="mt-1 text-sm text-brand-text-muted">{div.desc}</p>
+              </div>
+            ))}
+          </div>
         </div>
 
-        <div className="rounded-xl bg-brand-bg p-8">
-          <h2 className="text-2xl font-bold text-brand-black">Why Choose Us?</h2>
-          <ul className="mt-4 space-y-3 text-base">
-            <li className="flex gap-3"><span className="text-brand-red font-bold">&#10003;</span> Online design tools — no software needed</li>
-            <li className="flex gap-3"><span className="text-brand-red font-bold">&#10003;</span> Digital proofing before production</li>
-            <li className="flex gap-3"><span className="text-brand-red font-bold">&#10003;</span> CSV bulk upload for event products</li>
-            <li className="flex gap-3"><span className="text-brand-red font-bold">&#10003;</span> Print-ready file generation</li>
-            <li className="flex gap-3"><span className="text-brand-red font-bold">&#10003;</span> Fast turnaround times</li>
+        {/* Why choose us */}
+        <div className="rounded-md border-t-4 border-brand-primary bg-brand-secondary p-8">
+          <h2 className="font-heading text-2xl font-bold text-white mb-6">Why choose us?</h2>
+          <ul className="space-y-3">
+            {FEATURES.map((feature) => (
+              <li key={feature} className="flex items-center gap-3 text-white/80">
+                <Check className="h-4 w-4 shrink-0 text-brand-primary" />
+                <span className="text-sm">{feature}</span>
+              </li>
+            ))}
           </ul>
         </div>
       </div>

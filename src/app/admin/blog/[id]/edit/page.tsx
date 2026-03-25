@@ -125,7 +125,7 @@ export default function AdminBlogEditPage() {
       </Button>
 
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Edit Blog Post</h1>
+        <h1 className="text-2xl font-bold text-brand-text">Edit Blog Post</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Update &quot;{post.title}&quot;
         </p>

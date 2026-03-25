@@ -1,5 +1,5 @@
 /**
- * Core type definitions for the SpeedyPrint Design Canvas plugin architecture.
+ * Core type definitions for the Speedy Labels Design Canvas plugin architecture.
  * Adapted from vue-fabric-editor's plugin system for React/Fabric.js v7.
  */
 

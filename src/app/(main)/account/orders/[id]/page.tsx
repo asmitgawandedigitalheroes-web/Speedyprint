@@ -7,6 +7,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { createClient } from '@/lib/supabase/client'
 import { formatCurrency, formatDate, formatDateTime } from '@/lib/utils/format'
 import { ORDER_STATUS_LABELS, ORDER_ITEM_STATUS_LABELS } from '@/lib/utils/constants'
+import { ArrowLeft, Download, RotateCcw, Loader2 } from 'lucide-react'
 import type { Order, OrderItem } from '@/types'
 
 export default function OrderDetailPage() {
@@ -36,7 +37,6 @@ export default function OrderDetailPage() {
       setItems((itemsRes.data as OrderItem[]) || [])
       setLoading(false)
 
-      // Fetch production files if order exists
       if (orderRes.data) {
         try {
           const filesRes = await fetch(`/api/orders/${id}/files`)
@@ -101,12 +101,14 @@ export default function OrderDetailPage() {
 
   if (loading) {
     return (
-      <div className="mx-auto max-w-4xl px-4 py-8">
-        <div className="h-8 w-48 animate-pulse rounded bg-gray-200" />
-        <div className="mt-6 space-y-4">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="h-24 animate-pulse rounded-lg bg-gray-100" />
-          ))}
+      <div className="bg-brand-bg min-h-screen">
+        <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
+          <div className="h-6 w-48 animate-pulse rounded-md bg-white mb-6" />
+          <div className="space-y-4">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-24 animate-pulse rounded-md bg-white border border-gray-100" />
+            ))}
+          </div>
         </div>
       </div>
     )
@@ -114,202 +116,173 @@ export default function OrderDetailPage() {
 
   if (!order) {
     return (
-      <div className="mx-auto max-w-4xl px-4 py-8 text-center">
-        <p className="text-lg text-brand-gray-medium">Order not found.</p>
-        <Link href="/account/orders" className="mt-4 inline-block text-brand-red hover:underline">
-          Back to Orders
-        </Link>
+      <div className="bg-brand-bg min-h-screen">
+        <div className="mx-auto max-w-4xl px-4 py-20 sm:px-6 text-center">
+          <p className="text-brand-text-muted">Order not found.</p>
+          <Link href="/account/orders" className="mt-4 inline-block text-sm font-medium text-brand-primary hover:underline">
+            Back to orders
+          </Link>
+        </div>
       </div>
     )
   }
 
-  const status = ORDER_STATUS_LABELS[order.status] || {
-    label: order.status,
-    color: 'bg-gray-100 text-gray-700',
-  }
+  const status = ORDER_STATUS_LABELS[order.status] || { label: order.status, color: 'bg-gray-100 text-gray-700' }
   const canReorder = order.status === 'completed' || order.status === 'cancelled'
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
-      <Link
-        href="/account/orders"
-        className="mb-4 inline-block text-sm text-brand-gray-medium hover:text-brand-red"
-      >
-        &larr; Back to Orders
-      </Link>
-
-      {/* Order Header */}
-      <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-brand-black">{order.order_number}</h1>
-          <p className="text-brand-gray-medium">
-            Placed {formatDateTime(order.created_at)}
-          </p>
-          {order.tracking_number && (
-            <p className="mt-1 text-sm text-brand-gray-medium">
-              Tracking: <span className="font-mono font-medium">{order.tracking_number}</span>
-            </p>
-          )}
-        </div>
-        <div className="flex items-center gap-3">
-          <span className={`rounded-full px-4 py-1.5 text-sm font-medium ${status.color}`}>
-            {status.label}
-          </span>
-          {productionFiles.length > 0 && (
-            <button
-              onClick={handleDownloadFiles}
-              disabled={downloading}
-              className="flex items-center gap-2 rounded-lg border border-brand-red px-4 py-2 text-sm font-semibold text-brand-red transition hover:bg-brand-red hover:text-white disabled:opacity-60"
-            >
-              {downloading ? (
-                <>
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-brand-red border-t-transparent" />
-                  Preparing…
-                </>
-              ) : (
-                `Download Files (${productionFiles.length})`
+    <div className="bg-brand-bg min-h-screen">
+      <div className="border-b border-gray-200 bg-white">
+        <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
+          <Link
+            href="/account/orders"
+            className="mb-4 inline-flex items-center gap-1.5 text-sm text-brand-text-muted hover:text-brand-primary transition"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" /> Back to orders
+          </Link>
+          <div className="mt-2 flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <div className="h-1 w-8 bg-brand-primary mb-3" />
+              <h1 className="font-heading text-2xl font-bold text-brand-text">{order.order_number}</h1>
+              <p className="mt-1 text-sm text-brand-text-muted">Placed {formatDateTime(order.created_at)}</p>
+              {order.tracking_number && (
+                <p className="mt-1 text-xs text-brand-text-muted">
+                  Tracking: <span className="font-mono font-medium text-brand-text">{order.tracking_number}</span>
+                </p>
               )}
-            </button>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className={`rounded-sm px-2.5 py-1 text-xs font-medium ${status.color}`}>{status.label}</span>
+              {productionFiles.length > 0 && (
+                <button
+                  onClick={handleDownloadFiles}
+                  disabled={downloading}
+                  className="inline-flex items-center gap-2 rounded-md border border-brand-primary px-4 py-2 text-sm font-semibold text-brand-primary transition hover:bg-brand-primary hover:text-white disabled:opacity-60"
+                >
+                  {downloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                  {downloading ? 'Preparing…' : `Download (${productionFiles.length})`}
+                </button>
+              )}
+              {canReorder && (
+                <button
+                  onClick={handleReorder}
+                  disabled={reordering}
+                  className="inline-flex items-center gap-2 rounded-md bg-brand-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-primary-dark disabled:opacity-60"
+                >
+                  {reordering ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4" />}
+                  {reordering ? 'Creating…' : 'Reorder'}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8 space-y-4">
+        {/* Order Items */}
+        <div className="rounded-md border border-gray-100 bg-white">
+          <div className="border-b border-gray-100 px-6 py-4">
+            <h2 className="font-heading text-base font-semibold text-brand-text">Order items</h2>
+          </div>
+          <div className="divide-y divide-gray-50">
+            {items.map((item) => {
+              const itemStatus = ORDER_ITEM_STATUS_LABELS[item.status] || { label: item.status, color: 'bg-gray-100 text-gray-700' }
+              return (
+                <div key={item.id} className="flex items-center justify-between p-5">
+                  <div className="flex items-center gap-4">
+                    <div className="flex h-14 w-14 items-center justify-center rounded-md border border-gray-100 bg-brand-bg text-xs text-brand-text-muted">
+                      Preview
+                    </div>
+                    <div>
+                      <p className="font-semibold text-brand-text">{(item.product_group as any)?.name || 'Product'}</p>
+                      <p className="text-sm text-brand-text-muted">
+                        {(item.product_template as any)?.name || 'Template'} · Qty: {item.quantity}
+                      </p>
+                      {item.selected_params && Object.keys(item.selected_params).length > 0 && (
+                        <div className="mt-1 flex flex-wrap gap-1">
+                          {Object.entries(item.selected_params).map(([k, v]) => (
+                            <span key={k} className="rounded-sm bg-brand-bg px-1.5 py-0.5 text-xs text-brand-text-muted">
+                              {k}: {String(v)}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-end gap-2">
+                    <p className="font-semibold text-brand-text">{formatCurrency(item.line_total)}</p>
+                    <span className={`rounded-sm px-2 py-0.5 text-xs font-medium ${itemStatus.color}`}>{itemStatus.label}</span>
+                    {item.status === 'proof_sent' && (
+                      <Link
+                        href={`/account/orders/${order.id}/proof/${item.id}`}
+                        className="rounded-md bg-brand-primary px-3 py-1 text-xs font-semibold text-white hover:bg-brand-primary-dark transition"
+                      >
+                        Review proof
+                      </Link>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* Shipping Address */}
+        {order.shipping_address && Object.keys(order.shipping_address).length > 0 && (
+          <div className="rounded-md border border-gray-100 bg-white p-6">
+            <h2 className="font-heading text-base font-semibold text-brand-text mb-3">Shipping address</h2>
+            <div className="text-sm text-brand-text-muted leading-relaxed">
+              {order.shipping_address.full_name && (
+                <p className="font-medium text-brand-text">{order.shipping_address.full_name}</p>
+              )}
+              {order.shipping_address.address_line1 && <p>{order.shipping_address.address_line1}</p>}
+              {order.shipping_address.address_line2 && <p>{order.shipping_address.address_line2}</p>}
+              {(order.shipping_address.city || order.shipping_address.province) && (
+                <p>{[order.shipping_address.city, order.shipping_address.province, order.shipping_address.postal_code].filter(Boolean).join(', ')}</p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Order Summary */}
+        <div className="rounded-md border border-gray-100 bg-white p-6">
+          <h2 className="font-heading text-base font-semibold text-brand-text mb-4">Order summary</h2>
+          <div className="h-px bg-gray-100 mb-4" />
+          <div className="space-y-3 text-sm">
+            <div className="flex justify-between">
+              <span className="text-brand-text-muted">Subtotal</span>
+              <span className="text-brand-text">{formatCurrency(order.subtotal)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-brand-text-muted">VAT (15%)</span>
+              <span className="text-brand-text">{formatCurrency(order.tax)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-brand-text-muted">Shipping</span>
+              <span className="text-brand-text">{formatCurrency(order.shipping_cost)}</span>
+            </div>
+          </div>
+          <div className="my-4 h-px bg-gray-100" />
+          <div className="flex justify-between">
+            <span className="font-semibold text-brand-text">Total</span>
+            <span className="font-heading text-xl font-bold text-brand-primary">{formatCurrency(order.total)}</span>
+          </div>
+          {order.payment_reference && (
+            <p className="mt-3 text-xs text-brand-text-muted">
+              Payment ref: <span className="font-mono text-brand-text">{order.payment_reference}</span>
+            </p>
           )}
           {canReorder && (
             <button
               onClick={handleReorder}
               disabled={reordering}
-              className="flex items-center gap-2 rounded-lg bg-brand-red px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-red-light disabled:opacity-60"
+              className="mt-6 flex w-full items-center justify-center gap-2 rounded-md bg-brand-primary py-3 text-sm font-semibold text-white transition hover:bg-brand-primary-dark disabled:opacity-60"
             >
-              {reordering ? (
-                <>
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                  Creating order…
-                </>
-              ) : (
-                'Reorder'
-              )}
+              {reordering ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4" />}
+              {reordering ? 'Creating reorder…' : 'Reorder this'}
             </button>
           )}
         </div>
-      </div>
-
-      {/* Order Items */}
-      <div className="mb-8 rounded-lg border border-brand-gray-light bg-white">
-        <div className="border-b border-brand-gray-light p-4">
-          <h2 className="text-lg font-semibold text-brand-black">Order Items</h2>
-        </div>
-        <div className="divide-y divide-gray-100">
-          {items.map((item) => {
-            const itemStatus = ORDER_ITEM_STATUS_LABELS[item.status] || {
-              label: item.status,
-              color: 'bg-gray-100 text-gray-700',
-            }
-            return (
-              <div key={item.id} className="flex items-center justify-between p-4">
-                <div className="flex items-center gap-4">
-                  <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-gray-100 text-xs text-brand-gray-medium">
-                    Preview
-                  </div>
-                  <div>
-                    <p className="font-medium text-brand-black">
-                      {(item.product_group as any)?.name || 'Product'}
-                    </p>
-                    <p className="text-sm text-brand-gray-medium">
-                      {(item.product_template as any)?.name || 'Template'} &middot; Qty:{' '}
-                      {item.quantity}
-                    </p>
-                    {item.selected_params && Object.keys(item.selected_params).length > 0 && (
-                      <div className="mt-1 flex flex-wrap gap-1">
-                        {Object.entries(item.selected_params).map(([k, v]) => (
-                          <span
-                            key={k}
-                            className="rounded bg-gray-100 px-1.5 py-0.5 text-xs text-brand-gray-medium"
-                          >
-                            {k}: {String(v)}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <div className="flex flex-col items-end gap-2">
-                  <p className="font-medium">{formatCurrency(item.line_total)}</p>
-                  <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${itemStatus.color}`}>
-                    {itemStatus.label}
-                  </span>
-                  {item.status === 'proof_sent' && (
-                    <Link
-                      href={`/account/orders/${order.id}/proof/${item.id}`}
-                      className="rounded bg-brand-red px-3 py-1 text-xs text-white hover:bg-brand-red-light"
-                    >
-                      Review Proof
-                    </Link>
-                  )}
-                </div>
-              </div>
-            )
-          })}
-        </div>
-      </div>
-
-      {/* Shipping address (if available) */}
-      {order.shipping_address && Object.keys(order.shipping_address).length > 0 && (
-        <div className="mb-8 rounded-lg border border-brand-gray-light bg-white p-6">
-          <h2 className="mb-3 text-lg font-semibold text-brand-black">Shipping Address</h2>
-          <div className="text-sm text-brand-gray-medium">
-            {order.shipping_address.full_name && (
-              <p className="font-medium text-brand-black">{order.shipping_address.full_name}</p>
-            )}
-            {order.shipping_address.address_line1 && <p>{order.shipping_address.address_line1}</p>}
-            {order.shipping_address.address_line2 && <p>{order.shipping_address.address_line2}</p>}
-            {(order.shipping_address.city || order.shipping_address.province) && (
-              <p>
-                {[order.shipping_address.city, order.shipping_address.province, order.shipping_address.postal_code]
-                  .filter(Boolean)
-                  .join(', ')}
-              </p>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Order Summary */}
-      <div className="rounded-lg border border-brand-gray-light bg-white p-6">
-        <h2 className="mb-4 text-lg font-semibold text-brand-black">Order Summary</h2>
-        <div className="space-y-2 text-sm">
-          <div className="flex justify-between">
-            <span className="text-brand-gray-medium">Subtotal</span>
-            <span>{formatCurrency(order.subtotal)}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-brand-gray-medium">VAT (15%)</span>
-            <span>{formatCurrency(order.tax)}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-brand-gray-medium">Shipping</span>
-            <span>{formatCurrency(order.shipping_cost)}</span>
-          </div>
-          <div className="border-t pt-2">
-            <div className="flex justify-between text-lg font-bold">
-              <span>Total</span>
-              <span>{formatCurrency(order.total)}</span>
-            </div>
-          </div>
-          {order.payment_reference && (
-            <div className="flex justify-between border-t pt-2 text-xs text-brand-gray-medium">
-              <span>Payment Reference</span>
-              <span className="font-mono">{order.payment_reference}</span>
-            </div>
-          )}
-        </div>
-
-        {/* Reorder button at bottom too */}
-        {canReorder && (
-          <button
-            onClick={handleReorder}
-            disabled={reordering}
-            className="mt-6 w-full rounded-lg bg-brand-red py-3 text-base font-semibold text-white transition hover:bg-brand-red-light disabled:opacity-60"
-          >
-            {reordering ? 'Creating reorder…' : 'Reorder This'}
-          </button>
-        )}
       </div>
     </div>
   )

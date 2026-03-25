@@ -1,54 +1,63 @@
 import type { Metadata } from 'next'
-import { SITE_NAME, SITE_DESCRIPTION } from '@/lib/utils/constants'
+import Link from 'next/link'
+import Image from 'next/image'
+import { SITE_NAME } from '@/lib/utils/constants'
 
 export const metadata: Metadata = {
-  robots: {
-    index: false,
-    follow: false,
-  },
+  robots: { index: false, follow: false },
 }
 
-export default function AuthLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen flex">
-      {/* Left branding panel — hidden on mobile */}
-      <div className="hidden lg:flex lg:w-1/2 bg-brand-red relative flex-col justify-between p-12 text-white overflow-hidden">
-        {/* Decorative background pattern */}
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-20 -left-10 w-72 h-72 rounded-full border-[3px] border-white" />
-          <div className="absolute bottom-32 right-10 w-56 h-56 rounded-full border-[3px] border-white" />
-          <div className="absolute top-1/2 left-1/3 w-40 h-40 rounded-full border-[3px] border-white" />
-        </div>
+      {/* Left branding panel */}
+      <div className="hidden lg:flex lg:w-5/12 bg-brand-secondary flex-col justify-between p-12 text-white">
+        {/* Top: logo */}
+        <Link href="/" className="inline-block">
+          <Image
+            src="/images/logo.png"
+            alt={SITE_NAME}
+            width={140}
+            height={36}
+            className="h-9 w-auto"
+          />
+        </Link>
 
-        {/* Top — Logo / Site name */}
-        <div className="relative z-10">
-          <h1 className="text-3xl font-bold tracking-tight">{SITE_NAME}</h1>
-        </div>
-
-        {/* Centre — Tagline */}
-        <div className="relative z-10 space-y-6">
-          <h2 className="text-4xl font-bold leading-tight">
-            Quality printing,
-            <br />
-            delivered fast.
+        {/* Centre: tagline */}
+        <div className="space-y-6">
+          <div className="h-1 w-10 bg-brand-primary" />
+          <h2 className="font-heading text-4xl font-bold leading-tight text-white">
+            Quality printing,<br />delivered fast.
           </h2>
-          <p className="text-lg text-white/80 max-w-md">
-            {SITE_DESCRIPTION}
+          <p className="text-lg text-white/60 max-w-sm">
+            South Africa&apos;s trusted online custom sticker and label printing platform.
           </p>
+
+          {/* Stats */}
+          <div className="flex items-center gap-0 divide-x divide-white/10 pt-4">
+            <div className="pr-8">
+              <p className="font-heading text-2xl font-bold text-white">5 000+</p>
+              <p className="text-xs text-white/50 mt-0.5">Happy clients</p>
+            </div>
+            <div className="px-8">
+              <p className="font-heading text-2xl font-bold text-white">24 hr</p>
+              <p className="text-xs text-white/50 mt-0.5">Turnaround</p>
+            </div>
+            <div className="pl-8">
+              <p className="font-heading text-2xl font-bold text-white">100%</p>
+              <p className="text-xs text-white/50 mt-0.5">Quality</p>
+            </div>
+          </div>
         </div>
 
-        {/* Bottom — Decoration / copyright */}
-        <div className="relative z-10 text-sm text-white/60">
+        {/* Bottom */}
+        <p className="text-xs text-white/30">
           &copy; {new Date().getFullYear()} {SITE_NAME}. All rights reserved.
-        </div>
+        </p>
       </div>
 
       {/* Right form panel */}
-      <div className="flex-1 flex items-center justify-center p-6 sm:p-8 lg:p-12 bg-white">
+      <div className="flex flex-1 items-center justify-center bg-white p-6 sm:p-10 lg:p-16">
         <div className="w-full max-w-md">{children}</div>
       </div>
     </div>

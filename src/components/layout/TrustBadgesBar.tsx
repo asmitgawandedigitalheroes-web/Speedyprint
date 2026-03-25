@@ -25,7 +25,7 @@ const BADGES = [
 
 export function TrustBadgesBar() {
   return (
-    <div className="border-y border-brand-gray-light bg-brand-bg">
+    <div className="border-y border-gray-200 bg-brand-bg">
       <div className="mx-auto max-w-7xl px-4 py-3 sm:px-6 lg:px-8">
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4 lg:gap-8">
           {BADGES.map((badge) => (

@@ -27,6 +27,8 @@ import {
   ZoomOut,
   Maximize,
   TableProperties,
+  PanelLeft,
+  PanelRight,
 } from 'lucide-react'
 import type { ProductTemplate } from '@/types'
 
@@ -62,6 +64,8 @@ export function TopBar({
   const canUndo = useEditorStore((s) => s.canUndo)
   const canRedo = useEditorStore((s) => s.canRedo)
   const zoom = useEditorStore((s) => s.zoom)
+  const toggleLeftPanel = useEditorStore((s) => s.toggleLeftPanel)
+  const toggleRightPanel = useEditorStore((s) => s.toggleRightPanel)
 
   const [showExport, setShowExport] = useState(false)
   const [showShortcuts, setShowShortcuts] = useState(false)
@@ -98,40 +102,52 @@ export function TopBar({
 
   return (
     <>
-      <div className="flex w-full items-center justify-between px-3">
-        {/* Left: template info */}
-        <div className="flex items-center gap-2">
+      <div className="flex w-full items-center justify-between gap-1 px-2 sm:px-3">
+        {/* Left: back + design name + mobile left-panel toggle */}
+        <div className="flex min-w-0 items-center gap-1 sm:gap-2">
+          {/* Mobile: open left tools panel */}
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={toggleLeftPanel}
+            title="Tools panel"
+            className="shrink-0 lg:hidden"
+          >
+            <PanelLeft className="size-4" />
+          </Button>
+
           <Button
             variant="ghost"
             size="icon-sm"
             onClick={() => router.back()}
             title="Back"
+            className="shrink-0"
           >
             <ArrowLeft className="size-4" />
           </Button>
 
-          <Separator orientation="vertical" className="h-6" />
+          <Separator orientation="vertical" className="hidden h-6 sm:block" />
 
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground">
+          <div className="flex min-w-0 items-center gap-1 sm:gap-2">
+            <span className="hidden text-xs text-muted-foreground sm:inline">
               {template.product_group?.name || 'Product'}
             </span>
-            <span className="text-xs text-muted-foreground">/</span>
+            <span className="hidden text-xs text-muted-foreground sm:inline">/</span>
             <Input
               value={designName}
               onChange={(e) => onSetDesignName(e.target.value)}
-              className="h-7 w-40 border-none bg-transparent text-sm font-medium shadow-none focus-visible:ring-1"
+              className="h-7 w-24 border-none bg-transparent text-sm font-medium shadow-none focus-visible:ring-1 sm:w-40"
               placeholder="Design name"
             />
           </div>
 
           {isDirty && (
-            <span className="text-xs text-amber-500">Unsaved</span>
+            <span className="hidden text-xs text-amber-500 sm:inline">Unsaved</span>
           )}
         </div>
 
-        {/* Center: zoom + undo/redo */}
-        <div className="flex items-center gap-1">
+        {/* Center: zoom + undo/redo (hidden on mobile) */}
+        <div className="hidden items-center gap-1 md:flex">
           <Button
             variant="ghost"
             size="icon-sm"
@@ -167,18 +183,19 @@ export function TopBar({
           </Button>
         </div>
 
-        {/* Right: actions */}
-        <div className="flex items-center gap-1.5">
+        {/* Right: actions + mobile right-panel toggle */}
+        <div className="flex shrink-0 items-center gap-1 sm:gap-1.5">
           <Button
             variant="ghost"
             size="icon-sm"
             onClick={() => setShowShortcuts(true)}
             title="Keyboard Shortcuts"
+            className="hidden md:flex"
           >
             <Keyboard className="size-4" />
           </Button>
 
-          <Separator orientation="vertical" className="h-5" />
+          <Separator orientation="vertical" className="hidden h-5 md:block" />
 
           {/* Batch CSV Upload — only for event products (race bibs, MTB boards, etc.) */}
           {template.product_group?.division === 'events' && (
@@ -188,12 +205,12 @@ export function TopBar({
                 size="sm"
                 onClick={() => router.push(`/designer/${template.id}/csv`)}
                 title="Batch CSV Variable Data Upload"
-                className="border-orange-200 text-orange-600 hover:bg-orange-50 hover:border-orange-400"
+                className="hidden border-orange-200 text-orange-600 hover:bg-orange-50 hover:border-orange-400 sm:flex"
               >
                 <TableProperties className="size-4" />
-                Batch CSV
+                <span className="hidden sm:inline">Batch CSV</span>
               </Button>
-              <Separator orientation="vertical" className="h-5" />
+              <Separator orientation="vertical" className="hidden h-5 sm:block" />
             </>
           )}
 
@@ -202,16 +219,17 @@ export function TopBar({
             size="sm"
             onClick={onSave}
             disabled={isSaving || !isDirty}
+            className="px-2 sm:px-3"
           >
             {isSaving ? (
               <Loader2 className="size-4 animate-spin" />
             ) : (
               <Save className="size-4" />
             )}
-            Save
+            <span className="hidden sm:inline">Save</span>
           </Button>
 
-          <Button variant="outline" size="sm" onClick={onPreview}>
+          <Button variant="outline" size="sm" onClick={onPreview} className="hidden sm:flex">
             <Eye className="size-4" />
             Preview
           </Button>
@@ -220,14 +238,26 @@ export function TopBar({
             variant="outline"
             size="sm"
             onClick={() => setShowExport(true)}
+            className="hidden sm:flex"
           >
             <Download className="size-4" />
             Export
           </Button>
 
-          <Button size="sm" onClick={onAddToCart}>
+          <Button size="sm" onClick={onAddToCart} className="px-2 sm:px-3">
             <ShoppingCart className="size-4" />
-            Add to Cart
+            <span className="hidden sm:inline">Add to Cart</span>
+          </Button>
+
+          {/* Mobile: open right properties panel */}
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={toggleRightPanel}
+            title="Properties panel"
+            className="shrink-0 lg:hidden"
+          >
+            <PanelRight className="size-4" />
           </Button>
         </div>
       </div>

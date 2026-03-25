@@ -77,7 +77,7 @@ export default function AdminBlogNewPage() {
       </Button>
 
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">New Blog Post</h1>
+        <h1 className="text-2xl font-bold text-brand-text">New Blog Post</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Create a new blog article
         </p>
@@ -128,7 +128,7 @@ export default function AdminBlogNewPage() {
                 id="author"
                 value={author}
                 onChange={(e) => setAuthor(e.target.value)}
-                placeholder="e.g., SpeedyPrint Team"
+                placeholder="e.g., Speedy Labels Team"
               />
             </div>
 

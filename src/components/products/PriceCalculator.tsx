@@ -61,9 +61,9 @@ export function PriceCalculator({
   if (loading) {
     return (
       <div className="space-y-3 animate-pulse">
-        <div className="h-4 w-32 rounded bg-brand-gray-light" />
-        <div className="h-6 w-40 rounded bg-brand-gray-light" />
-        <div className="h-4 w-24 rounded bg-brand-gray-light" />
+        <div className="h-4 w-32 rounded bg-gray-100" />
+        <div className="h-6 w-40 rounded bg-gray-100" />
+        <div className="h-4 w-24 rounded bg-gray-100" />
       </div>
     )
   }
@@ -78,7 +78,7 @@ export function PriceCalculator({
 
   if (!price) {
     return (
-      <div className="text-sm text-brand-gray-medium">
+      <div className="text-sm text-brand-text-muted">
         Select options to see pricing
       </div>
     )
@@ -95,12 +95,12 @@ export function PriceCalculator({
               key={i}
               className="flex items-center justify-between text-sm"
             >
-              <span className="text-brand-gray-medium">{item.label}</span>
+              <span className="text-brand-text-muted">{item.label}</span>
               <span
                 className={
                   item.amount < 0
                     ? 'text-green-600 font-medium'
-                    : 'text-brand-gray'
+                    : 'text-brand-text-muted'
                 }
               >
                 {item.amount < 0 ? '-' : ''}
@@ -114,31 +114,31 @@ export function PriceCalculator({
 
       {/* Unit price */}
       <div className="flex items-center justify-between">
-        <span className="text-sm text-brand-gray-medium">Unit price</span>
-        <span className="font-medium text-brand-black">
+        <span className="text-sm text-brand-text-muted">Unit price</span>
+        <span className="font-medium text-brand-text">
           {formatCurrency(price.unitPrice)}
         </span>
       </div>
 
       {/* Quantity */}
       <div className="flex items-center justify-between">
-        <span className="text-sm text-brand-gray-medium">Quantity</span>
-        <span className="font-medium text-brand-black">{quantity}</span>
+        <span className="text-sm text-brand-text-muted">Quantity</span>
+        <span className="font-medium text-brand-text">{quantity}</span>
       </div>
 
       <Separator />
 
       {/* Subtotal */}
       <div className="flex items-center justify-between">
-        <span className="text-base font-semibold text-brand-black">
+        <span className="text-base font-semibold text-brand-text">
           Subtotal
         </span>
-        <span className="text-xl font-bold text-brand-red">
+        <span className="text-xl font-bold text-brand-primary">
           {formatCurrency(price.subtotal)}
         </span>
       </div>
 
-      <p className="text-xs text-brand-gray-medium">
+      <p className="text-xs text-brand-text-muted">
         Excl. VAT. Shipping calculated at checkout.
       </p>
     </div>

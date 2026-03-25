@@ -181,7 +181,7 @@ export default function AdminUserDetailPage({
               : '?'}
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">
+            <h1 className="text-2xl font-bold text-brand-text">
               {profile.full_name ?? 'Unnamed User'}
             </h1>
             <p className="text-sm text-muted-foreground">

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Mail, Phone, MapPin, Send } from 'lucide-react'
+import { Mail, Phone, MapPin, Clock, Send, ArrowRight } from 'lucide-react'
 import { SITE_NAME } from '@/lib/utils/constants'
 
 export default function ContactPage() {
@@ -10,160 +10,151 @@ export default function ContactPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    // In production, this would send to an API route / email service
     setSubmitted(true)
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:px-8">
-      <h1 className="text-4xl font-bold text-brand-black">Contact Us</h1>
-      <p className="mt-4 text-lg text-brand-gray-medium">
-        Have a question or need a custom quote? Get in touch with our team.
-      </p>
-
-      <div className="mt-12 grid grid-cols-1 gap-12 lg:grid-cols-3">
-        {/* Contact Info */}
-        <div className="space-y-8">
-          <div className="flex gap-4">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-brand-red/10">
-              <Mail className="h-6 w-6 text-brand-red" />
-            </div>
-            <div>
-              <h3 className="font-semibold text-brand-black">Email</h3>
-              <p className="mt-1 text-brand-gray-medium">info@speedyprint.co.za</p>
-              <p className="text-brand-gray-medium">orders@speedyprint.co.za</p>
-            </div>
-          </div>
-
-          <div className="flex gap-4">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-brand-red/10">
-              <Phone className="h-6 w-6 text-brand-red" />
-            </div>
-            <div>
-              <h3 className="font-semibold text-brand-black">Phone</h3>
-              <p className="mt-1 text-brand-gray-medium">+27 (0) 21 123 4567</p>
-              <p className="text-sm text-brand-gray-medium">Mon-Fri, 8am - 5pm SAST</p>
-            </div>
-          </div>
-
-          <div className="flex gap-4">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-brand-red/10">
-              <MapPin className="h-6 w-6 text-brand-red" />
-            </div>
-            <div>
-              <h3 className="font-semibold text-brand-black">Address</h3>
-              <p className="mt-1 text-brand-gray-medium">
-                Cape Town, Western Cape<br />
-                South Africa
-              </p>
-            </div>
-          </div>
-
-          <div className="rounded-xl bg-brand-bg p-6">
-            <h3 className="font-semibold text-brand-black">Business Hours</h3>
-            <div className="mt-3 space-y-1 text-sm text-brand-gray-medium">
-              <div className="flex justify-between">
-                <span>Monday - Friday</span>
-                <span>8:00 AM - 5:00 PM</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Saturday</span>
-                <span>9:00 AM - 1:00 PM</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Sunday</span>
-                <span>Closed</span>
-              </div>
-            </div>
-          </div>
+    <div className="bg-white">
+      {/* Page header */}
+      <div className="border-b border-gray-100 bg-brand-bg">
+        <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+          <div className="h-1 w-8 bg-brand-primary mb-4" />
+          <h1 className="font-heading text-3xl font-bold text-brand-text">Contact us</h1>
+          <p className="mt-2 text-brand-text-muted">
+            Have a question or need a custom quote? Get in touch with our team.
+          </p>
         </div>
+      </div>
 
-        {/* Contact Form */}
-        <div className="lg:col-span-2">
-          {submitted ? (
-            <div className="rounded-xl border border-green-200 bg-green-50 p-8 text-center">
-              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
-                <Send className="h-8 w-8 text-green-600" />
-              </div>
-              <h2 className="mt-4 text-2xl font-bold text-brand-black">Message Sent!</h2>
-              <p className="mt-2 text-brand-gray-medium">
-                Thank you for contacting {SITE_NAME}. We&apos;ll get back to you within 24 hours.
-              </p>
-              <button
-                onClick={() => { setSubmitted(false); setForm({ name: '', email: '', subject: '', message: '' }) }}
-                className="mt-6 rounded-lg bg-brand-red px-6 py-2 text-white transition hover:bg-brand-red-light"
-              >
-                Send Another Message
-              </button>
-            </div>
-          ) : (
-            <form onSubmit={handleSubmit} className="space-y-6 rounded-xl border border-brand-gray-light p-8">
-              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+      <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 gap-12 lg:grid-cols-3">
+          {/* Contact info */}
+          <div className="space-y-8">
+            {[
+              {
+                icon: Mail,
+                title: 'Email',
+                lines: ['info@speedylabels.co.za', 'orders@speedylabels.co.za'],
+              },
+              {
+                icon: Phone,
+                title: 'Phone',
+                lines: ['+27 (0) 21 123 4567', 'Mon–Fri, 8am – 5pm SAST'],
+              },
+              {
+                icon: MapPin,
+                title: 'Address',
+                lines: ['Cape Town, Western Cape', 'South Africa'],
+              },
+            ].map((item) => (
+              <div key={item.title} className="flex gap-4">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-gray-100 bg-brand-bg">
+                  <item.icon className="h-5 w-5 text-brand-primary" />
+                </div>
                 <div>
-                  <label htmlFor="name" className="block text-sm font-medium text-brand-black">
-                    Full Name
-                  </label>
+                  <h3 className="font-semibold text-brand-text">{item.title}</h3>
+                  {item.lines.map((l, i) => (
+                    <p key={i} className="mt-0.5 text-sm text-brand-text-muted">{l}</p>
+                  ))}
+                </div>
+              </div>
+            ))}
+
+            {/* Hours */}
+            <div className="rounded-md border border-gray-100 bg-brand-bg p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <Clock className="h-4 w-4 text-brand-primary" />
+                <h3 className="font-semibold text-brand-text text-sm">Business hours</h3>
+              </div>
+              <div className="space-y-1.5 text-sm text-brand-text-muted">
+                <div className="flex justify-between">
+                  <span>Monday – Friday</span><span className="font-medium text-brand-text">08:00 – 17:00</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Saturday</span><span className="font-medium text-brand-text">09:00 – 13:00</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Sunday</span><span className="text-brand-text-muted">Closed</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Contact form */}
+          <div className="lg:col-span-2">
+            {submitted ? (
+              <div className="rounded-md border border-green-200 bg-green-50 p-10 text-center">
+                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-md bg-green-100">
+                  <Send className="h-6 w-6 text-green-600" />
+                </div>
+                <h2 className="mt-4 font-heading text-2xl font-bold text-brand-text">Message sent</h2>
+                <p className="mt-2 text-brand-text-muted">
+                  Thanks for reaching out. We&apos;ll get back to you within 24 hours.
+                </p>
+                <button
+                  onClick={() => { setSubmitted(false); setForm({ name: '', email: '', subject: '', message: '' }) }}
+                  className="mt-6 inline-flex items-center gap-2 rounded-md bg-brand-primary px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-primary-dark"
+                >
+                  Send another message
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={handleSubmit} className="space-y-5 rounded-md border border-gray-100 p-8">
+                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                  {[
+                    { id: 'name', label: 'Full name', type: 'text', placeholder: 'John Doe', key: 'name' },
+                    { id: 'email', label: 'Email address', type: 'email', placeholder: 'you@example.com', key: 'email' },
+                  ].map((field) => (
+                    <div key={field.id}>
+                      <label htmlFor={field.id} className="block text-sm font-medium text-brand-text mb-1.5">
+                        {field.label}
+                      </label>
+                      <input
+                        id={field.id}
+                        type={field.type}
+                        required
+                        placeholder={field.placeholder}
+                        value={form[field.key as keyof typeof form]}
+                        onChange={(e) => setForm((f) => ({ ...f, [field.key]: e.target.value }))}
+                        className="w-full rounded-md border border-gray-200 px-4 py-2.5 text-sm focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary"
+                      />
+                    </div>
+                  ))}
+                </div>
+
+                <div>
+                  <label htmlFor="subject" className="block text-sm font-medium text-brand-text mb-1.5">Subject</label>
                   <input
-                    id="name"
+                    id="subject"
                     type="text"
                     required
-                    value={form.name}
-                    onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                    className="mt-1 w-full rounded-lg border border-brand-gray-light px-4 py-2 focus:border-brand-red focus:outline-none focus:ring-1 focus:ring-brand-red"
+                    value={form.subject}
+                    onChange={(e) => setForm((f) => ({ ...f, subject: e.target.value }))}
+                    className="w-full rounded-md border border-gray-200 px-4 py-2.5 text-sm focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary"
                   />
                 </div>
+
                 <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-brand-black">
-                    Email Address
-                  </label>
-                  <input
-                    id="email"
-                    type="email"
+                  <label htmlFor="message" className="block text-sm font-medium text-brand-text mb-1.5">Message</label>
+                  <textarea
+                    id="message"
+                    rows={6}
                     required
-                    value={form.email}
-                    onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-                    className="mt-1 w-full rounded-lg border border-brand-gray-light px-4 py-2 focus:border-brand-red focus:outline-none focus:ring-1 focus:ring-brand-red"
+                    value={form.message}
+                    onChange={(e) => setForm((f) => ({ ...f, message: e.target.value }))}
+                    className="w-full rounded-md border border-gray-200 px-4 py-2.5 text-sm focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary"
                   />
                 </div>
-              </div>
 
-              <div>
-                <label htmlFor="subject" className="block text-sm font-medium text-brand-black">
-                  Subject
-                </label>
-                <input
-                  id="subject"
-                  type="text"
-                  required
-                  value={form.subject}
-                  onChange={(e) => setForm((f) => ({ ...f, subject: e.target.value }))}
-                  className="mt-1 w-full rounded-lg border border-brand-gray-light px-4 py-2 focus:border-brand-red focus:outline-none focus:ring-1 focus:ring-brand-red"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="message" className="block text-sm font-medium text-brand-black">
-                  Message
-                </label>
-                <textarea
-                  id="message"
-                  rows={6}
-                  required
-                  value={form.message}
-                  onChange={(e) => setForm((f) => ({ ...f, message: e.target.value }))}
-                  className="mt-1 w-full rounded-lg border border-brand-gray-light px-4 py-2 focus:border-brand-red focus:outline-none focus:ring-1 focus:ring-brand-red"
-                />
-              </div>
-
-              <button
-                type="submit"
-                className="flex items-center gap-2 rounded-lg bg-brand-red px-8 py-3 font-semibold text-white transition hover:bg-brand-red-light"
-              >
-                <Send className="h-5 w-5" />
-                Send Message
-              </button>
-            </form>
-          )}
+                <button
+                  type="submit"
+                  className="inline-flex items-center gap-2 rounded-md bg-brand-primary px-7 py-3 text-sm font-semibold text-white transition hover:bg-brand-primary-dark"
+                >
+                  Send message <ArrowRight className="h-4 w-4" />
+                </button>
+              </form>
+            )}
+          </div>
         </div>
       </div>
     </div>

@@ -6,7 +6,7 @@ import type { BlogPost } from '@/types'
 
 export const metadata: Metadata = {
   title: `Blog | ${SITE_NAME}`,
-  description: 'Tips, guides, and insights about custom stickers, labels, and printing from the SpeedyPrint team.',
+  description: 'Tips, guides, and insights about custom stickers, labels, and printing from the Speedy Labels team.',
 }
 
 export const dynamic = 'force-dynamic'
@@ -25,27 +25,27 @@ export default async function BlogPage() {
   const posts = await getBlogPosts()
 
   return (
-    <div className="bg-white">
-      {/* Hero */}
-      <section className="bg-brand-secondary py-16 text-white">
-        <div className="mx-auto max-w-7xl px-4 text-center sm:px-6 lg:px-8">
-          <h1 className="font-heading text-4xl font-bold">Blog</h1>
-          <p className="mx-auto mt-4 max-w-2xl text-lg text-white/80">
-            Tips, guides, and insights about custom stickers, labels, and
-            printing.
+    <div className="bg-brand-bg min-h-screen">
+      {/* Page header */}
+      <div className="bg-brand-secondary">
+        <div className="mx-auto max-w-7xl px-4 py-16 text-center sm:px-6 lg:px-8">
+          <h1 className="font-heading text-4xl font-bold text-white">Blog</h1>
+          <p className="mx-auto mt-4 max-w-2xl text-lg text-white/60">
+            Tips, guides, and insights about custom stickers, labels, and printing.
           </p>
         </div>
-      </section>
+      </div>
 
-      {/* Posts Grid */}
+      {/* Posts grid */}
       <section className="py-16">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           {posts.length === 0 ? (
-            <p className="text-center text-brand-text-muted">
-              No blog posts yet. Check back soon!
-            </p>
+            <div className="rounded-md border border-gray-100 bg-white p-16 text-center">
+              <div className="mx-auto mb-4 h-1 w-8 bg-brand-primary" />
+              <p className="text-brand-text-muted">No blog posts yet. Check back soon!</p>
+            </div>
           ) : (
-            <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
               {posts.map((post) => (
                 <BlogCard key={post.id} post={post} />
               ))}

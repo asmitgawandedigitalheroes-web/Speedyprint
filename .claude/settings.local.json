@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "Bash(npx tsc:*)",
-      "Bash(where node.exe)"
+      "Bash(where node.exe)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(xargs sed:*)"
     ]
   }
 }

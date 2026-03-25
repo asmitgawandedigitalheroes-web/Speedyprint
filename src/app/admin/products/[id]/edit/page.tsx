@@ -425,7 +425,7 @@ export default function AdminProductEditPage({
       </Button>
 
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Edit Product</h1>
+        <h1 className="text-2xl font-bold text-brand-text">Edit Product</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Update product details, templates, and pricing rules
         </p>
@@ -738,7 +738,7 @@ export default function AdminProductEditPage({
 
                 {/* Adjustable Dimensions */}
                 <div className="space-y-2 rounded-lg border border-dashed border-gray-300 p-3">
-                  <p className="text-xs font-semibold text-brand-gray-medium uppercase tracking-wider">
+                  <p className="text-xs font-semibold text-brand-text-muted uppercase tracking-wider">
                     Adjustable Dimensions (optional)
                   </p>
                   <p className="text-[10px] text-muted-foreground">
@@ -786,7 +786,7 @@ export default function AdminProductEditPage({
 
                 {/* Sponsor Zones */}
                 <div className="space-y-2 rounded-lg border border-dashed border-gray-300 p-3">
-                  <p className="text-xs font-semibold text-brand-gray-medium uppercase tracking-wider">
+                  <p className="text-xs font-semibold text-brand-text-muted uppercase tracking-wider">
                     Sponsor / Logo Zones (optional)
                   </p>
                   <p className="text-[10px] text-muted-foreground">

@@ -154,7 +154,7 @@ export default function AdminTemplateEditPage({
           </Link>
         </Button>
         <div className="flex-1">
-          <h1 className="text-2xl font-bold text-gray-900">Edit Template</h1>
+          <h1 className="text-2xl font-bold text-brand-text">Edit Template</h1>
           <p className="mt-0.5 text-sm text-muted-foreground">{name}</p>
         </div>
       </div>

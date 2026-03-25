@@ -8,7 +8,7 @@ export default function AdminOrdersPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Order Pipeline</h1>
+        <h1 className="text-2xl font-bold text-brand-text">Order Pipeline</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Full visibility from quote through to completion — list or kanban view
         </p>

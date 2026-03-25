@@ -127,12 +127,12 @@ export default async function ProductPage({ params }: ProductPageProps) {
         ]}
       />
       {/* Breadcrumb */}
-      <nav aria-label="Breadcrumb" className="mb-8 text-sm text-brand-gray-medium">
-        <a href="/products" className="hover:text-brand-red transition-colors">
+      <nav aria-label="Breadcrumb" className="mb-8 text-sm text-brand-text-muted">
+        <a href="/products" className="hover:text-brand-primary transition-colors">
           Products
         </a>
         <span className="mx-2">/</span>
-        <span className="text-brand-black">{typedProduct.name}</span>
+        <span className="text-brand-text">{typedProduct.name}</span>
       </nav>
 
       {/* Product header */}
@@ -142,11 +142,11 @@ export default async function ProductPage({ params }: ProductPageProps) {
             {division.name}
           </Badge>
         )}
-        <h1 className="text-3xl font-bold text-brand-black">
+        <h1 className="font-heading text-3xl font-bold text-brand-text">
           {typedProduct.name}
         </h1>
         {typedProduct.description && (
-          <p className="mt-3 text-brand-gray-medium leading-relaxed">
+          <p className="mt-3 text-brand-text-muted leading-relaxed">
             {typedProduct.description}
           </p>
         )}

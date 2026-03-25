@@ -30,47 +30,47 @@ export default async function TemplatesPage() {
   const templates = await getTemplates()
 
   return (
-    <div className="bg-white">
-      {/* Hero */}
-      <section className="bg-brand-secondary py-16 text-white">
-        <div className="mx-auto max-w-7xl px-4 text-center sm:px-6 lg:px-8">
-          <h1 className="font-heading text-4xl font-bold">Design Templates</h1>
-          <p className="mx-auto mt-4 max-w-2xl text-lg text-white/80">
-            Choose a template and customize it using our online design wizard.
-            No design software needed.
+    <div className="bg-brand-bg min-h-screen">
+      {/* Page header */}
+      <div className="bg-brand-secondary">
+        <div className="mx-auto max-w-7xl px-4 py-16 text-center sm:px-6 lg:px-8">
+          <h1 className="font-heading text-4xl font-bold text-white">Design templates</h1>
+          <p className="mx-auto mt-4 max-w-2xl text-white/60">
+            Choose a template and customize it using our online design wizard. No design software needed.
           </p>
         </div>
-      </section>
+      </div>
 
-      {/* Category Links */}
-      <section className="border-b bg-brand-bg py-4">
-        <div className="mx-auto flex max-w-7xl flex-wrap justify-center gap-3 px-4">
-          <Link
-            href="/templates"
-            className="rounded-full bg-brand-primary px-4 py-1.5 text-sm font-medium text-white"
-          >
-            All Templates
-          </Link>
-          {V2_DIVISIONS.map((div) => (
+      {/* Category filter */}
+      <div className="border-b border-gray-200 bg-white">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-wrap gap-1 py-3">
             <Link
-              key={div.key}
-              href={`/templates/${div.key}`}
-              className="rounded-full border px-4 py-1.5 text-sm font-medium text-brand-text hover:bg-white"
+              href="/templates"
+              className="rounded-md bg-brand-primary px-4 py-1.5 text-sm font-medium text-white"
             >
-              {div.name}
+              All templates
             </Link>
-          ))}
+            {V2_DIVISIONS.map((div) => (
+              <Link
+                key={div.key}
+                href={`/templates/${div.key}`}
+                className="rounded-md border border-gray-200 px-4 py-1.5 text-sm font-medium text-brand-text transition hover:border-brand-primary hover:text-brand-primary"
+              >
+                {div.name}
+              </Link>
+            ))}
+          </div>
         </div>
-      </section>
+      </div>
 
-      {/* Templates Grid */}
-      <section className="py-16">
+      {/* Templates grid */}
+      <section className="py-10">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           {templates.length === 0 ? (
-            <div className="py-20 text-center">
-              <p className="text-lg text-brand-text-muted">
-                No templates available yet.
-              </p>
+            <div className="rounded-md border border-gray-100 bg-white py-20 text-center">
+              <div className="mx-auto mb-4 h-1 w-8 bg-brand-primary" />
+              <p className="text-brand-text-muted">No templates available yet.</p>
               <p className="mt-2 text-sm text-brand-text-muted">
                 You can still{' '}
                 <Link href="/order-now" className="text-brand-primary hover:underline">
@@ -80,15 +80,14 @@ export default async function TemplatesPage() {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
               {templates.map((template) => (
                 <Link
                   key={template.id}
                   href={`/designer/${template.id}`}
-                  className="group overflow-hidden rounded-xl border bg-white shadow-sm transition-shadow hover:shadow-md"
+                  className="group overflow-hidden rounded-md border border-gray-100 bg-white transition hover:border-brand-primary/30 hover:shadow-md"
                 >
-                  {/* Thumbnail */}
-                  <div className="relative aspect-square overflow-hidden bg-gray-100">
+                  <div className="relative aspect-square overflow-hidden bg-brand-bg">
                     {template.product_group?.image_url ? (
                       <Image
                         src={template.product_group.image_url}
@@ -97,20 +96,18 @@ export default async function TemplatesPage() {
                         className="object-cover transition-transform group-hover:scale-105"
                       />
                     ) : (
-                      <div className="flex h-full items-center justify-center text-4xl">🎨</div>
+                      <div className="flex h-full items-center justify-center text-3xl text-brand-text-muted">🎨</div>
                     )}
                   </div>
-
-                  {/* Info */}
                   <div className="p-4">
-                    <h3 className="font-heading text-sm font-semibold text-brand-text group-hover:text-brand-primary">
+                    <h3 className="font-heading text-sm font-semibold text-brand-text group-hover:text-brand-primary transition">
                       {template.name}
                     </h3>
                     <p className="mt-1 text-xs text-brand-text-muted">
-                      {template.print_width_mm}x{template.print_height_mm}mm
+                      {template.print_width_mm}×{template.print_height_mm}mm
                     </p>
                     <p className="mt-2 text-xs font-medium text-brand-primary">
-                      Design Now →
+                      Design now →
                     </p>
                   </div>
                 </Link>

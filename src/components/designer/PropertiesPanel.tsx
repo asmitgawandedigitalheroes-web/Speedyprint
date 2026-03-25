@@ -39,10 +39,23 @@ import {
   FlipVertical2,
   Group,
   Ungroup,
+  Droplets,
+  Sun,
+  Palette,
+  Ruler,
+  Maximize2,
 } from 'lucide-react'
 import { useEditorStore } from '@/lib/designer/store'
 import { cn } from '@/lib/utils'
 import { GOOGLE_FONTS } from '@/lib/designer/fonts'
+
+// Recommended colors palette
+const RECOMMENDED_COLORS = [
+  '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
+  '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9',
+  '#F8B500', '#6C5CE7', '#A29BFE', '#FD79A8', '#FDCB6E',
+  '#E17055', '#00B894', '#00CEC9', '#0984E3', '#6C5CE7',
+]
 
 // --- Props ---
 
@@ -100,6 +113,9 @@ export function PropertiesPanel({
   const [shapeFill, setShapeFill] = useState('#3b82f6')
   const [shapeStroke, setShapeStroke] = useState('#1d4ed8')
   const [shapeStrokeWidth, setShapeStrokeWidth] = useState(2)
+
+  // Background color for canvas
+  const [backgroundColor, setBackgroundColor] = useState('#FFFFFF')
 
   const objType = getObjectType(selectedObject)
 
@@ -270,32 +286,70 @@ export function PropertiesPanel({
 
   // --- Render ---
 
-  if (!selectedObject) {
-    return (
-      <div
-        className={cn(
-          'flex w-[280px] shrink-0 flex-col items-center justify-center border-l bg-background p-6',
-          className
-        )}
-      >
-        <MousePointer2 className="mb-3 size-10 text-muted-foreground/40" />
-        <p className="text-center text-sm text-muted-foreground">
-          Select an element to edit its properties
-        </p>
-      </div>
-    )
-  }
-
   return (
     <div
       className={cn(
-        'flex w-[280px] shrink-0 flex-col overflow-y-auto border-l bg-background p-4',
+        'flex w-[300px] shrink-0 flex-col overflow-y-auto border-l bg-background',
         className
       )}
     >
-      <h3 className="mb-3 text-sm font-semibold capitalize text-foreground">
-        {objType} Properties
-      </h3>
+      {/* Preview Section */}
+      <div className="p-4 border-b">
+        <h3 className="text-sm font-semibold text-gray-900 mb-3">Preview</h3>
+        <div className="aspect-[4/3] bg-gray-100 rounded-lg border overflow-hidden flex items-center justify-center">
+          <div className="text-center text-gray-400 text-xs">
+            <svg className="w-8 h-8 mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            Design Preview
+          </div>
+        </div>
+      </div>
+
+      {/* Background Color Section */}
+      <div className="p-4 border-b">
+        <h3 className="text-sm font-semibold text-gray-900 mb-3">Background Color</h3>
+        <div className="flex items-center gap-3">
+          <div className="relative">
+            <input
+              type="color"
+              value={backgroundColor}
+              onChange={(e) => setBackgroundColor(e.target.value)}
+              className="w-10 h-10 rounded-lg border cursor-pointer"
+            />
+          </div>
+          <Input
+            type="text"
+            value={backgroundColor}
+            onChange={(e) => setBackgroundColor(e.target.value)}
+            className="flex-1 h-10"
+            placeholder="#FFFFFF"
+          />
+        </div>
+      </div>
+
+      {/* Recommended Colors */}
+      <div className="p-4 border-b">
+        <h3 className="text-sm font-semibold text-gray-900 mb-3">Recommended Colors</h3>
+        <div className="grid grid-cols-5 gap-2">
+          {RECOMMENDED_COLORS.map((color, index) => (
+            <button
+              key={index}
+              onClick={() => setBackgroundColor(color)}
+              className="w-8 h-8 rounded-full border border-gray-200 transition-transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-indigo-500"
+              style={{ backgroundColor: color }}
+              title={color}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Object Properties */}
+      {selectedObject ? (
+        <div className="p-4 flex-1">
+          <h3 className="text-sm font-semibold capitalize text-foreground mb-3">
+            {objType} Properties
+          </h3>
 
       {/* --- Position --- */}
       <div className="space-y-2">
@@ -332,7 +386,52 @@ export function PropertiesPanel({
 
       {/* --- Size --- */}
       <div className="mt-3 space-y-2">
-        <Label className="text-xs font-medium text-muted-foreground">Size</Label>
+        <div className="flex items-center justify-between">
+          <Label className="text-xs font-medium text-muted-foreground">Size</Label>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 px-2 text-xs"
+            onClick={() => {
+              // Reset to original size
+              updateObject('scaleX', 1)
+              updateObject('scaleY', 1)
+              setWidth(selectedObject.width * 1)
+              setHeight(selectedObject.height * 1)
+            }}
+          >
+            <Maximize2 className="h-3 w-3 mr-1" />
+            Reset
+          </Button>
+        </div>
+        
+        {/* Size Presets */}
+        <div className="grid grid-cols-4 gap-1">
+          {[
+            { w: 50, h: 50, label: '50×50' },
+            { w: 100, h: 100, label: '100×100' },
+            { w: 150, h: 100, label: '150×100' },
+            { w: 200, h: 100, label: '200×100' },
+          ].map((preset) => (
+            <Button
+              key={preset.label}
+              variant="outline"
+              size="sm"
+              className="h-6 text-xs"
+              onClick={() => {
+                setWidth(preset.w)
+                setHeight(preset.h)
+                const scaleX = preset.w / (selectedObject.width || 1)
+                const scaleY = preset.h / (selectedObject.height || 1)
+                updateObject('scaleX', scaleX)
+                updateObject('scaleY', scaleY)
+              }}
+            >
+              {preset.label}
+            </Button>
+          ))}
+        </div>
+
         <div className="grid grid-cols-2 gap-2">
           <div className="space-y-1">
             <Label className="text-xs">W</Label>
@@ -364,6 +463,20 @@ export function PropertiesPanel({
               min={1}
             />
           </div>
+        </div>
+
+        {/* Constrain Proportions */}
+        <div className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            id="constrain"
+            className="h-3 w-3"
+            defaultChecked={true}
+            onChange={(e) => {
+              // TODO: Implement constrain proportions logic
+            }}
+          />
+          <Label htmlFor="constrain" className="text-xs">Constrain proportions</Label>
         </div>
       </div>
 
@@ -401,6 +514,125 @@ export function PropertiesPanel({
           }}
           className="w-full accent-primary"
         />
+      </div>
+
+      {/* --- Shadow Effects --- */}
+      <div className="mt-3 space-y-2">
+        <div className="flex items-center justify-between">
+          <Label className="text-xs font-medium text-muted-foreground">Shadow</Label>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 px-2 text-xs"
+            onClick={() => {
+              // Remove shadow
+              updateObject('shadow', '')
+              updateObject('shadowBlur', 0)
+              updateObject('shadowOffsetX', 0)
+              updateObject('shadowOffsetY', 0)
+              updateObject('shadowColor', 'transparent')
+            }}
+          >
+            <Sun className="h-3 w-3 mr-1" />
+            Clear
+          </Button>
+        </div>
+
+        {/* Shadow Presets */}
+        <div className="grid grid-cols-3 gap-1">
+          {[
+            { blur: 5, x: 2, y: 2, color: 'rgba(0,0,0,0.2)', label: 'Soft' },
+            { blur: 10, x: 4, y: 4, color: 'rgba(0,0,0,0.3)', label: 'Medium' },
+            { blur: 15, x: 6, y: 6, color: 'rgba(0,0,0,0.4)', label: 'Hard' },
+          ].map((preset) => (
+            <Button
+              key={preset.label}
+              variant="outline"
+              size="sm"
+              className="h-6 text-xs"
+              onClick={() => {
+                updateObject('shadow', `${preset.color} ${preset.x}px ${preset.y}px ${preset.blur}px`)
+                updateObject('shadowBlur', preset.blur)
+                updateObject('shadowOffsetX', preset.x)
+                updateObject('shadowOffsetY', preset.y)
+                updateObject('shadowColor', preset.color)
+              }}
+            >
+              {preset.label}
+            </Button>
+          ))}
+        </div>
+
+        {/* Custom Shadow Controls */}
+        <div className="space-y-2">
+          <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-1">
+              <Label className="text-xs">X Offset</Label>
+              <Input
+                type="number"
+                defaultValue={0}
+                onChange={(e) => {
+                  const val = Number(e.target.value)
+                  updateObject('shadowOffsetX', val)
+                }}
+                className="h-7 text-xs"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Y Offset</Label>
+              <Input
+                type="number"
+                defaultValue={0}
+                onChange={(e) => {
+                  const val = Number(e.target.value)
+                  updateObject('shadowOffsetY', val)
+                }}
+                className="h-7 text-xs"
+              />
+            </div>
+          </div>
+          
+          <div className="space-y-1">
+            <Label className="text-xs">Blur</Label>
+            <Input
+              type="number"
+              defaultValue={0}
+              min={0}
+              max={50}
+              onChange={(e) => {
+                const val = Number(e.target.value)
+                updateObject('shadowBlur', val)
+              }}
+              className="h-7 text-xs"
+            />
+          </div>
+
+          <div className="space-y-1">
+            <Label className="text-xs">Color</Label>
+            <div className="flex items-center gap-2">
+              <input
+                type="color"
+                defaultValue="#000000"
+                onChange={(e) => {
+                  const hex = e.target.value
+                  const rgba = `${hex}88` // Add transparency
+                  updateObject('shadowColor', rgba)
+                }}
+                className="h-7 w-7 border border-border rounded"
+              />
+              <Input
+                type="text"
+                defaultValue="#000000"
+                onChange={(e) => {
+                  const hex = e.target.value
+                  const rgba = `${hex}88`
+                  updateObject('shadowColor', rgba)
+                }}
+                className="h-7 text-xs flex-1"
+              />
+            </div>
+          </div>
+        </div>
       </div>
 
       <Separator className="my-3" />
@@ -735,6 +967,14 @@ export function PropertiesPanel({
           Delete
         </Button>
       </div>
+    </div>
+  ) : (
+    /* Empty state - no object selected */
+    <div className="flex-1 flex flex-col items-center justify-center p-4 text-center">
+      <MousePointer2 className="h-12 w-12 text-gray-300 mb-3" />
+      <p className="text-sm text-gray-500">Select an element to edit its properties</p>
+    </div>
+  )}
     </div>
   )
 }

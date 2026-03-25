@@ -45,7 +45,7 @@ export function ProductCard({ product }: ProductCardProps) {
 
         <CardContent className="pt-4">
           <div className="mb-2 flex items-start justify-between gap-2">
-            <h3 className="text-lg font-semibold text-brand-black group-hover:text-brand-red transition-colors line-clamp-1">
+            <h3 className="text-lg font-semibold text-brand-text group-hover:text-brand-primary transition-colors line-clamp-1">
               {product.name}
             </h3>
             {division && (
@@ -55,7 +55,7 @@ export function ProductCard({ product }: ProductCardProps) {
             )}
           </div>
           {product.description && (
-            <p className="text-sm text-brand-gray-medium line-clamp-2">
+            <p className="text-sm text-brand-text-muted line-clamp-2">
               {product.description}
             </p>
           )}

@@ -56,11 +56,11 @@ const NAV_ITEMS: NavItem[] = [
       { href: '/blog', label: 'Blog' },
     ],
   },
-  { href: '/order-now', label: 'Order Now' },
   { href: '/products', label: 'Products' },
   { href: '/templates', label: 'Templates' },
   { href: '/faq', label: 'FAQ' },
   { href: '/contact', label: 'Contact' },
+  { href: '/order-now', label: 'Order Now' },
 ]
 
 function DesktopDropdown({ item }: { item: NavItem }) {
@@ -175,6 +175,14 @@ export function Header() {
           {NAV_ITEMS.map((item) =>
             item.children ? (
               <DesktopDropdown key={item.label} item={item} />
+            ) : item.href === '/order-now' ? (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="ml-1 rounded-md bg-brand-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-primary-dark"
+              >
+                {item.label}
+              </Link>
             ) : (
               <Link
                 key={item.href}

@@ -20,7 +20,7 @@ const poppins = Poppins({
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  themeColor: '#FF6B00',
+  themeColor: '#FF5C00',
 }
 
 export const metadata: Metadata = {
@@ -47,7 +47,7 @@ export const metadata: Metadata = {
     'award trophies',
     'South Africa printing',
     'online printing',
-    'SpeedyPrint',
+    'Speedy Labels',
   ],
   authors: [{ name: SITE_NAME, url: SITE_URL }],
   creator: SITE_NAME,

@@ -81,7 +81,7 @@ export default function AdminUsersPage() {
     <div className="space-y-6">
       {/* Page Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+        <h1 className="text-2xl font-bold text-brand-text flex items-center gap-2">
           <Users className="h-6 w-6" />
           Users
         </h1>

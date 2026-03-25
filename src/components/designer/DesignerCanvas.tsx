@@ -152,9 +152,6 @@ const DesignerCanvasInner = forwardRef<DesignerCanvasRef, DesignerCanvasProps>(
           // Configure zoom plugin
           const zoomPlugin = editor.getPlugin<ZoomPlugin>('ZoomPlugin')
           zoomPlugin.setZones(zones)
-          if (containerRef.current) {
-            zoomPlugin.setContainer(containerRef.current)
-          }
 
           // Resize canvas HTML element to fill the container so the viewport
           // transform can zoom/pan the design content within the full viewport.

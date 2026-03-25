@@ -86,7 +86,7 @@ export default function AdminProductNewPage() {
       </Button>
 
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Create Product</h1>
+        <h1 className="text-2xl font-bold text-brand-text">Create Product</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Add a new product group to your catalog
         </p>

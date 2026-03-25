@@ -1,6 +1,6 @@
 /**
- * ZoomPlugin — Zoom and pan controls for the canvas.
- * Ported from DesignerCanvas.tsx zoom/pan logic.
+ * ZoomPlugin — Centered zoom controls for the canvas (pan disabled).
+ * The design area stays centered in the viewport at all times.
  */
 
 import { Point, type Canvas as FabricCanvas } from 'fabric'
@@ -17,11 +17,7 @@ export class ZoomPlugin implements IPluginTempl {
   canvas: FabricCanvas
   editor: IEditor
 
-  private isPanning = false
-  private lastPanPoint: { x: number; y: number } | null = null
-  private spaceHeld = false
   private zones: CanvasZones | null = null
-  private containerEl: HTMLElement | null = null
 
   constructor(canvas: FabricCanvas, editor: IEditor) {
     this.canvas = canvas
@@ -29,15 +25,10 @@ export class ZoomPlugin implements IPluginTempl {
   }
 
   setup(): void {
-    // Mouse wheel zoom
-    this.canvas.on('mouse:wheel', this._onWheel as unknown as (e: unknown) => void)
+    // Mouse wheel zoom — always centered on the design, not the mouse pointer
+    this.canvas.on('mouse:wheel', this._onWheelCentered as unknown as (e: unknown) => void)
 
-    // Pan with middle mouse or space+drag
-    this.canvas.on('mouse:down', this._onMouseDown as unknown as (e: unknown) => void)
-    this.canvas.on('mouse:move', this._onMouseMove as unknown as (e: unknown) => void)
-    this.canvas.on('mouse:up', this._onMouseUp)
-
-    // Space key for pan mode
+    // Space key disabled — no pan mode
     window.addEventListener('keydown', this._onKeyDown)
     window.addEventListener('keyup', this._onKeyUp)
 
@@ -46,27 +37,19 @@ export class ZoomPlugin implements IPluginTempl {
   }
 
   destroy(): void {
-    this.canvas.off('mouse:wheel', this._onWheel as unknown as (e: unknown) => void)
-    this.canvas.off('mouse:down', this._onMouseDown as unknown as (e: unknown) => void)
-    this.canvas.off('mouse:move', this._onMouseMove as unknown as (e: unknown) => void)
-    this.canvas.off('mouse:up', this._onMouseUp)
+    this.canvas.off('mouse:wheel', this._onWheelCentered as unknown as (e: unknown) => void)
     this.canvas.off('mouse:move', this._onMouseTrack as unknown as (e: unknown) => void)
     window.removeEventListener('keydown', this._onKeyDown)
     window.removeEventListener('keyup', this._onKeyUp)
   }
 
   /**
-   * Set the zones reference (needed for fitToScreen calculations).
+   * Set the zones reference (needed for centered zoom calculations).
    */
   setZones(zones: CanvasZones): void {
     this.zones = zones
-  }
-
-  /**
-   * Set the container element for fitToScreen.
-   */
-  setContainer(el: HTMLElement): void {
-    this.containerEl = el
+    // Initial centering of the design
+    this.zoomToFit()
   }
 
   // --- Public API ---
@@ -130,7 +113,7 @@ export class ZoomPlugin implements IPluginTempl {
   }
 
   /**
-   * Reset pan (center the canvas).
+   * Reset to centered view.
    */
   resetPan(): void {
     this.zoomToFit()
@@ -168,7 +151,7 @@ export class ZoomPlugin implements IPluginTempl {
 
   // --- Event handlers ---
 
-  private _onWheel = (opt: { e: WheelEvent }): void => {
+  private _onWheelCentered = (opt: { e: WheelEvent }): void => {
     const evt = opt.e
     evt.preventDefault()
     evt.stopPropagation()
@@ -178,77 +161,9 @@ export class ZoomPlugin implements IPluginTempl {
     newZoom *= 0.999 ** delta
     newZoom = Math.min(Math.max(newZoom, MIN_ZOOM), MAX_ZOOM)
 
-    const point = new Point(evt.offsetX, evt.offsetY)
-    this.canvas.zoomToPoint(point, newZoom)
-
-    // Clamp pan so at least a portion of the design remains visible
-    this._clampViewport(newZoom)
+    // Always apply zoom centered on the design (not the mouse pointer)
+    this._applyZoomCentered(newZoom)
     this._updateZoom(newZoom)
-  }
-
-  /**
-   * Clamp viewport transform so the design area never goes fully off-screen.
-   * Leaves a 40px margin so the user can always grab it and pan back.
-   */
-  private _clampViewport(zoom: number): void {
-    if (!this.zones) return
-    const vpt = this.canvas.viewportTransform
-    if (!vpt) return
-
-    const vpW = this.canvas.width
-    const vpH = this.canvas.height
-    const designW = this.zones.bleedPx.width * zoom
-    const designH = this.zones.bleedPx.height * zoom
-    const MARGIN = 40
-
-    // vpt[4] = offsetX, vpt[5] = offsetY
-    // Max offset: design left edge can go at most (vpW - MARGIN) right
-    // Min offset: design right edge must stay at least MARGIN from left edge
-    vpt[4] = Math.min(vpt[4], vpW - MARGIN)
-    vpt[4] = Math.max(vpt[4], -(designW - MARGIN))
-    vpt[5] = Math.min(vpt[5], vpH - MARGIN)
-    vpt[5] = Math.max(vpt[5], -(designH - MARGIN))
-
-    this.canvas.requestRenderAll()
-  }
-
-  private _onMouseDown = (opt: { e: MouseEvent }): void => {
-    const evt = opt.e
-    if (evt.button === 1 || this.spaceHeld) {
-      this.isPanning = true
-      this.lastPanPoint = { x: evt.clientX, y: evt.clientY }
-      this.canvas.selection = false
-      this.canvas.defaultCursor = 'grab'
-      evt.preventDefault()
-      evt.stopPropagation()
-    }
-  }
-
-  private _onMouseMove = (opt: { e: MouseEvent }): void => {
-    if (!this.isPanning || !this.lastPanPoint) return
-
-    const evt = opt.e
-    const vpt = this.canvas.viewportTransform
-    if (!vpt) return
-
-    const dx = evt.clientX - this.lastPanPoint.x
-    const dy = evt.clientY - this.lastPanPoint.y
-
-    vpt[4] += dx
-    vpt[5] += dy
-
-    this.lastPanPoint = { x: evt.clientX, y: evt.clientY }
-    this.canvas.requestRenderAll()
-  }
-
-  private _onMouseUp = (): void => {
-    if (this.isPanning) {
-      this.isPanning = false
-      this.lastPanPoint = null
-      this.canvas.selection = true
-      this.canvas.defaultCursor = 'default'
-      this.canvas.setViewportTransform(this.canvas.viewportTransform!)
-    }
   }
 
   private _onMouseTrack = (opt: { e: MouseEvent }): void => {
@@ -258,10 +173,8 @@ export class ZoomPlugin implements IPluginTempl {
   }
 
   private _onKeyDown = (e: KeyboardEvent): void => {
-    if (e.code === 'Space' && !e.repeat) {
-      this.spaceHeld = true
-      this.canvas.defaultCursor = 'grab'
-
+    // Space key disabled - no pan mode
+    if (e.code === 'Space') {
       const target = e.target as HTMLElement
       if (
         target.tagName === 'INPUT' ||
@@ -275,11 +188,9 @@ export class ZoomPlugin implements IPluginTempl {
   }
 
   private _onKeyUp = (e: KeyboardEvent): void => {
+    // Space key disabled - no pan mode
     if (e.code === 'Space') {
-      this.spaceHeld = false
-      if (!this.isPanning) {
-        this.canvas.defaultCursor = 'default'
-      }
+      // No-op: space key doesn't enable panning
     }
   }
 

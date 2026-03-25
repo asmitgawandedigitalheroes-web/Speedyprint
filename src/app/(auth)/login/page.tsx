@@ -4,7 +4,7 @@ import { useState, type FormEvent, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { toast } from 'sonner'
-import { Loader2 } from 'lucide-react'
+import { Loader2, ArrowRight } from 'lucide-react'
 
 import { useAuth } from '@/hooks/useAuth'
 import { SITE_NAME } from '@/lib/utils/constants'
@@ -16,7 +16,6 @@ function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const redirect = searchParams.get('redirect')
-
   const { login, isLoading } = useAuth()
 
   const [email, setEmail] = useState('')
@@ -24,14 +23,8 @@ function LoginForm() {
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
-
     const { error } = await login(email, password)
-
-    if (error) {
-      toast.error(error)
-      return
-    }
-
+    if (error) { toast.error(error); return }
     toast.success('Signed in successfully')
     router.push(redirect || '/account')
   }
@@ -39,18 +32,15 @@ function LoginForm() {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="space-y-2">
-        <h1 className="text-2xl font-bold text-brand-black">
-          Welcome back
-        </h1>
-        <p className="text-brand-gray-medium">
-          Sign in to your {SITE_NAME} account
-        </p>
+      <div>
+        <div className="h-1 w-8 bg-brand-primary mb-4" />
+        <h1 className="font-heading text-2xl font-bold text-brand-text">Welcome back</h1>
+        <p className="mt-1 text-sm text-brand-text-muted">Sign in to your {SITE_NAME} account</p>
       </div>
 
       {/* Form */}
       <form onSubmit={handleSubmit} className="space-y-5">
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           <Label htmlFor="email">Email</Label>
           <Input
             id="email"
@@ -61,15 +51,16 @@ function LoginForm() {
             required
             autoComplete="email"
             disabled={isLoading}
+            className="focus:border-brand-primary focus:ring-brand-primary"
           />
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           <div className="flex items-center justify-between">
             <Label htmlFor="password">Password</Label>
             <Link
               href="/reset-password"
-              className="text-sm text-brand-red hover:text-brand-red-dark transition-colors"
+              className="text-xs text-brand-primary hover:text-brand-primary-dark transition-colors"
             >
               Forgot password?
             </Link>
@@ -83,33 +74,27 @@ function LoginForm() {
             required
             autoComplete="current-password"
             disabled={isLoading}
+            className="focus:border-brand-primary focus:ring-brand-primary"
           />
         </div>
 
         <Button
           type="submit"
-          className="w-full bg-brand-red hover:bg-brand-red-dark text-white"
+          className="w-full bg-brand-primary hover:bg-brand-primary-dark text-white gap-2"
           disabled={isLoading}
         >
           {isLoading ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Signing in...
-            </>
+            <><Loader2 className="h-4 w-4 animate-spin" /> Signing in...</>
           ) : (
-            'Sign In'
+            <><span>Sign in</span><ArrowRight className="h-4 w-4" /></>
           )}
         </Button>
       </form>
 
-      {/* Footer link */}
-      <p className="text-center text-sm text-brand-gray-medium">
+      <p className="text-center text-sm text-brand-text-muted">
         Don&apos;t have an account?{' '}
-        <Link
-          href="/register"
-          className="font-medium text-brand-red hover:text-brand-red-dark transition-colors"
-        >
-          Register
+        <Link href="/register" className="font-medium text-brand-primary hover:text-brand-primary-dark transition-colors">
+          Create one
         </Link>
       </p>
     </div>
@@ -118,7 +103,7 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<div className="flex items-center justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-brand-red" /></div>}>
+    <Suspense fallback={<div className="flex items-center justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-brand-primary" /></div>}>
       <LoginForm />
     </Suspense>
   )

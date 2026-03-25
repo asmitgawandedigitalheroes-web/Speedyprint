@@ -175,10 +175,10 @@ export function ProductConfigurator({
 
       {/* Template info */}
       {selectedTemplate && (
-        <div className="rounded-lg bg-brand-bg p-3 text-xs text-brand-gray-medium">
+        <div className="rounded-lg bg-brand-bg p-3 text-xs text-brand-text-muted">
           {dimensionConstraints ? (
             <>
-              Print size: <span className="font-medium text-brand-black">{customWidth || selectedTemplate.print_width_mm} × {customHeight || selectedTemplate.print_height_mm} mm</span> | {selectedTemplate.dpi} DPI | Bleed: {selectedTemplate.bleed_mm} mm
+              Print size: <span className="font-medium text-brand-text">{customWidth || selectedTemplate.print_width_mm} × {customHeight || selectedTemplate.print_height_mm} mm</span> | {selectedTemplate.dpi} DPI | Bleed: {selectedTemplate.bleed_mm} mm
             </>
           ) : (
             <>Print size: {selectedTemplate.print_width_mm} × {selectedTemplate.print_height_mm} mm | {selectedTemplate.dpi} DPI | Bleed: {selectedTemplate.bleed_mm} mm</>
@@ -191,7 +191,7 @@ export function ProductConfigurator({
         <>
           <Separator />
           <div className="space-y-4">
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-brand-gray-medium">
+            <h3 className="text-sm font-semibold uppercase tracking-wider text-brand-text-muted">
               Custom Size
             </h3>
             <div className="grid grid-cols-2 gap-4">
@@ -199,7 +199,7 @@ export function ProductConfigurator({
                 <div className="space-y-1.5">
                   <Label htmlFor="dim-width">
                     Width (mm)
-                    <span className="ml-1 text-xs font-normal text-brand-gray-medium">
+                    <span className="ml-1 text-xs font-normal text-brand-text-muted">
                       {dimensionConstraints.min_width_mm}–{dimensionConstraints.max_width_mm}
                     </span>
                   </Label>
@@ -220,7 +220,7 @@ export function ProductConfigurator({
                     step={dimensionConstraints.width_step_mm ?? 1}
                     value={customWidth || dimensionConstraints.min_width_mm}
                     onChange={(e) => setCustomWidth(e.target.value)}
-                    className="h-1.5 w-full cursor-pointer appearance-none rounded-lg bg-brand-gray-light accent-brand-red"
+                    className="h-1.5 w-full cursor-pointer appearance-none rounded-lg bg-gray-200 accent-brand-primary"
                   />
                 </div>
               )}
@@ -228,7 +228,7 @@ export function ProductConfigurator({
                 <div className="space-y-1.5">
                   <Label htmlFor="dim-height">
                     Height (mm)
-                    <span className="ml-1 text-xs font-normal text-brand-gray-medium">
+                    <span className="ml-1 text-xs font-normal text-brand-text-muted">
                       {dimensionConstraints.min_height_mm}–{dimensionConstraints.max_height_mm}
                     </span>
                   </Label>
@@ -249,14 +249,14 @@ export function ProductConfigurator({
                     step={dimensionConstraints.height_step_mm ?? 1}
                     value={customHeight || dimensionConstraints.min_height_mm}
                     onChange={(e) => setCustomHeight(e.target.value)}
-                    className="h-1.5 w-full cursor-pointer appearance-none rounded-lg bg-brand-gray-light accent-brand-red"
+                    className="h-1.5 w-full cursor-pointer appearance-none rounded-lg bg-gray-200 accent-brand-primary"
                   />
                 </div>
               )}
             </div>
             {customWidth && customHeight && (
-              <p className="text-xs text-brand-gray-medium">
-                Area: <span className="font-medium text-brand-black">{(Number(customWidth) * Number(customHeight)).toLocaleString()} mm²</span>
+              <p className="text-xs text-brand-text-muted">
+                Area: <span className="font-medium text-brand-text">{(Number(customWidth) * Number(customHeight)).toLocaleString()} mm²</span>
               </p>
             )}
           </div>
@@ -268,7 +268,7 @@ export function ProductConfigurator({
         <>
           <Separator />
           <div>
-            <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-brand-gray-medium">
+            <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-brand-text-muted">
               Options
             </h3>
             <ParameterSelector
@@ -286,10 +286,10 @@ export function ProductConfigurator({
           <Separator />
           <div className="space-y-4">
             <div>
-              <h3 className="text-sm font-semibold uppercase tracking-wider text-brand-gray-medium">
+              <h3 className="text-sm font-semibold uppercase tracking-wider text-brand-text-muted">
                 Sponsor / Logo Zones
               </h3>
-              <p className="mt-1 text-xs text-brand-gray-medium">
+              <p className="mt-1 text-xs text-brand-text-muted">
                 Enter a URL for each sponsor logo (PNG or SVG, transparent background recommended).
               </p>
             </div>
@@ -298,7 +298,7 @@ export function ProductConfigurator({
                 <Label htmlFor={`sponsor-${zone.key}`}>
                   {zone.label}
                   {zone.description && (
-                    <span className="ml-2 text-xs font-normal text-brand-gray-medium">
+                    <span className="ml-2 text-xs font-normal text-brand-text-muted">
                       {zone.description}
                     </span>
                   )}
@@ -377,7 +377,7 @@ export function ProductConfigurator({
           <>
             <Button
               asChild
-              className="flex-1 bg-brand-red text-white hover:bg-brand-red-light"
+              className="flex-1 bg-brand-primary text-white hover:bg-brand-primary-dark"
               size="lg"
             >
               <Link href={`/designer/${selectedTemplateId}`}>Design Now</Link>
@@ -393,16 +393,16 @@ export function ProductConfigurator({
 
       {/* ── CSV Variable Data (events division only) ──────────────────────── 
       {isEventsProduct && selectedTemplateId && (
-        <div className="rounded-lg border border-dashed border-brand-gray-light bg-gray-50 p-4">
+        <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 p-4">
           <div className="flex items-start gap-3">
             <div className="mt-0.5 text-2xl">📋</div>
             <div className="flex-1">
-              <p className="font-semibold text-brand-black text-sm">Variable Data (CSV)</p>
-              <p className="mt-0.5 text-xs text-brand-gray-medium">
+              <p className="font-semibold text-brand-text text-sm">Variable Data (CSV)</p>
+              <p className="mt-0.5 text-xs text-brand-text-muted">
                 Bulk-generate personalised race numbers, names, or event tags from a spreadsheet.
                 Upload a CSV with each row representing one item — up to 5,000 entries per batch.
               </p>
-              <Button asChild variant="outline" size="sm" className="mt-3 border-brand-red text-brand-red hover:bg-red-50">
+              <Button asChild variant="outline" size="sm" className="mt-3 border-brand-primary text-brand-primary hover:bg-brand-primary/5">
                 <Link href={`/designer/${selectedTemplateId}/csv`}>
                   Upload CSV →
                 </Link>

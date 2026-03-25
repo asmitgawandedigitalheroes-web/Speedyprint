@@ -22,6 +22,9 @@ import { ShapesPanel } from './panels/ShapesPanel'
 import { QRCodePanel } from './panels/QRCodePanel'
 import { BarcodePanel } from './panels/BarcodePanel'
 import { ImageFiltersPanel } from './panels/ImageFiltersPanel'
+import { TemplatesPanel } from './panels/TemplatesPanel'
+import { MaterialsPanel } from './panels/MaterialsPanel'
+import { AIPanel } from './panels/AIPanel'
 import { validateImageFile, smartUpload, ACCEPTED_IMAGE_EXTENSIONS } from '@/lib/upload'
 import type { DesignerCanvasRef } from '@/hooks/useDesigner'
 import {
@@ -36,11 +39,14 @@ import {
   CheckCircle2,
   RefreshCw,
   X,
+  Palette,
+  Layout,
+  Sparkles,
 } from 'lucide-react'
 
 // --- Tab definitions ---
 
-type TabId = 'text' | 'images' | 'shapes' | 'qrcode' | 'layers' | 'filters'
+type TabId = 'material' | 'template' | 'text' | 'add' | 'my' | 'ai'
 
 interface TabDef {
   id: TabId
@@ -49,12 +55,12 @@ interface TabDef {
 }
 
 const TABS: TabDef[] = [
+  { id: 'material', label: 'Material', icon: Palette },
+  { id: 'template', label: 'Template', icon: Layout },
   { id: 'text', label: 'Text', icon: Type },
-  { id: 'images', label: 'Images', icon: ImagePlus },
-  { id: 'shapes', label: 'Shapes', icon: Shapes },
-  { id: 'qrcode', label: 'QR/Barcode', icon: QrCode },
-  { id: 'filters', label: 'Filters', icon: ImagePlus },
-  { id: 'layers', label: 'Layers', icon: Layers },
+  { id: 'add', label: 'Add', icon: Shapes },
+  { id: 'my', label: 'My', icon: ImagePlus },
+  { id: 'ai', label: 'AI Creation', icon: Sparkles },
 ]
 
 // --- Upload state ---
@@ -87,7 +93,7 @@ interface ToolbarProps {
 // --- Component ---
 
 export function Toolbar({ canvasRef, className }: ToolbarProps) {
-  const [activeTab, setActiveTab] = useState<TabId>('text')
+  const [activeTab, setActiveTab] = useState<TabId>('material')
   const [uploadState, setUploadState] = useState<UploadState>(INITIAL_UPLOAD_STATE)
   const [isDragOver, setIsDragOver] = useState(false)
 
@@ -282,13 +288,22 @@ export function Toolbar({ canvasRef, className }: ToolbarProps) {
 
       {/* Panel content */}
       <div className="w-[228px] overflow-y-auto border-r bg-background p-3">
+        {/* Material tab */}
+        {activeTab === 'material' && <MaterialsPanel />}
+
+        {/* Template tab */}
+        {activeTab === 'template' && <TemplatesPanel />}
+
         {/* Text tab */}
         {activeTab === 'text' && <TextPanel />}
 
-        {/* Images tab */}
-        {activeTab === 'images' && (
+        {/* Add tab - Images, Shapes, QR, etc. */}
+        {activeTab === 'add' && <ShapesPanel />}
+
+        {/* My tab - User uploads */}
+        {activeTab === 'my' && (
           <div className="space-y-4">
-            <div className="text-sm font-semibold text-gray-700">Images</div>
+            <div className="text-sm font-semibold text-gray-700">My Uploads</div>
 
             {/* Hidden file inputs */}
             <input
@@ -430,38 +445,11 @@ export function Toolbar({ canvasRef, className }: ToolbarProps) {
               <FileJson className="h-4 w-4" />
               <span>Import SVG / JSON</span>
             </button>
-
-            {/* Image filters (shown when image selected) */}
-            <div className="border-t pt-3">
-              <ImageFiltersPanel />
-            </div>
           </div>
         )}
 
-        {/* Shapes tab */}
-        {activeTab === 'shapes' && <ShapesPanel />}
-
-        {/* QR/Barcode tab */}
-        {activeTab === 'qrcode' && (
-          <div className="space-y-6">
-            <QRCodePanel />
-            <div className="border-t pt-4">
-              <BarcodePanel />
-            </div>
-          </div>
-        )}
-
-        {/* Filters tab */}
-        {activeTab === 'filters' && <ImageFiltersPanel />}
-
-        {/* Layers tab */}
-        {activeTab === 'layers' && (
-          <LayersPanel
-            canvasRef={canvasRef}
-            selectedObject={selectedObject}
-            onClose={() => setActiveTab('text')}
-          />
-        )}
+        {/* AI Creation tab */}
+        {activeTab === 'ai' && <AIPanel />}
       </div>
     </div>
   )
