@@ -408,14 +408,16 @@ async function renderObject(
  * @param variables   Map of placeholder key → replacement value
  */
 export function mergeVariables(
-  canvasJSON: CanvasJSON,
+  canvasData: CanvasJSON | CanvasJSON[],
   variables: Record<string, string>
-): CanvasJSON {
-  const json = JSON.parse(JSON.stringify(canvasJSON)) as CanvasJSON
+): CanvasJSON | CanvasJSON[] {
+  if (Array.isArray(canvasData)) {
+    return canvasData.map(c => mergeVariables(c, variables) as CanvasJSON)
+  }
+
+  const json = JSON.parse(JSON.stringify(canvasData)) as CanvasJSON
 
   function processObject(obj: CanvasObject) {
-    // If rawText exists, it's the original template text (e.g. "Hello {{name}}")
-    // If not, we use obj.text as the source.
     const sourceText = obj.rawText || obj.text
     
     if (sourceText) {

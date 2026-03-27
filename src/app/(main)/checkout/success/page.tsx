@@ -1,11 +1,11 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { CheckCircle2, Package, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
 
-export default function SuccessPage() {
+function SuccessContent() {
   const searchParams = useSearchParams()
   const orderId = searchParams.get('order_id')
   const router = useRouter()
@@ -32,7 +32,7 @@ export default function SuccessPage() {
 
         <div className="space-y-3">
           <Link
-            href={`/account/orders/${orderId}`}
+            href={orderId ? `/account/orders/${orderId}` : '/account/orders'}
             className="flex w-full items-center justify-center gap-2 rounded-lg bg-brand-primary py-3 text-sm font-semibold text-white transition hover:bg-brand-primary-dark shadow-md hover:shadow-lg"
           >
             <Package className="h-4 w-4" /> View Order Status
@@ -46,5 +46,18 @@ export default function SuccessPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function SuccessPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-[70vh] flex-col items-center justify-center bg-brand-bg px-4 py-12">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-primary"></div>
+        <p className="mt-4 text-brand-text-muted italic">Confirming your payment...</p>
+      </div>
+    }>
+      <SuccessContent />
+    </Suspense>
   )
 }
