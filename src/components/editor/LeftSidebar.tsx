@@ -22,7 +22,6 @@ import LayersPanel from './LayersPanel'
 import BulkCreatePanel from './left-panels/BulkCreatePanel'
 import FinishPanel from './left-panels/FinishPanel'
 import { useEditorStore } from '@/lib/editor/useEditorStore'
-import { useIsMobile } from '@/hooks/useIsMobile'
 
 export type LeftTab = 'material' | 'template' | 'text' | 'add' | 'my' | 'ai' | 'layers' | 'bulk' | 'complete'
 
@@ -69,9 +68,9 @@ export default function LeftSidebar() {
   const utilTabs = TABS.filter((t) => t.group === 'utility')
 
   return (
-    <div className="flex h-full w-full">
-      {/* Icon rail - hidden on mobile as bottom nav handles tab selection */}
-      <div className="w-14 bg-ed-bg border-r border-ed-border hidden lg:flex flex-col items-center py-2 gap-0.5 flex-shrink-0">
+    <div className="flex h-full">
+      {/* Icon rail */}
+      <div className="w-14 bg-ed-bg border-r border-ed-border flex flex-col items-center py-2 gap-0.5 flex-shrink-0">
         {toolTabs.map((tab) => {
           const isActive = activeTab === tab.id
           return (
@@ -119,11 +118,11 @@ export default function LeftSidebar() {
       {/* Expandable content panel */}
       <div
         className={`bg-ed-surface border-r border-ed-border overflow-hidden transition-all duration-200 ease-out ${
-          activeTab ? 'w-full lg:w-72' : 'w-0'
+          activeTab ? 'w-72' : 'w-0'
         }`}
       >
         {activeTab && (
-          <div className="w-full lg:w-72 h-full">
+          <div className="w-72 h-full">
             {PANEL_MAP[activeTab]}
           </div>
         )}

@@ -91,13 +91,10 @@ function effectiveOpacity(color: string | undefined | null, objOpacity: number):
  * @param options     dpi (default 300), isProof, includeBleed
  */
 export async function generatePNG(
-  canvasData: CanvasJSON | CanvasJSON[],
+  canvasJSON: CanvasJSON,
   printSpecs: PrintSpecs,
   options: GeneratePNGOptions = {}
 ): Promise<Uint8Array> {
-  const canvasJSON = Array.isArray(canvasData) ? canvasData[0] : canvasData
-  if (!canvasJSON) throw new Error('No canvas data provided to generatePNG')
-
   const { print_width_mm, print_height_mm, bleed_mm } = printSpecs
   const { isProof = false, includeBleed = true, dpi = 300 } = options
 

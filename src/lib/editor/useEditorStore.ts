@@ -271,7 +271,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   setLeftPanel: (tab) => set({ leftPanel: tab }),
   showGrid: false,
   toggleGrid: () => set((s) => ({ showGrid: !s.showGrid })),
-  showPrintBoundaries: true,
+  showPrintBoundaries: false,
   togglePrintBoundaries: () => set((s) => ({ showPrintBoundaries: !s.showPrintBoundaries })),
 
   // Restoration flag

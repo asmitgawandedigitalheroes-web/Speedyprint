@@ -1,11 +1,11 @@
 'use client'
 
-import { Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
+import { Suspense } from 'react'
 import { XCircle, ArrowLeft, RefreshCw } from 'lucide-react'
 import Link from 'next/link'
 
-function CancelContent() {
+function CancelPageContent() {
   const searchParams = useSearchParams()
   const orderId = searchParams.get('order_id')
 
@@ -48,11 +48,14 @@ function CancelContent() {
 export default function CancelPage() {
   return (
     <Suspense fallback={
-      <div className="flex min-h-[70vh] flex-col items-center justify-center bg-brand-bg px-4 py-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-primary"></div>
+      <div className="flex min-h-[70vh] items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-red-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-brand-text-muted">Loading...</p>
+        </div>
       </div>
     }>
-      <CancelContent />
+      <CancelPageContent />
     </Suspense>
   )
 }

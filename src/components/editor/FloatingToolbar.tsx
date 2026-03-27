@@ -13,7 +13,6 @@ import {
   Type,
 } from 'lucide-react'
 import { useEditorStore } from '@/lib/editor/useEditorStore'
-import { useIsMobile } from '@/hooks/useIsMobile'
 import {
   duplicateSelected,
   deleteSelected,
@@ -82,12 +81,8 @@ export default function FloatingToolbar() {
     activeObject.type === 'i-text' ||
     activeObject.type === 'textbox'
 
-  const isMobile = useIsMobile()
-
-  const btnClass = `p-1.5 rounded-md hover:bg-gray-100 text-gray-600 hover:text-gray-900 transition-colors ${
-    isMobile ? 'p-2.5' : 'p-1.5'
-  }`
-  const iconSize = isMobile ? 20 : 16
+  const btnClass =
+    'p-1.5 rounded-md hover:bg-gray-100 text-gray-600 hover:text-gray-900 transition-colors'
 
   return (
     <div
@@ -100,28 +95,28 @@ export default function FloatingToolbar() {
       }}
     >
       <button onClick={() => duplicateSelected(canvas)} title="Duplicate" className={btnClass}>
-        <Copy size={iconSize} />
+        <Copy size={16} />
       </button>
       <button onClick={() => deleteSelected(canvas)} title="Delete (DEL)" className={btnClass}>
-        <Trash2 size={iconSize} />
+        <Trash2 size={16} />
       </button>
 
       <div className="w-px h-5 bg-gray-200 mx-0.5" />
 
       <button onClick={() => bringForward(canvas)} title="Bring Forward" className={btnClass}>
-        <Layers size={iconSize} />
+        <Layers size={16} />
       </button>
       <button onClick={() => sendBackward(canvas)} title="Send Backward" className={btnClass}>
-        <Layers2 size={iconSize} />
+        <Layers2 size={16} />
       </button>
 
       <div className="w-px h-5 bg-gray-200 mx-0.5" />
 
       <button onClick={() => flipHorizontal(canvas)} title="Flip Horizontal" className={btnClass}>
-        <FlipHorizontal2 size={iconSize} />
+        <FlipHorizontal2 size={16} />
       </button>
       <button onClick={() => flipVertical(canvas)} title="Flip Vertical" className={btnClass}>
-        <FlipVertical2 size={iconSize} />
+        <FlipVertical2 size={16} />
       </button>
 
       {isText && (
@@ -136,7 +131,7 @@ export default function FloatingToolbar() {
             title="Edit Text"
             className={btnClass}
           >
-            <Type size={iconSize} />
+            <Type size={16} />
           </button>
         </>
       )}
@@ -144,10 +139,10 @@ export default function FloatingToolbar() {
       <div className="w-px h-5 bg-gray-200 mx-0.5" />
 
       <button onClick={() => centerOnArtboard(canvas)} title="Center on Artboard" className={btnClass}>
-        <AlignCenter size={iconSize} />
+        <AlignCenter size={16} />
       </button>
       <button onClick={() => toggleLock(canvas)} title="Lock/Unlock" className={btnClass}>
-        <Lock size={iconSize} />
+        <Lock size={16} />
       </button>
     </div>
   )
