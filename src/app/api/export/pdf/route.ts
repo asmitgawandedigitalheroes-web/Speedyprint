@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
       includeBleed: specs.bleed_mm > 0,
     })
 
-    return new NextResponse(pdfBytes, {
+    return new NextResponse(Buffer.from(pdfBytes), {
       status: 200,
       headers: {
         'Content-Type': 'application/pdf',
