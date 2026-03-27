@@ -30,9 +30,14 @@ interface CanvasObject {
   radius?: number
   // Group children
   objects?: CanvasObject[]
+  isArtboard?: boolean
+  isGuide?: boolean
+  rawText?: string
+  originX?: string
+  originY?: string
 }
 
-interface CanvasJSON {
+export interface CanvasJSON {
   objects?: CanvasObject[]
   width?: number
   height?: number
@@ -92,7 +97,7 @@ function parseOpacity(color: string | undefined | null, objOpacity: number): num
  * Handles: text (Textbox / IText), Image, Rect, Circle, Line, Group.
  */
 export async function generatePDF(
-  canvasJSON: CanvasJSON,
+  canvasData: CanvasJSON | CanvasJSON[],
   printSpecs: PrintSpecs,
   options: GenerateOptions = {}
 ): Promise<Uint8Array> {
@@ -104,19 +109,8 @@ export async function generatePDF(
   const pageH_pt = (print_height_mm + bleedMM * 2) * MM_TO_POINTS
   const bleedOffset_pt = bleedMM * MM_TO_POINTS
 
-  const canvasW = canvasJSON.width ?? 800
-  const canvasH = canvasJSON.height ?? 600
-  const scaleX = (print_width_mm * MM_TO_POINTS) / canvasW
-  const scaleY = (print_height_mm * MM_TO_POINTS) / canvasH
-
   const pdfDoc = await PDFDocument.create()
-  const page = pdfDoc.addPage([pageW_pt, pageH_pt])
-
-  // Background fill
-  if (canvasJSON.background && canvasJSON.background !== 'transparent') {
-    const [r, g, b] = parseColor(canvasJSON.background)
-    page.drawRectangle({ x: 0, y: 0, width: pageW_pt, height: pageH_pt, color: rgb(r, g, b) })
-  }
+  const pages = Array.isArray(canvasData) ? canvasData : [canvasData]
 
   const fonts = {
     regular: await pdfDoc.embedFont(StandardFonts.Helvetica),
@@ -125,26 +119,115 @@ export async function generatePDF(
     boldItalic: await pdfDoc.embedFont(StandardFonts.HelveticaBoldOblique),
   }
 
-  for (const obj of canvasJSON.objects ?? []) {
-    if (obj.visible === false) continue
-    await renderObject(obj, pdfDoc, page, scaleX, scaleY, bleedOffset_pt, pageH_pt, fonts)
+  for (const canvasJSON of pages) {
+    const page = pdfDoc.addPage([pageW_pt, pageH_pt])
+
+    // ─── Find or calculate artboard ──────────────────────────────────────────
+  let artboard = canvasJSON.objects?.find(o => o.isArtboard) as CanvasObject & { originX?: string, originY?: string } | undefined
+  
+  let artW: number
+  let artH: number
+  let artL: number
+  let artT: number
+
+  if (artboard) {
+    artW = (artboard.width ?? 800) * (artboard.scaleX ?? 1)
+    artH = (artboard.height ?? 600) * (artboard.scaleY ?? 1)
+    artL = artboard.left ?? 0
+    artT = artboard.top ?? 0
+
+    if (artboard.originX === 'center') artL -= artW / 2
+    else if (artboard.originX === 'right') artL -= artW
+
+    if (artboard.originY === 'center') artT -= artH / 2
+    else if (artboard.originY === 'bottom') artT -= artH
+  } else {
+    // FALLBACK: Calculate bounding box of all visible objects
+    const visibleObjects = (canvasJSON.objects || []).filter(o => o.visible !== false && !o.isGuide)
+    if (visibleObjects.length > 0) {
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
+      
+      visibleObjects.forEach(obj => {
+        const sx = obj.scaleX ?? 1
+        const sy = obj.scaleY ?? 1
+        const w = (obj.width ?? 0) * sx
+        const h = (obj.height ?? 0) * sy
+        let l = obj.left ?? 0
+        let t = obj.top ?? 0
+        
+        // Account for object origins
+        if (obj.originX === 'center') l -= w / 2
+        else if (obj.originX === 'right') l -= w
+        if (obj.originY === 'center') t -= h / 2
+        else if (obj.originY === 'bottom') t -= h
+
+        minX = Math.min(minX, l)
+        minY = Math.min(minY, t)
+        maxX = Math.max(maxX, l + w)
+        maxY = Math.max(maxY, t + h)
+      })
+
+      artL = minX
+      artT = minY
+      artW = maxX - minX
+      artH = maxY - minY
+      
+      // If the resulting box is centered at 0,0, expand it symmetrically to prevent clipping
+      if (Math.abs(minX + maxX) < 1 && Math.abs(minY + maxY) < 1) {
+        const halfW = Math.max(Math.abs(minX), Math.abs(maxX))
+        const halfH = Math.max(Math.abs(minY), Math.abs(maxY))
+        artL = -halfW
+        artT = -halfH
+        artW = halfW * 2
+        artH = halfH * 2
+      }
+    } else {
+      artW = canvasJSON.width ?? 800
+      artH = canvasJSON.height ?? 600
+      artL = 0
+      artT = 0
+    }
   }
 
-  // Proof watermark
-  if (isProof) {
-    const wFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold)
-    const label = 'PROOF – NOT FOR PRODUCTION'
-    const wSize = pageW_pt * 0.06
-    const wWidth = wFont.widthOfTextAtSize(label, wSize)
-    page.drawText(label, {
-      x: (pageW_pt - wWidth) / 2,
-      y: pageH_pt / 2,
-      size: wSize,
-      font: wFont,
-      color: rgb(0.9, 0, 0),
-      opacity: 0.35,
-      rotate: degrees(45),
-    })
+    const scaleX = (print_width_mm * MM_TO_POINTS) / artW
+    const scaleY = (print_height_mm * MM_TO_POINTS) / artH
+
+    // Background fill
+    const bg = artboard?.fill || canvasJSON.background
+    if (bg && bg !== 'transparent') {
+      const [r, g, b] = parseColor(bg as string)
+      page.drawRectangle({ x: 0, y: 0, width: pageW_pt, height: pageH_pt, color: rgb(r, g, b) })
+    }
+
+    for (const obj of canvasJSON.objects ?? []) {
+      if (obj.visible === false || obj.isGuide || obj.isArtboard) continue
+      
+      // Make coordinates relative to artboard
+      const relativeObj = {
+        ...obj,
+        left: (obj.left ?? 0) - artL,
+        top: (obj.top ?? 0) - artT
+      }
+      
+      await renderObject(relativeObj, pdfDoc, page, scaleX, scaleY, bleedOffset_pt, pageH_pt, fonts)
+    }
+
+    // Proof watermark
+    if (isProof) {
+      const wFont = fonts.bold
+      const label = 'PROOF – NOT FOR PRODUCTION'
+      const wSize = pageW_pt * 0.06
+      const wWidth = wFont.widthOfTextAtSize(label, wSize)
+      page.drawText(label, {
+        x: (pageW_pt - wWidth) / 2,
+        y: pageH_pt / 2,
+        size: wSize,
+        font: wFont,
+        color: rgb(0.9, 0, 0),
+        opacity: 0.35,
+        rotate: degrees(45),
+      })
+    }
   }
 
   return pdfDoc.save()
@@ -153,7 +236,7 @@ export async function generatePDF(
 // ─── Object renderer ─────────────────────────────────────────────────────────
 
 async function renderObject(
-  obj: CanvasObject,
+  obj: CanvasObject & { originX?: string, originY?: string },
   pdfDoc: PDFDocument,
   page: ReturnType<PDFDocument['addPage']>,
   scaleX: number,
@@ -164,10 +247,21 @@ async function renderObject(
 ) {
   const sx = (obj.scaleX ?? 1) * scaleX
   const sy = (obj.scaleY ?? 1) * scaleY
-  const left = obj.left ?? 0
-  const top = obj.top ?? 0
+  
+  // Fabric.js logic for origins:
+  // If originX is 'center', left is the middle. If 'left', it's the edge.
   const objW = (obj.width ?? 0) * sx
   const objH = (obj.height ?? 0) * sy
+  
+  let left = obj.left ?? 0
+  let top = obj.top ?? 0
+
+  if (obj.originX === 'center') left -= (obj.width ?? 0) * (obj.scaleX ?? 1) / 2
+  else if (obj.originX === 'right') left -= (obj.width ?? 0) * (obj.scaleX ?? 1)
+
+  if (obj.originY === 'center') top -= (obj.height ?? 0) * (obj.scaleY ?? 1) / 2
+  else if (obj.originY === 'bottom') top -= (obj.height ?? 0) * (obj.scaleY ?? 1)
+
   const opacity = obj.opacity ?? 1
   const type = (obj.type ?? '').toLowerCase()
   // PDF y=0 is bottom; fabric y=0 is top → flip
@@ -320,8 +414,12 @@ export function mergeVariables(
   const json = JSON.parse(JSON.stringify(canvasJSON)) as CanvasJSON
 
   function processObject(obj: CanvasObject) {
-    if (obj.text) {
-      let t = obj.text
+    // If rawText exists, it's the original template text (e.g. "Hello {{name}}")
+    // If not, we use obj.text as the source.
+    const sourceText = obj.rawText || obj.text
+    
+    if (sourceText) {
+      let t = sourceText
       for (const [key, val] of Object.entries(variables)) {
         t = t.replaceAll(`{{${key}}}`, val)
       }

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
-import { generatePDF, mergeVariables } from '@/lib/pdf/generator'
+import { generatePDF, mergeVariables, type CanvasJSON } from '@/lib/pdf/generator'
 import type { ProductTemplate } from '@/types'
 
 const SAMPLE_ROWS = 5
@@ -55,15 +55,24 @@ export async function POST(
     print_height_mm: template.print_height_mm ?? 70,
     bleed_mm: template.bleed_mm ?? 3,
   }
-  const baseCanvas = template.template_json as Parameters<typeof generatePDF>[0]
 
   const fieldMap = Object.fromEntries(
     Object.entries(columnMapping).filter(([k]) => !k.startsWith('_'))
   ) as Record<string, string>
+  const designId = columnMapping._design_id as string | undefined
+
+  // Resolve base canvas: prefer design's canvas_json, fallback to template's template_json
+  let baseCanvas = template.template_json as CanvasJSON
+  if (designId) {
+    const { data: design } = await admin.from('designs').select('canvas_json').eq('id', designId).single()
+    if (design?.canvas_json) {
+      baseCanvas = design.canvas_json as CanvasJSON
+    }
+  }
 
   const rows = (job.parsed_data ?? []) as Record<string, string>[]
   const sampleRows = rows.slice(0, SAMPLE_ROWS)
-  const proofUrls: string[] = []
+  const mergedCanvases: any[] = []
   const errors: { row: number; error: string }[] = []
 
   for (let i = 0; i < sampleRows.length; i++) {
@@ -77,44 +86,52 @@ export async function POST(
         if (!(col in variables)) variables[col] = val
       }
 
-      const mergedCanvas = mergeVariables(baseCanvas, variables)
-      const pdfBytes = await generatePDF(mergedCanvas, printSpecs, { isProof: true, includeBleed: false })
-
-      const fileName = `sample_${id}_row${i + 1}.pdf`
-      const storagePath = `csv-proofs/${id}/${fileName}`
-
-      const { error: uploadErr } = await admin.storage
-        .from('proofs')
-        .upload(storagePath, pdfBytes, { contentType: 'application/pdf', upsert: true })
-
-      if (!uploadErr) {
-        const { data: { publicUrl } } = admin.storage.from('proofs').getPublicUrl(storagePath)
-        proofUrls.push(publicUrl)
-      } else {
-        errors.push({ row: i + 1, error: uploadErr.message })
-      }
+      const merged = mergeVariables(baseCanvas, variables)
+      mergedCanvases.push(merged)
     } catch (rowErr) {
       errors.push({ row: i + 1, error: String(rowErr) })
     }
+  }
+
+  if (mergedCanvases.length === 0) {
+    return NextResponse.json({ error: 'Failed to generate any sample canvases', details: errors }, { status: 500 })
+  }
+
+  let combinedProofUrl = ''
+  try {
+    const pdfBytes = await generatePDF(mergedCanvases, printSpecs, { isProof: true, includeBleed: false })
+    const fileName = `combined_proof_${id}.pdf`
+    const storagePath = `csv-proofs/${id}/${fileName}`
+
+    const { error: uploadErr } = await admin.storage
+      .from('proofs')
+      .upload(storagePath, pdfBytes, { contentType: 'application/pdf', upsert: true })
+
+    if (uploadErr) throw uploadErr
+
+    const { data: { publicUrl } } = admin.storage.from('proofs').getPublicUrl(storagePath)
+    combinedProofUrl = publicUrl
+  } catch (err: any) {
+    return NextResponse.json({ error: `PDF Generation/Upload failed: ${err.message}` }, { status: 500 })
   }
 
   // Mark job as having sample proof
   await admin
     .from('csv_jobs')
     .update({
-      status: 'validated', // keep validated — customer hasn't approved yet
+      status: 'validated',
       column_mapping: {
         ...columnMapping,
-        _sample_proof_urls: JSON.stringify(proofUrls),
+        _combined_proof_url: combinedProofUrl,
         _sample_proof_generated_at: new Date().toISOString(),
       },
     })
     .eq('id', id)
 
   return NextResponse.json({
-    sample_count: sampleRows.length,
+    sample_count: mergedCanvases.length,
     total_rows: rows.length,
-    proof_urls: proofUrls,
+    proof_url: combinedProofUrl,
     errors,
   })
 }

@@ -132,19 +132,25 @@ export const useAuth = create<AuthState>()(
       },
 
       refreshProfile: async () => {
-        const supabase = createClient()
-        const { data: { user } } = await supabase.auth.getUser()
+        set({ isLoading: true })
+        try {
+          const supabase = createClient()
+          const { data: { user } } = await supabase.auth.getUser()
 
-        if (user) {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', user.id)
-            .single()
+          if (user) {
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', user.id)
+              .single()
 
-          set({ user: profile, isAuthenticated: true })
-        } else {
-          set({ user: null, isAuthenticated: false })
+            set({ user: profile, isAuthenticated: true, isLoading: false })
+          } else {
+            set({ user: null, isAuthenticated: false, isLoading: false })
+          }
+        } catch (error) {
+          console.error('Error refreshing profile:', error)
+          set({ isLoading: false })
         }
       },
     }),

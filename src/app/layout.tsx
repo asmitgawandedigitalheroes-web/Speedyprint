@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import { Inter, Poppins } from 'next/font/google'
 import { Toaster } from '@/components/ui/sonner'
+import { AuthProvider } from '@/components/auth/AuthProvider'
 import { SITE_NAME, SITE_DESCRIPTION, SITE_URL } from '@/lib/utils/constants'
 import './globals.css'
 
@@ -20,7 +21,7 @@ const poppins = Poppins({
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  themeColor: '#FF5C00',
+  themeColor: '#E30613',
 }
 
 export const metadata: Metadata = {
@@ -107,8 +108,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${inter.variable} ${poppins.variable} font-sans`}>
-        {children}
-        <Toaster richColors closeButton position="top-right" />
+        <AuthProvider>
+          {children}
+          <Toaster richColors closeButton position="top-right" />
+        </AuthProvider>
       </body>
     </html>
   )

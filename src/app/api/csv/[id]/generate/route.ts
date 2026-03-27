@@ -41,12 +41,22 @@ async function processCSVJob(jobId: string): Promise<void> {
     return
   }
 
+  const designId = columnMapping._design_id as string | undefined
+
+  // Resolve base canvas: prefer design's canvas_json, fallback to template's template_json
+  let baseCanvas = template.template_json as Parameters<typeof generatePDF>[0]
+  if (designId) {
+    const { data: design } = await admin.from('designs').select('canvas_json').eq('id', designId).single()
+    if (design?.canvas_json) {
+      baseCanvas = design.canvas_json as any
+    }
+  }
+
   const printSpecs = {
     print_width_mm: template.print_width_mm ?? 100,
     print_height_mm: template.print_height_mm ?? 70,
     bleed_mm: template.bleed_mm ?? 3,
   }
-  const baseCanvas = template.template_json as Parameters<typeof generatePDF>[0]
 
   // Field map — strip internal _keys
   const fieldMap = Object.fromEntries(

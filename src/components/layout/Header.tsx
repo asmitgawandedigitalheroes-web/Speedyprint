@@ -135,11 +135,18 @@ function DesktopDropdown({ item }: { item: NavItem }) {
 export function Header() {
   const pathname = usePathname()
   const router = useRouter()
-  const { user, isAuthenticated, logout } = useAuth()
-  const itemCount = useCart((s) => s.getItemCount())
+  const { user, isAuthenticated, isLoading, logout } = useAuth()
+  const storeItemCount = useCart((s) => s.getItemCount())
+  const [itemCount, setItemCount] = useState(0)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+
+  // Sync cart count client-side only to avoid hydration mismatch
+  // (Zustand store is populated from localStorage after hydration)
+  useEffect(() => {
+    setItemCount(storeItemCount)
+  }, [storeItemCount])
 
   const isActive = (href: string) => {
     if (href === '/') return pathname === '/'
@@ -244,7 +251,9 @@ export function Header() {
           </Link>
 
           {/* Auth Section */}
-          {isAuthenticated && user ? (
+          {isLoading ? (
+            <div className="hidden h-9 w-32 animate-pulse rounded-md bg-gray-50 sm:flex" />
+          ) : isAuthenticated && user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="rounded-full">
@@ -399,7 +408,9 @@ export function Header() {
 
                 <div className="my-4 h-px bg-gray-200" />
 
-                {isAuthenticated && user ? (
+                {isLoading ? (
+                  <div className="mx-3 h-20 animate-pulse rounded-md bg-gray-50" />
+                ) : isAuthenticated && user ? (
                   <>
                     <div className="px-3 py-2">
                       <p className="text-sm font-medium">

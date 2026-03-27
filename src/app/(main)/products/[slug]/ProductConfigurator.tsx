@@ -1,7 +1,9 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
@@ -55,6 +57,9 @@ export function ProductConfigurator({
 
   // Sponsor zones state: key → logo URL
   const [sponsorValues, setSponsorValues] = useState<Record<string, string>>({})
+
+  const router = useRouter()
+  const [navigatingState, setNavigatingState] = useState<'design' | 'upload' | null>(null)
 
   const selectedTemplate = useMemo(
     () => templates.find((t) => t.id === selectedTemplateId),
@@ -376,41 +381,41 @@ export function ProductConfigurator({
         {selectedTemplateId && (
           <>
             <Button
-              asChild
+              onClick={() => {
+                setNavigatingState('design')
+                router.push(`/designer/${selectedTemplateId}`)
+              }}
+              disabled={navigatingState !== null}
               className="flex-1 bg-brand-primary text-white hover:bg-brand-primary-dark"
               size="lg"
             >
-              <Link href={`/designer/${selectedTemplateId}`}>Design Now</Link>
+              {navigatingState === 'design' ? (
+                <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Preparing Editor...</>
+              ) : (
+                'Design Now'
+              )}
             </Button>
-            <Button asChild variant="outline" className="flex-1" size="lg">
-              <Link href={`/designer/${selectedTemplateId}?mode=upload`}>
-                Upload Artwork
-              </Link>
+            <Button
+              variant="outline"
+              className="flex-1"
+              size="lg"
+              disabled={navigatingState !== null}
+              onClick={() => {
+                setNavigatingState('upload')
+                router.push(`/designer/${selectedTemplateId}?mode=upload`)
+              }}
+            >
+              {navigatingState === 'upload' ? (
+                <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Preparing Upload...</>
+              ) : (
+                'Upload Artwork'
+              )}
             </Button>
           </>
         )}
       </div>
 
-      {/* ── CSV Variable Data (events division only) ──────────────────────── 
-      {isEventsProduct && selectedTemplateId && (
-        <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 p-4">
-          <div className="flex items-start gap-3">
-            <div className="mt-0.5 text-2xl">📋</div>
-            <div className="flex-1">
-              <p className="font-semibold text-brand-text text-sm">Variable Data (CSV)</p>
-              <p className="mt-0.5 text-xs text-brand-text-muted">
-                Bulk-generate personalised race numbers, names, or event tags from a spreadsheet.
-                Upload a CSV with each row representing one item — up to 5,000 entries per batch.
-              </p>
-              <Button asChild variant="outline" size="sm" className="mt-3 border-brand-primary text-brand-primary hover:bg-brand-primary/5">
-                <Link href={`/designer/${selectedTemplateId}/csv`}>
-                  Upload CSV →
-                </Link>
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}*/}
+      {/* CSV batch upload is available in the editor toolbar (CSV button) */}
     </div>
   )
 }

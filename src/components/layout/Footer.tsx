@@ -36,9 +36,9 @@ export function Footer() {
   const whatsappUrl = whatsappNumber
     ? `https://wa.me/${whatsappNumber.replace(/[^0-9]/g, '')}`
     : WHATSAPP_URL
-  const facebookUrl = settings.social_facebook || 'https://facebook.com/speedyprint'
-  const instagramUrl = settings.social_instagram || 'https://instagram.com/speedyprint'
-  const linkedinUrl = settings.social_twitter || 'https://linkedin.com/company/speedyprint'
+  const facebookUrl = settings.social_facebook || 'https://facebook.com/speedylabels'
+  const instagramUrl = settings.social_instagram || 'https://instagram.com/speedylabels'
+  const linkedinUrl = settings.social_twitter || 'https://linkedin.com/company/speedylabels'
   const siteName = settings.site_name || SITE_NAME
 
   const SOCIAL_LINKS = [
@@ -130,7 +130,7 @@ export function Footer() {
             </h3>
             <ul className="space-y-3 text-sm text-white/70">
               <li className="flex items-start gap-2">
-                <Mail className="mt-0.5 h-4 w-4 shrink-0 text-brand-primary" />
+                <Mail className="mt-0.5 h-4 w-4 shrink-0 text-white" />
                 <a
                   href={`mailto:${companyEmail}`}
                   className="transition-colors hover:text-white"
@@ -139,7 +139,7 @@ export function Footer() {
                 </a>
               </li>
               <li className="flex items-start gap-2">
-                <Phone className="mt-0.5 h-4 w-4 shrink-0 text-brand-primary" />
+                <Phone className="mt-0.5 h-4 w-4 shrink-0 text-white" />
                 <a
                   href={`tel:${companyPhone.replace(/[^+0-9]/g, '')}`}
                   className="transition-colors hover:text-white"
@@ -148,11 +148,11 @@ export function Footer() {
                 </a>
               </li>
               <li className="flex items-start gap-2">
-                <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-brand-primary" />
+                <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-white" />
                 <span>{companyAddress}</span>
               </li>
               <li className="flex items-start gap-2">
-                <Clock className="mt-0.5 h-4 w-4 shrink-0 text-brand-primary" />
+                <Clock className="mt-0.5 h-4 w-4 shrink-0 text-white" />
                 <span>Mon - Fri: 08:00 - 17:00</span>
               </li>
             </ul>

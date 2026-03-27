@@ -186,7 +186,7 @@ export function QuickOrderForm({
                 className="mt-1"
               />
               {quantity >= 50 && (
-                <p className="mt-1 text-xs text-brand-accent">
+                <p className="mt-1 text-xs text-brand-primary">
                   Volume discount applied!
                 </p>
               )}
@@ -369,7 +369,7 @@ export function QuickOrderForm({
               {price.freeDelivery && (
                 <div className="mt-1 flex justify-between text-sm">
                   <span className="text-brand-text-muted">Delivery</span>
-                  <span className="font-medium text-brand-accent">FREE</span>
+                  <span className="font-medium text-brand-primary">FREE</span>
                 </div>
               )}
             </div>

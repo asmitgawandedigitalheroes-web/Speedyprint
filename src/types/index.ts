@@ -318,6 +318,7 @@ export interface CartItem {
   line_total: number
   selected_params: Record<string, unknown>
   design_id?: string
+  csv_job_id?: string
   thumbnail_url?: string
   artwork_url?: string
 }

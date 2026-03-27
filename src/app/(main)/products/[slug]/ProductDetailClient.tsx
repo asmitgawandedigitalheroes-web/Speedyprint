@@ -22,7 +22,6 @@ interface ProductDetailClientProps {
   pricingRules: PricingRule[]
   divisionName: string | null
   division: Division
-  gradient: string
 }
 
 export function ProductDetailClient({
@@ -31,7 +30,6 @@ export function ProductDetailClient({
   pricingRules,
   divisionName,
   division,
-  gradient,
 }: ProductDetailClientProps) {
   const [activeImageUrl, setActiveImageUrl] = useState<string | null>(
     templates[0]?.image_url || product.image_url
@@ -58,17 +56,19 @@ export function ProductDetailClient({
       {/* Left: Product image */}
       <div>
         <div
-          className={`relative flex h-80 items-center justify-center rounded-xl bg-gradient-to-br ${gradient} lg:h-[480px] overflow-hidden`}
+          className="relative flex h-80 items-center justify-center overflow-hidden rounded-xl bg-brand-bg lg:h-[480px]"
         >
           {activeImageUrl ? (
-            <Image
-              src={activeImageUrl}
-              alt={product.name}
-              fill
-              sizes="(max-width: 1024px) 100vw, 50vw"
-              className="object-cover rounded-xl"
-              priority
-            />
+            <div className="absolute inset-x-0 top-0 bottom-[-15%]">
+              <Image
+                src={activeImageUrl}
+                alt={product.name}
+                fill
+                sizes="(max-width: 1024px) 100vw, 50vw"
+                className="object-cover object-top"
+                priority
+              />
+            </div>
           ) : (
             <span className="text-8xl font-bold text-white/20 select-none">
               {product.name.charAt(0)}
@@ -79,8 +79,8 @@ export function ProductDetailClient({
           <div className="absolute bottom-0 left-0 right-0 z-10 bg-brand-secondary/90 px-4 py-2 backdrop-blur-sm">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-bold tracking-wider text-white uppercase">
-                  SPEEDY <span className="text-brand-primary">PRINT</span>
+                <p className="text-xs font-bold uppercase tracking-wider text-white">
+                  SPEEDY <span className="text-brand-primary">LABELS</span>
                 </p>
                 {divisionName && (
                   <p className="text-[10px] text-white/70">{divisionName}</p>
