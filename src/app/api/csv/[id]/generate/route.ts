@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse, after } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
-import { generatePDF, mergeVariables } from '@/lib/pdf/generator'
+import { generatePDF, mergeVariables, type CanvasJSON } from '@/lib/pdf/generator'
 import type { ProductTemplate } from '@/types'
 
 // ─── Background processing ────────────────────────────────────────────────────
@@ -44,7 +44,7 @@ async function processCSVJob(jobId: string): Promise<void> {
   const designId = columnMapping._design_id as string | undefined
 
   // Resolve base canvas: prefer design's canvas_json, fallback to template's template_json
-  let baseCanvas = template.template_json as Parameters<typeof generatePDF>[0]
+  let baseCanvas = (template.template_json as any) as CanvasJSON
   if (designId) {
     const { data: design } = await admin.from('designs').select('canvas_json').eq('id', designId).single()
     if (design?.canvas_json) {

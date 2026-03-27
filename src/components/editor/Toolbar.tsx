@@ -5,8 +5,8 @@ import {
   ArrowLeft,
   Undo2,
   Redo2,
-  ZoomIn as ZoomInIcon,
-  ZoomOut as ZoomOutIcon,
+  ZoomIn,
+  ZoomOut,
   Maximize2,
   Save,
   Eye,
@@ -25,7 +25,6 @@ import { useEditorStore } from '@/lib/editor/useEditorStore'
 import { exportJSON, exportPNG, exportSVG, loadJSON } from '@/lib/editor/fabricUtils'
 import { createClient } from '@/lib/supabase/client'
 import { useCart } from '@/hooks/useCart'
-import { useIsMobile } from '@/hooks/useIsMobile'
 import { CURRENCY_SYMBOL, VAT_RATE } from '@/lib/utils/constants'
 import type { ProductTemplate } from '@/types'
 
@@ -379,102 +378,172 @@ export default function Toolbar() {
   const iconBtn = 'p-1.5 text-ed-text-muted hover:text-ed-text hover:bg-ed-surface-hover rounded-md disabled:opacity-30 disabled:cursor-not-allowed transition-colors active:scale-95'
   const ghostBtn = 'flex items-center gap-1.5 px-3 py-1.5 border border-ed-border text-ed-text-muted text-xs font-medium rounded-md hover:text-ed-text hover:border-ed-border-light hover:bg-ed-surface-hover disabled:opacity-30 disabled:cursor-not-allowed transition-colors'
 
-  const isMobile = useIsMobile()
-
   return (
     <div className="h-11 bg-ed-surface border-b border-ed-border flex items-center px-3 gap-1 flex-shrink-0">
       {/* LEFT: Back + Breadcrumb + Name + Status */}
-      <div className="flex items-center gap-2 min-w-0 flex-1 lg:flex-none">
+      <div className="flex items-center gap-2 min-w-0">
         <button onClick={() => window.history.back()} title="Back" className={iconBtn}>
           <ArrowLeft size={16} />
         </button>
-        
-        {!isMobile && groupName && (
+
+        {groupName && (
           <>
             <span className="text-xs text-ed-text-dim whitespace-nowrap">{groupName}</span>
             <span className="text-xs text-ed-border-light">/</span>
           </>
         )}
 
-        <div className="flex flex-col lg:flex-row lg:items-center min-w-0">
+        {siblingTemplates.length > 1 && template ? (
+          <div ref={templatePickerRef} className="relative">
+            <button
+              onClick={() => setShowTemplatePicker((v) => !v)}
+              className="flex items-center gap-1 text-sm font-semibold text-ed-text hover:bg-ed-surface-hover rounded-md px-2 py-1 transition-colors"
+            >
+              {template.name}
+              <ChevronDown size={14} className="text-ed-text-dim" />
+            </button>
+            {showTemplatePicker && (
+              <div className="absolute top-full left-0 mt-1 bg-ed-surface border border-ed-border rounded-lg shadow-xl shadow-black/10 z-50 min-w-[200px] py-1">
+                <p className="px-3 py-1.5 text-[10px] font-semibold text-ed-text-dim uppercase tracking-wider">Template</p>
+                {siblingTemplates.map((t) => (
+                  <button
+                    key={t.id}
+                    onClick={() => handleTemplateSwitch(t)}
+                    className={`w-full text-left px-3 py-2 text-sm transition-colors ${
+                      t.id === template.id
+                        ? 'bg-ed-accent/15 text-ed-accent font-medium'
+                        : 'text-ed-text-muted hover:bg-ed-surface-hover hover:text-ed-text'
+                    }`}
+                  >
+                    {t.name}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : (
           <input
             type="text"
             value={designName}
             onChange={(e) => setDesignName(e.target.value)}
-            className="text-sm font-semibold text-ed-text bg-transparent border-none outline-none min-w-[80px] max-w-[120px] lg:max-w-[180px] hover:bg-ed-surface-hover focus:bg-ed-surface-hover px-2 py-0.5 rounded-md transition-all truncate"
-            placeholder="Untitled"
+            className="text-sm font-semibold text-ed-text bg-transparent border-none outline-none min-w-[100px] max-w-[180px] hover:bg-ed-surface-hover focus:bg-ed-surface-hover px-2 py-0.5 rounded-md transition-all"
+            placeholder="Untitled Design"
           />
-          
-          {/* Save status - always show but minimal on mobile */}
-          <span className="flex items-center gap-1 ml-1 scale-75 origin-left lg:scale-100">
-            <span className={`w-1.5 h-1.5 rounded-full ${
-              saveStatus === 'saving' || saving ? 'bg-blue-400 animate-pulse' :
-              saveStatus === 'saved' ? 'bg-emerald-400' : 'bg-amber-400'
-            }`} />
-            <span className="text-[10px] text-ed-text-dim hidden lg:inline">
-              {saving || saveStatus === 'saving' ? 'Saving...' : saveStatus === 'saved' ? 'Saved' : 'Unsaved'}
-            </span>
+        )}
+
+        {siblingTemplates.length > 1 && template && (
+          <input
+            type="text"
+            value={designName}
+            onChange={(e) => setDesignName(e.target.value)}
+            className="text-sm font-semibold text-ed-text bg-transparent border-none outline-none min-w-[100px] max-w-[140px] hover:bg-ed-surface-hover focus:bg-ed-surface-hover px-2 py-0.5 rounded-md transition-all"
+            placeholder="Untitled Design"
+          />
+        )}
+
+        {/* Save status */}
+        <span className="flex items-center gap-1.5 text-[11px] whitespace-nowrap">
+          <span className={`w-1.5 h-1.5 rounded-full ${
+            saveStatus === 'saving' || saving ? 'bg-blue-400 animate-pulse' :
+            saveStatus === 'saved' ? 'bg-emerald-400' : 'bg-amber-400'
+          }`} />
+          <span className="text-ed-text-dim">
+            {saving || saveStatus === 'saving' ? 'Saving...' : saveStatus === 'saved' ? 'Saved' : 'Unsaved'}
           </span>
-        </div>
+        </span>
       </div>
 
-      {/* CENTER: Undo/Redo + Zoom (Desktop Only, or hidden on mobile) */}
-      {!isMobile && (
-        <div className="flex-1 flex items-center justify-center gap-0.5">
-          <button onClick={undo} disabled={noCanvas} title="Undo (Ctrl+Z)" className={iconBtn}>
-            <Undo2 size={15} />
-          </button>
-          <button onClick={redo} disabled={noCanvas} title="Redo (Ctrl+Y)" className={iconBtn}>
-            <Redo2 size={15} />
-          </button>
+      {/* CENTER: Undo/Redo + Zoom */}
+      <div className="flex-1 flex items-center justify-center gap-0.5">
+        <button onClick={undo} disabled={noCanvas} title="Undo (Ctrl+Z)" className={iconBtn}>
+          <Undo2 size={15} />
+        </button>
+        <button onClick={redo} disabled={noCanvas} title="Redo (Ctrl+Y)" className={iconBtn}>
+          <Redo2 size={15} />
+        </button>
 
-          <div className="w-px h-4 bg-ed-border mx-2" />
+        <div className="w-px h-4 bg-ed-border mx-2" />
 
-          <div className="flex items-center bg-ed-bg rounded-md px-1">
-            <button onClick={zoomOut} disabled={noCanvas} title="Zoom Out" className={iconBtn}>
-              <ZoomOutIcon size={15} />
-            </button>
-            <span className="text-[11px] text-ed-text-muted font-mono min-w-[3rem] text-center tabular-nums select-none">
-              {Math.round(zoom * 100)}%
-            </span>
-            <button onClick={zoomIn} disabled={noCanvas} title="Zoom In" className={iconBtn}>
-              <ZoomInIcon size={15} />
-            </button>
-          </div>
-          <button onClick={zoomToFit} disabled={noCanvas} title="Fit to View" className={iconBtn}>
-            <Maximize2 size={15} />
+        <div className="flex items-center bg-ed-bg rounded-md px-1">
+          <button onClick={zoomOut} disabled={noCanvas} title="Zoom Out" className={iconBtn}>
+            <ZoomOut size={15} />
+          </button>
+          <span className="text-[11px] text-ed-text-muted font-mono min-w-[3rem] text-center tabular-nums select-none">
+            {Math.round(zoom * 100)}%
+          </span>
+          <button onClick={zoomIn} disabled={noCanvas} title="Zoom In" className={iconBtn}>
+            <ZoomIn size={15} />
           </button>
         </div>
-      )}
+        <button onClick={zoomToFit} disabled={noCanvas} title="Fit to View" className={iconBtn}>
+          <Maximize2 size={15} />
+        </button>
+      </div>
 
       {/* RIGHT: Actions */}
-      <div className="flex items-center gap-1">
-        {!isMobile && (
-          <>
-            <button onClick={handlePreview} disabled={noCanvas} title="Preview" className={iconBtn}>
-              <Eye size={16} />
-            </button>
-            <div className="w-px h-4 bg-ed-border mx-0.5" />
-            <button onClick={handleSave} disabled={noCanvas || saving} title="Save Design" className={ghostBtn}>
-              <Save size={14} />
-              {saving ? 'Saving...' : 'Save'}
-            </button>
-            <button onClick={handleExport} disabled={noCanvas} title="Export PNG" className={ghostBtn}>
-              <Download size={14} />
-              Export
-            </button>
-          </>
+      <div className="flex items-center gap-1.5">
+        <button onClick={handlePreview} disabled={noCanvas} title="Preview" className={iconBtn}>
+          <Eye size={16} />
+        </button>
+        <button
+          onClick={() => useEditorStore.getState().togglePrintBoundaries()}
+          disabled={noCanvas}
+          title="Toggle Print Boundaries"
+          className={iconBtn}
+          style={{ opacity: useEditorStore.getState().showPrintBoundaries ? 1 : 0.4 }}
+        >
+          <Maximize2 size={15} />
+        </button>
+
+        <div className="w-px h-4 bg-ed-border mx-0.5" />
+
+        {template && (
+          <button
+            onClick={() => window.open(`/designer/${template.id}/csv${designId ? `?design=${designId}` : ''}`, '_blank')}
+            disabled={noCanvas}
+            title="Batch CSV Upload"
+            className={ghostBtn}
+          >
+            <Table2 size={14} />
+            CSV
+          </button>
         )}
-        
-        {/* Shopping Cart - always visible */}
+        <button onClick={handleSave} disabled={noCanvas || saving} title="Save Design" className={ghostBtn}>
+          <Save size={14} />
+          {saving ? 'Saving...' : 'Save'}
+        </button>
+        <button onClick={handleExport} disabled={noCanvas} title="Export PNG" className={ghostBtn}>
+          <Download size={14} />
+          Export
+        </button>
+        <button onClick={handleExportPDF} disabled={noCanvas} title="Export PDF" className={ghostBtn}>
+          <Download size={14} />
+          PDF
+        </button>
+
+        {useAuth.getState().user?.role === 'admin' && (
+          <button 
+            onClick={handleSaveAsDefault} 
+            disabled={noCanvas || saving} 
+            title="Save as Default Template Design (Admin Only)" 
+            className={`${ghostBtn} bg-blue-50/50 border-blue-200 text-blue-600 hover:bg-blue-100/50`}
+          >
+            <LayoutTemplate size={14} />
+            Set Default
+          </button>
+        )}
+
+        <div className="w-px h-4 bg-ed-border mx-0.5" />
+
+        {/* Primary CTA — gold gradient */}
         <button
           onClick={handleOpenCartModal}
           disabled={noCanvas}
           title="Add to Cart"
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-brand-primary text-white text-xs font-bold rounded-md hover:bg-brand-primary-dark disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-md shadow-brand-primary/20 active:scale-95 whitespace-nowrap lg:px-4"
+          className="flex items-center gap-1.5 px-4 py-1.5 bg-gradient-to-r from-ed-accent to-ed-accent-hover text-white text-xs font-bold rounded-md hover:from-ed-accent-hover hover:to-ed-accent disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-lg shadow-ed-accent/20 hover:shadow-ed-accent/30 active:scale-95"
         >
           <ShoppingCart size={14} />
-          <span className={isMobile ? 'hidden sm:inline' : ''}>Add to Cart</span>
+          Add to Cart
         </button>
       </div>
 

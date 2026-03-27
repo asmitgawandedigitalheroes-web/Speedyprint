@@ -418,7 +418,7 @@ export default function Sidebar() {
   const selectClass = 'w-full editor-input appearance-none'
 
   return (
-    <div className="w-full lg:w-72 bg-ed-surface border-l border-ed-border lg:border-l flex flex-col h-full overflow-y-auto editor-scrollbar">
+    <div className="w-72 bg-ed-surface border-l border-ed-border flex flex-col h-full overflow-y-auto editor-scrollbar">
 
       {/* Preview */}
       <div className="px-3 pt-3 pb-2 border-b border-ed-border">

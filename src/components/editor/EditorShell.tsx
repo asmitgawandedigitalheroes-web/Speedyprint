@@ -9,22 +9,6 @@ import Toolbar from './Toolbar'
 import Sidebar from './Sidebar'
 import LeftSidebar from './LeftSidebar'
 import StatusBar from './StatusBar'
-import { useIsMobile } from '@/hooks/useIsMobile'
-import {
-  Sheet,
-  SheetContent,
-} from '@/components/ui/sheet'
-import {
-  Gem,
-  LayoutTemplate,
-  Type,
-  Shapes,
-  FolderOpen,
-  Layers,
-  Database,
-  CheckCircle2,
-  Settings2,
-} from 'lucide-react'
 import type { ProductTemplate, Design } from '@/types'
 
 const EditorCanvas = dynamic(() => import('./Canvas'), {
@@ -206,91 +190,15 @@ export default function EditorShell({ templateId, designId }: EditorShellProps) 
     )
   }
 
-  const isMobile = useIsMobile()
-  const leftPanel = useEditorStore((s) => s.leftPanel)
-  const setLeftPanel = useEditorStore((s) => s.setLeftPanel)
-  const activeObject = useEditorStore((s) => s.activeObject)
-  const [showProperties, setShowProperties] = useState(false)
-
-  // Auto-close mobile tools when tab is selected or object is tapped
-  const handleMobileTabClick = (tabId: string) => {
-    setLeftPanel(tabId as any)
-  }
-
-  // Open properties automatically on mobile when an object is selected
-  useEffect(() => {
-    if (isMobile && activeObject) {
-      setShowProperties(true)
-    }
-  }, [isMobile, activeObject])
-
   return (
     <div className="h-screen flex flex-col bg-ed-bg">
       <Toolbar />
-      <div className="flex-1 flex overflow-hidden relative">
-        {!isMobile && <LeftSidebar />}
+      <div className="flex-1 flex overflow-hidden">
+        <LeftSidebar />
         <EditorCanvas />
-        {!isMobile && <Sidebar />}
-
-        {/* Mobile: Tools Drawer */}
-        <Sheet open={isMobile && !!leftPanel} onOpenChange={(open) => !open && setLeftPanel(null)}>
-          <SheetContent side="left" className="w-[85vw] p-0 border-none bg-ed-bg overflow-hidden flex flex-row">
-            <LeftSidebar />
-          </SheetContent>
-        </Sheet>
-
-        {/* Mobile: Properties Drawer */}
-        <Sheet open={isMobile && showProperties && !!activeObject} onOpenChange={setShowProperties}>
-          <SheetContent side="bottom" className="h-[70vh] p-0 border-none rounded-t-3xl bg-ed-surface overflow-hidden">
-            <div className="w-12 h-1 w-12 bg-gray-300 rounded-full mx-auto my-3" />
-            <Sidebar />
-          </SheetContent>
-        </Sheet>
-
-        {/* Mobile Bottom Navigation Bar */}
-        {isMobile && (
-          <div className="absolute bottom-0 left-0 right-0 h-16 bg-ed-surface border-t border-ed-border px-4 flex items-center justify-around z-10 lg:hidden">
-            <button
-              onClick={() => handleMobileTabClick('material')}
-              className={`flex flex-col items-center gap-1 focus:outline-none ${leftPanel === 'material' ? 'text-ed-accent' : 'text-ed-text-dim'}`}
-            >
-              <Gem size={20} />
-              <span className="text-[10px] font-medium">Elements</span>
-            </button>
-            <button
-              onClick={() => handleMobileTabClick('text')}
-              className={`flex flex-col items-center gap-1 focus:outline-none ${leftPanel === 'text' ? 'text-ed-accent' : 'text-ed-text-dim'}`}
-            >
-              <Type size={20} />
-              <span className="text-[10px] font-medium">Text</span>
-            </button>
-            <button
-              onClick={() => handleMobileTabClick('add')}
-              className={`flex flex-col items-center gap-1 focus:outline-none ${leftPanel === 'add' ? 'text-ed-accent' : 'text-ed-text-dim'}`}
-            >
-              <Shapes size={20} />
-              <span className="text-[10px] font-medium">Shapes</span>
-            </button>
-            {activeObject && (
-              <button
-                onClick={() => setShowProperties(true)}
-                className={`flex flex-col items-center gap-1 focus:outline-none ${showProperties ? 'text-ed-accent' : 'text-ed-text-dim'}`}
-              >
-                <Settings2 size={20} />
-                <span className="text-[10px] font-medium">Details</span>
-              </button>
-            )}
-            <button
-              onClick={() => handleMobileTabClick('complete')}
-              className={`flex flex-col items-center gap-1 focus:outline-none ${leftPanel === 'complete' ? 'text-ed-accent' : 'text-ed-text-dim'}`}
-            >
-              <CheckCircle2 size={20} />
-              <span className="text-[10px] font-medium">Finish</span>
-            </button>
-          </div>
-        )}
+        <Sidebar />
       </div>
-      {!isMobile && <StatusBar />}
+      <StatusBar />
     </div>
   )
 }
