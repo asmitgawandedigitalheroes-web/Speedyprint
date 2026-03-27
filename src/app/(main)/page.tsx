@@ -608,7 +608,7 @@ export default function HomePage() {
       <TestimonialsCarousel />
 
       {/* ── CTA ────────────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden bg-red-400 py-20 lg:py-28">
+      <section className="relative overflow-hidden bg-brand-primary-dark py-20 lg:py-28">
 
         <div className="relative mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8">
           <p className="mb-4 text-[11px] font-bold uppercase tracking-widest text-yellow-400">
