@@ -30,7 +30,7 @@ export default async function TemplatesPage() {
   const templates = await getTemplates()
 
   return (
-    <div className="bg-brand-bg min-h-screen">
+    <div className="min-h-screen bg-white">
       {/* Page header */}
       <div className="bg-brand-secondary">
         <div className="mx-auto max-w-7xl px-4 py-16 text-center sm:px-6 lg:px-8">
@@ -80,7 +80,7 @@ export default async function TemplatesPage() {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {templates.map((template) => (
                 <Link
                   key={template.id}

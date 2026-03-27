@@ -1,6 +1,5 @@
 import { TopBar } from '@/components/layout/TopBar'
 import { Header } from '@/components/layout/Header'
-import { TrustBadgesBar } from '@/components/layout/TrustBadgesBar'
 import { Footer } from '@/components/layout/Footer'
 import { WhatsAppButton } from '@/components/layout/WhatsAppButton'
 import { OrganizationJsonLd, WebSiteJsonLd, LocalBusinessJsonLd } from '@/components/seo/JsonLd'
@@ -17,7 +16,6 @@ export default function MainLayout({
       <LocalBusinessJsonLd />
       <TopBar />
       <Header />
-      <TrustBadgesBar />
       <main className="flex-1">{children}</main>
       <Footer />
       <WhatsAppButton />

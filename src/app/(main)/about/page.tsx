@@ -5,23 +5,24 @@ import { Check } from 'lucide-react'
 export const metadata: Metadata = {
   title: `About ${SITE_NAME} | Custom Printing in South Africa`,
   description:
-    "Learn about Speedy Labels — South Africa's custom printing platform with five specialized divisions: labels, laser cutting, event numbers, stamps, and trophies.",
+    "Learn about Speedy Labels — South Africa's precision printing platform with six specialized divisions serving small businesses, makers, and event organisers.",
   alternates: {
     canonical: `${SITE_URL}/about`,
   },
   openGraph: {
     title: `About ${SITE_NAME}`,
-    description: 'South African printing business delivering custom solutions across five specialized divisions.',
+    description: 'Modern, precise, fast, and approachable — custom printing solutions across six specialized divisions.',
     url: `${SITE_URL}/about`,
   },
 }
 
 const DIVISIONS = [
-  { name: 'Speedy Labels', desc: 'Custom labels and stickers for any application' },
-  { name: 'Speedy Laser', desc: 'Precision laser-cut and engraved products' },
-  { name: 'Speedy Event Numbers', desc: 'Race bibs, event tags, and MTB boards' },
-  { name: 'Speedy Stamps', desc: 'Custom rubber stamps for businesses' },
-  { name: 'Speedy Trophies', desc: 'Branded coffee sleeves and trophies' },
+  { name: 'Speedy Labels', desc: 'Custom labels, stickers, and product packaging for any application' },
+  { name: 'Speedy Race Numbers', desc: 'Professional race bibs and event numbering systems' },
+  { name: 'Speedy MTB Boards', desc: 'Durable mountain bike number boards and cycling accessories' },
+  { name: 'Speedy Laser', desc: 'Precision laser-cut and engraved signage, plaques, and gifts' },
+  { name: 'Speedy Trophies', desc: 'Award trophies, medals, and recognition products' },
+  { name: 'Speedy Print', desc: 'General commercial printing, branded materials, and coffee cup sleeves' },
 ]
 
 const FEATURES = [
@@ -40,7 +41,7 @@ export default function AboutPage() {
         <div className="mx-auto max-w-4xl px-4 py-16 text-center sm:px-6 lg:px-8">
           <h1 className="font-heading text-4xl font-bold text-white">About {SITE_NAME}</h1>
           <p className="mx-auto mt-4 max-w-2xl text-white/60">
-            South African printing business delivering custom solutions across five specialized divisions.
+            Modern, precise, and approachable — delivering custom printing solutions across six specialized divisions.
           </p>
         </div>
       </div>
@@ -49,9 +50,10 @@ export default function AboutPage() {
         {/* Intro */}
         <div className="rounded-md border border-gray-100 bg-white p-8">
           <p className="text-brand-text-muted leading-relaxed">
-            Speedy Labels is a South African printing business delivering custom printing solutions
-            across five specialized divisions. From event race bibs to laser-cut signage, custom labels
-            to branded coffee cup sleeves, we handle it all with precision and speed.
+            Speedy Labels is a South African printing business built for small businesses, makers, and event organisers.
+            Clean, technical, and warm — we combine industrial-grade precision with a personal, approachable service.
+            From event race bibs to laser-cut signage, custom labels to branded coffee cup sleeves, we handle it all
+            with speed and care.
           </p>
         </div>
 
@@ -61,8 +63,8 @@ export default function AboutPage() {
             <div className="h-1 w-8 bg-brand-primary mb-4" />
             <h3 className="font-heading text-lg font-semibold text-brand-text">Our mission</h3>
             <p className="mt-3 text-sm text-brand-text-muted leading-relaxed">
-              To make custom printing accessible, affordable, and effortless for businesses
-              and event organizers across South Africa.
+              To make custom printing accessible, fast, and effortless for businesses
+              and event organisers across South Africa — with precision you can trust.
             </p>
           </div>
           <div className="rounded-md border border-gray-100 bg-white p-6">
@@ -105,3 +107,4 @@ export default function AboutPage() {
     </div>
   )
 }
+

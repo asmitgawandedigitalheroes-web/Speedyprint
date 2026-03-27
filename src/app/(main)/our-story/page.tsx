@@ -3,7 +3,7 @@ import { SITE_NAME } from '@/lib/utils/constants'
 
 export const metadata: Metadata = {
   title: `Our story | ${SITE_NAME}`,
-  description: 'Learn about Speedy Labels\'s journey from a small printing shop to South Africa\'s leading online custom sticker and label platform.',
+  description: 'Learn about Speedy Labels\'s journey from a small printing workshop to South Africa\'s trusted printing partner for small businesses and makers.',
 }
 
 const MILESTONES = [
@@ -16,9 +16,9 @@ const MILESTONES = [
 ]
 
 const VALUES = [
-  { title: 'Quality first', description: 'We use premium materials and state-of-the-art printing technology to ensure every sticker meets our exacting standards.' },
-  { title: 'Customer focus', description: 'Your satisfaction is our priority. We work closely with every client to deliver exactly what they need.' },
-  { title: 'Innovation', description: 'We continuously invest in new technology and techniques to stay at the forefront of the printing industry.' },
+  { title: 'Precision first', description: 'We use premium materials and state-of-the-art printing technology to ensure every label meets exacting standards — clean, technical, pixel-perfect.' },
+  { title: 'Fast and approachable', description: 'Speed without compromise. We work closely with every client — from makers to large businesses — to deliver exactly what they need, on time.' },
+  { title: 'Modern innovation', description: 'We continuously invest in new technology and processes to stay at the forefront of the printing industry — because your brand deserves the best.' },
 ]
 
 export default function OurStoryPage() {
@@ -29,8 +29,8 @@ export default function OurStoryPage() {
         <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8 text-center">
           <h1 className="font-heading text-4xl font-bold text-white">Our story</h1>
           <p className="mx-auto mt-4 max-w-2xl text-lg text-white/60">
-            From a small printing workshop to South Africa&apos;s leading online
-            custom sticker and label platform.
+            From a small printing workshop to South Africa&apos;s trusted
+            printing partner for small businesses, makers, and event organisers.
           </p>
         </div>
       </div>

@@ -164,7 +164,7 @@ export function HeroCalculator() {
             </div>
           </div>
           {price.freeDelivery && (
-            <p className="mt-2 text-center text-xs font-medium text-brand-accent">
+            <p className="mt-2 text-center text-xs font-medium text-brand-primary">
               Free delivery included!
             </p>
           )}

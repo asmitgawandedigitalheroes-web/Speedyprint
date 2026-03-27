@@ -100,16 +100,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
   const division = DIVISIONS.find((d) => d.key === typedProduct.division)
 
-  const divisionGradients: Record<string, string> = {
-    labels: 'from-red-500 to-orange-400',
-    laser: 'from-blue-600 to-cyan-400',
-    events: 'from-green-500 to-emerald-400',
-    stamps: 'from-purple-600 to-pink-400',
-    sleeves: 'from-amber-500 to-yellow-400',
-  }
-
-  const gradient =
-    divisionGradients[typedProduct.division] ?? 'from-gray-500 to-gray-400'
+  // Gradients removed for clean, flat UI
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
@@ -161,7 +152,6 @@ export default async function ProductPage({ params }: ProductPageProps) {
         pricingRules={pricingRules}
         divisionName={division?.name ?? null}
         division={typedProduct.division}
-        gradient={gradient}
       />
     </div>
   )

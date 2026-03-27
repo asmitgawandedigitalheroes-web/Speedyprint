@@ -244,7 +244,7 @@ export default function AdminSettingsPage() {
               onChange={(e) =>
                 updateSetting('social_facebook', e.target.value)
               }
-              placeholder="https://facebook.com/speedyprint"
+              placeholder="https://facebook.com/speedylabels"
               type="url"
             />
           </div>
@@ -256,7 +256,7 @@ export default function AdminSettingsPage() {
               onChange={(e) =>
                 updateSetting('social_instagram', e.target.value)
               }
-              placeholder="https://instagram.com/speedyprint"
+              placeholder="https://instagram.com/speedylabels"
               type="url"
             />
           </div>
@@ -268,7 +268,7 @@ export default function AdminSettingsPage() {
               onChange={(e) =>
                 updateSetting('social_twitter', e.target.value)
               }
-              placeholder="https://x.com/speedyprint"
+              placeholder="https://x.com/speedylabels"
               type="url"
             />
           </div>

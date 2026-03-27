@@ -1,29 +1,46 @@
 @import "tailwindcss";
 
 @theme {
-  /* Boutique Industrial Brand Colors */
-  --color-brand-primary: #FF5C00;
-  --color-brand-primary-light: #FF7A33;
-  --color-brand-primary-dark: #E04D00;
+  /* Brand Colors — Speedy Labels (Red primary + Teal accent) */
+  --color-brand-primary: #E30613;
+  --color-brand-primary-light: #FF2D3B;
+  --color-brand-primary-dark: #C00510;
   --color-brand-secondary: #1E293B;
   --color-brand-secondary-light: #334155;
   --color-brand-accent: #14B8A6;
+  --color-brand-accent-light: #2DD4BF;
   --color-brand-text: #1E293B;
   --color-brand-text-muted: #64748B;
   --color-brand-bg: #F8FAFC;
   --color-brand-surface: #FFFFFF;
+  --color-brand-panel: #F5F5F4;
+  --color-brand-separator: #E7E5E4;
 
   /* Legacy aliases (admin pages + backward compat) */
-  --color-brand-red: #FF5C00;
-  --color-brand-red-light: #FF7A33;
-  --color-brand-red-dark: #E04D00;
+  --color-brand-red: #E30613;
+  --color-brand-red-light: #FF2D3B;
+  --color-brand-red-dark: #C00510;
   --color-brand-black: #1E293B;
-  --color-brand-yellow: #FFC107;
-  --color-brand-yellow-light: #FFD54F;
+  --color-brand-yellow: #FFD700;
+  --color-brand-yellow-light: #FFE44D;
   --color-brand-white: #FFFFFF;
   --color-brand-gray: #1E293B;
   --color-brand-gray-light: #E2E8F0;
   --color-brand-gray-medium: #64748B;
+
+  /* Editor Light Theme */
+  --color-ed-bg: #F3F4F6;
+  --color-ed-surface: #FFFFFF;
+  --color-ed-surface-hover: #F9FAFB;
+  --color-ed-surface-active: #F3F4F6;
+  --color-ed-border: #E5E7EB;
+  --color-ed-border-light: #D1D5DB;
+  --color-ed-text: #1F2937;
+  --color-ed-text-muted: #4B5563;
+  --color-ed-text-dim: #9CA3AF;
+  --color-ed-accent: #E30613;
+  --color-ed-accent-hover: #FF2D3B;
+  --color-ed-canvas: #E5E7EB;
 
   --font-heading: 'Poppins', system-ui, sans-serif;
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
@@ -40,22 +57,76 @@
   --color-card-foreground: #1E293B;
   --color-popover: #FFFFFF;
   --color-popover-foreground: #1E293B;
-  --color-primary: #FF5C00;
+  --color-primary: #E30613;
   --color-primary-foreground: #FFFFFF;
   --color-secondary: #F8FAFC;
   --color-secondary-foreground: #1E293B;
   --color-muted: #F8FAFC;
   --color-muted-foreground: #64748B;
-  --color-accent: #F8FAFC;
+  --color-accent: #F5F5F4;
   --color-accent-foreground: #1E293B;
   --color-destructive: #EF4444;
-  --color-border: #E2E8F0;
-  --color-input: #E2E8F0;
-  --color-ring: #FF5C00;
+  --color-border: #E7E5E4;
+  --color-input: #E7E5E4;
+  --color-ring: #E30613;
 }
 
 @layer base {
   body {
     @apply bg-white text-brand-text antialiased;
   }
+}
+
+/* Marquee animation for homepage ticker */
+@keyframes marquee {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-25%); }
+}
+
+/* Editor-specific styles */
+.editor-canvas-shadow {
+  box-shadow: inset 0 0 9px 2px rgba(0, 0, 0, 0.12);
+}
+
+/* Light checkered transparency background */
+.editor-checkered-bg {
+  background-color: #E5E7EB;
+  background-image:
+    linear-gradient(45deg, rgba(0,0,0,0.04) 25%, transparent 25%),
+    linear-gradient(-45deg, rgba(0,0,0,0.04) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, rgba(0,0,0,0.04) 75%),
+    linear-gradient(-45deg, transparent 75%, rgba(0,0,0,0.04) 75%);
+  background-size: 20px 20px;
+  background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+}
+
+/* Light scrollbar for editor */
+.editor-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.editor-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.15);
+  border-radius: 2px;
+}
+.editor-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(0,0,0,0.25);
+}
+.editor-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.editor-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0,0,0,0.15) transparent;
+}
+
+/* Standardized dark editor input */
+.editor-input {
+  @apply bg-ed-bg border border-ed-border rounded-md px-2 py-1.5 text-xs text-ed-text;
+  @apply focus:outline-none focus:border-ed-accent/50 focus:ring-1 focus:ring-ed-accent/20;
+  @apply transition-colors;
+}
+
+/* Editor section title */
+.editor-section-title {
+  @apply text-[10px] font-semibold uppercase tracking-widest text-ed-text-dim mb-2;
 }

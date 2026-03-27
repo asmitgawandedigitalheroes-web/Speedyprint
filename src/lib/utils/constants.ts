@@ -7,11 +7,12 @@ export const CURRENCY = 'ZAR'
 export const CURRENCY_SYMBOL = 'R'
 
 export const DIVISIONS = [
-  { key: 'labels' as const, name: 'Speedy Labels', description: 'Custom labels and stickers', icon: 'Tag' },
-  { key: 'laser' as const, name: 'Speedy Laser', description: 'Laser-cut and engraved products', icon: 'Zap' },
-  { key: 'events' as const, name: 'Speedy Event Numbers', description: 'Race bibs, event numbers, tags', icon: 'Hash' },
-  { key: 'stamps' as const, name: 'Speedy Stamps', description: 'Custom rubber stamps', icon: 'Stamp' },
-  { key: 'sleeves' as const, name: 'Speedy Trophies', description: 'Coffee cup sleeves and trophies', icon: 'Trophy' },
+  { key: 'labels' as const, name: 'Speedy Labels', description: 'Custom labels, stickers, and product packaging', icon: 'Tag' },
+  { key: 'race-numbers' as const, name: 'Speedy Race Numbers', description: 'Professional race bibs and event numbering', icon: 'Hash' },
+  { key: 'mtb-boards' as const, name: 'Speedy MTB Boards', description: 'Mountain bike number boards and cycling accessories', icon: 'Bike' },
+  { key: 'laser' as const, name: 'Speedy Laser', description: 'Laser-cut and engraved signage and gifts', icon: 'Zap' },
+  { key: 'trophies' as const, name: 'Speedy Trophies', description: 'Award trophies, medals, and recognition products', icon: 'Trophy' },
+  { key: 'print' as const, name: 'Speedy Print', description: 'General commercial printing and branded materials', icon: 'Printer' },
 ]
 
 export const SA_PROVINCES = [
@@ -58,7 +59,7 @@ export const FLAT_SHIPPING_RATE = 85 // R85
 
 // V2 Sticker/Label Divisions
 export const V2_DIVISIONS = [
-  { key: 'custom-stickers' as const, name: 'Custom Stickers', description: 'High-quality custom stickers for any purpose', icon: 'Star', color: '#FF5C00' },
+  { key: 'custom-stickers' as const, name: 'Custom Stickers', description: 'High-quality custom stickers for any purpose', icon: 'Star', color: '#E30613' },
   { key: 'product-labels' as const, name: 'Product Labels', description: 'Professional labels for your products', icon: 'Tag', color: '#1E293B' },
   { key: 'vehicle-decals' as const, name: 'Vehicle & Fleet Decals', description: 'Durable decals for vehicles and fleets', icon: 'Truck', color: '#14B8A6' },
   { key: 'window-wall' as const, name: 'Window & Wall Graphics', description: 'Eye-catching window and wall graphics', icon: 'Layout', color: '#8B5CF6' },

@@ -1,39 +1,43 @@
-import type { Metadata } from 'next'
+'use client'
+
+import { useSearchParams } from 'next/navigation'
+import { XCircle, ArrowLeft, RefreshCw } from 'lucide-react'
 import Link from 'next/link'
-import { XCircle, ArrowRight } from 'lucide-react'
-import { SITE_NAME } from '@/lib/utils/constants'
 
-export const metadata: Metadata = {
-  title: `Payment Cancelled | ${SITE_NAME}`,
-}
+export default function CancelPage() {
+  const searchParams = useSearchParams()
+  const orderId = searchParams.get('order_id')
 
-export default function CheckoutCancelPage() {
   return (
-    <div className="bg-brand-bg min-h-screen">
-      <div className="mx-auto max-w-lg px-4 py-20 text-center">
-        <div className="rounded-md border border-gray-100 bg-white p-12">
-          <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-md bg-red-50">
-            <XCircle className="h-8 w-8 text-red-500" />
-          </div>
-          <div className="h-1 w-8 bg-brand-primary mx-auto mb-4" />
-          <h1 className="font-heading text-2xl font-bold text-brand-text">Payment cancelled</h1>
-          <p className="mt-3 text-sm text-brand-text-muted leading-relaxed">
-            Your payment was cancelled. Don&apos;t worry — your order has been saved and you can try again whenever you&apos;re ready.
+    <div className="flex min-h-[70vh] flex-col items-center justify-center bg-brand-bg px-4 py-12 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full bg-white px-8 py-10 rounded-xl shadow-sm border border-gray-100 text-center">
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-red-100 mb-6">
+          <XCircle className="h-10 w-10 text-red-600" />
+        </div>
+        
+        <h1 className="text-3xl font-bold text-brand-text mb-2 font-heading">Payment Cancelled</h1>
+        <p className="text-brand-text-muted mb-8 italic">Something went wrong or you chose to go back.</p>
+
+        <div className="bg-red-50/50 rounded-lg p-5 mb-8 border border-red-100 text-left">
+          <p className="text-sm text-red-800 leading-relaxed font-medium">
+            Your order has been saved but has not been paid for yet. 
+            You can find it in your account and try paying again when you're ready.
           </p>
-          <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
-            <Link
-              href="/cart"
-              className="inline-flex items-center justify-center gap-2 rounded-md bg-brand-primary px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-primary-dark"
-            >
-              Return to cart <ArrowRight className="h-4 w-4" />
-            </Link>
-            <Link
-              href="/"
-              className="inline-flex items-center justify-center gap-2 rounded-md border border-gray-200 bg-white px-5 py-2.5 text-sm font-semibold text-brand-text transition hover:border-brand-primary hover:text-brand-primary"
-            >
-              Back to home
-            </Link>
-          </div>
+        </div>
+
+        <div className="space-y-3">
+          <Link
+            href="/checkout"
+            className="flex w-full items-center justify-center gap-2 rounded-lg bg-brand-primary py-3 text-sm font-semibold text-white transition hover:bg-brand-primary-dark shadow-md hover:shadow-lg"
+          >
+            <RefreshCw className="h-4 w-4" /> Try Again
+          </Link>
+          <Link
+            href="/"
+            className="flex w-full items-center justify-center gap-2 rounded-lg bg-white border border-gray-200 py-3 text-sm font-medium text-brand-text hover:bg-gray-50 transition"
+          >
+            <ArrowLeft className="h-4 w-4" /> Back to Home
+          </Link>
         </div>
       </div>
     </div>

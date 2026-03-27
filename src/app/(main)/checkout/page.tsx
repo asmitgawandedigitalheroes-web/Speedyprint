@@ -91,15 +91,58 @@ export default function CheckoutPage() {
         line_total: item.line_total,
         selected_params: item.selected_params,
         design_id: item.design_id || null,
-        status: 'pending_design' as const,
+        csv_job_id: item.csv_job_id || null,
+        status: item.csv_job_id ? ('proof_sent' as const) : ('pending_design' as const),
       }))
 
-      const { error: itemsError } = await supabase.from('order_items').insert(orderItems)
+      const { data: createdItems, error: itemsError } = await supabase
+        .from('order_items')
+        .insert(orderItems)
+        .select()
+
       if (itemsError) throw itemsError
 
+      // Automated Proofing for CSV items
+      for (const item of createdItems || []) {
+        if (item.csv_job_id) {
+          // Fetch CSV job to get the combined proof URL
+          const { data: job } = await supabase
+            .from('csv_jobs')
+            .select('column_mapping')
+            .eq('id', item.csv_job_id)
+            .single()
+
+          const combinedProofUrl = job?.column_mapping?._combined_proof_url
+          if (combinedProofUrl) {
+            await supabase.from('proofs').insert({
+              order_item_id: item.id,
+              design_id: item.design_id,
+              version: 1,
+              proof_file_url: combinedProofUrl,
+              status: 'pending',
+            })
+          }
+        }
+      }
+
       clearCart()
-      toast.success('Order placed successfully!')
-      router.push(`/account/orders/${order.id}`)
+      
+      // Redirect to Stripe Checkout
+      const response = await fetch('/api/checkout/stripe', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ orderId: order.id }),
+      })
+
+      const { url, error } = await response.json()
+
+      if (url) {
+        window.location.href = url
+      } else {
+        throw new Error(error || 'Failed to initialize payment')
+      }
     } catch (error) {
       toast.error('Failed to place order. Please try again.')
       console.error(error)
@@ -236,8 +279,8 @@ export default function CheckoutPage() {
                 </div>
 
                 <div className="rounded-md border border-gray-100 bg-brand-primary/5 p-4">
-                  <p className="text-sm text-brand-text-muted text-center">
-                    Payment integration coming soon. Orders are placed as pending for now.
+                  <p className="text-sm text-brand-text-muted text-center italic">
+                    You will be redirected to <span className="font-bold text-brand-primary">Stripe</span> to complete your payment securely.
                   </p>
                 </div>
 
@@ -268,7 +311,7 @@ export default function CheckoutPage() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-brand-text-muted">Shipping</span>
-                  <span className="text-brand-accent font-medium">Free</span>
+                  <span className="text-green-600 font-medium">Free</span>
                 </div>
               </div>
               <div className="my-4 h-px bg-gray-100" />

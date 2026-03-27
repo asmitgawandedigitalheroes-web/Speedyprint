@@ -59,7 +59,7 @@ export default function DeliveryInfoPage() {
                 <h3 className="mt-4 font-heading text-lg font-semibold text-brand-text">{tier.title}</h3>
                 <p className="mt-2 font-heading text-2xl font-bold text-brand-primary">{tier.price}</p>
                 {tier.freeNote && (
-                  <p className="mt-1 text-xs font-semibold text-brand-accent">{tier.freeNote}</p>
+                  <p className="mt-1 text-xs font-semibold text-brand-primary">{tier.freeNote}</p>
                 )}
                 <p className="mt-1 text-xs text-brand-text-muted">{tier.time}</p>
                 <p className="mt-4 text-sm text-brand-text-muted">{tier.description}</p>
