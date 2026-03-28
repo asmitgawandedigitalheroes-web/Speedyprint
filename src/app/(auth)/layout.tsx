@@ -14,13 +14,13 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       <div className="hidden lg:flex lg:w-5/12 bg-brand-secondary flex-col justify-between p-12 text-white">
         {/* Top: logo */}
         <Link href="/" className="inline-block">
-          <Image
-            src="/images/logo.png"
-            alt={SITE_NAME}
-            width={140}
-            height={36}
-            className="h-9 w-auto"
-          />
+            <Image
+              src="/images/logo.png"
+              alt={SITE_NAME}
+              width={140}
+              height={36}
+              className="h-14 w-auto"
+            />
         </Link>
 
         {/* Centre: tagline */}

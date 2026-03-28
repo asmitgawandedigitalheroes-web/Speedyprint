@@ -164,17 +164,17 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-50 border-b border-gray-200 bg-white shadow-sm">
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Logo */}
         <Link href="/" className="flex shrink-0 items-center gap-2">
-          <Image
-            src="/images/logo.png"
-            alt={SITE_NAME}
-            width={160}
-            height={40}
-            className="h-10 w-auto"
-            priority
-          />
+            <Image
+              src="/images/logo.png"
+              alt={SITE_NAME}
+              width={264}
+              height={56}
+              className="h-14 w-auto"
+              priority
+            />
         </Link>
 
         {/* Desktop Navigation */}
@@ -446,15 +446,15 @@ export function Header() {
                     </Link>
                     {(user.role === 'admin' ||
                       user.role === 'production_staff') && (
-                      <Link
-                        href="/admin"
-                        onClick={() => setMobileOpen(false)}
-                        className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-brand-text hover:bg-gray-100"
-                      >
-                        <LayoutDashboard className="h-4 w-4" />
-                        Admin Dashboard
-                      </Link>
-                    )}
+                        <Link
+                          href="/admin"
+                          onClick={() => setMobileOpen(false)}
+                          className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-brand-text hover:bg-gray-100"
+                        >
+                          <LayoutDashboard className="h-4 w-4" />
+                          Admin Dashboard
+                        </Link>
+                      )}
                     <button
                       onClick={() => {
                         logout()
