@@ -57,9 +57,9 @@ export function Footer() {
               <Image
                 src="/images/logo.png"
                 alt={siteName}
-                width={160}
-                height={40}
-                className="h-10 w-auto"
+                width={224}
+                height={56}
+                className="h-14 w-auto"
               />
             </Link>
             <p className="mt-4 text-sm text-white/70">
