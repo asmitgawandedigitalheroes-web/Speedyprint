@@ -87,20 +87,42 @@ async function processCSVJob(jobId: string): Promise<void> {
   const errors: { row: number; error: string }[] = []
   const generatedPaths: string[] = []
 
+  // ── Detect CSV headers present in first row ────────────────────────────
+  const availableColumns = new Set(Object.keys(rows[0] ?? {}))
+
+  // Warn at job level about any mapped field whose CSV column doesn't exist
+  const missingColumns: string[] = []
+  for (const [fieldKey, csvCol] of Object.entries(fieldMap)) {
+    if (csvCol && !availableColumns.has(csvCol)) {
+      missingColumns.push(`"{{${fieldKey}}}" → CSV column "${csvCol}" not found`)
+    }
+  }
+  if (missingColumns.length > 0) {
+    console.warn(`[VDP Job ${jobId}] Missing CSV columns:\n  ${missingColumns.join('\n  ')}`)
+  }
+
   // ── Process rows ──────────────────────────────────────────────────────────
   for (let i = 0; i < totalRows; i++) {
     const row = rows[i]
     try {
-      // Build variables — mapped fields first, then raw columns for {{Header}} patterns
+      // Build variables:
+      //   1. Explicit field mapping (template param key → CSV column value)
+      //   2. Direct CSV column headers as fallback for {{ColumnName}} patterns
+      //      — enables zero-config usage when column names match placeholder keys
       const variables: Record<string, string> = {}
+
+      // Primary: use explicit field→column mapping
       for (const [fieldKey, csvCol] of Object.entries(fieldMap)) {
-        variables[fieldKey] = row[csvCol] ?? ''
-      }
-      for (const [col, val] of Object.entries(row)) {
-        if (!(col in variables)) variables[col] = val
+        variables[fieldKey] = (csvCol ? (row[csvCol] ?? '') : '')
       }
 
-      const mergedCanvas = mergeVariables(baseCanvas, variables)
+      // Fallback: add raw CSV columns not already covered by the mapping
+      // so that {{ColumnName}} placeholders resolve without explicit mapping
+      for (const [col, val] of Object.entries(row)) {
+        if (!(col in variables)) variables[col] = val ?? ''
+      }
+
+      const mergedCanvas = mergeVariables(baseCanvas, variables, { warnOnMissing: i === 0 })
       const pdfBytes = await generatePDF(mergedCanvas, printSpecs, { isProof: false, includeBleed: true })
 
       // Filename: {OrderID}_{ProductType}_{RowNum}_{Name}_{Date}.pdf

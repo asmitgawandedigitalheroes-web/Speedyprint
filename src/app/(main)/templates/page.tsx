@@ -93,6 +93,7 @@ export default async function TemplatesPage() {
                         src={template.product_group.image_url}
                         alt={template.name}
                         fill
+                        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
                         className="object-cover transition-transform group-hover:scale-105"
                       />
                     ) : (

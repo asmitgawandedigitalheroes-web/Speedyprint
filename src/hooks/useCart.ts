@@ -3,7 +3,8 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { CartItem } from '@/types'
-import { VAT_RATE, FREE_DELIVERY_THRESHOLD, FLAT_SHIPPING_RATE } from '@/lib/utils/constants'
+import { VAT_RATE, FREE_DELIVERY_THRESHOLD, FLAT_SHIPPING_RATE, MAX_CART_QUANTITY } from '@/lib/utils/constants'
+import { livePricing } from '@/hooks/useSiteSettings'
 
 interface CartState {
   items: CartItem[]
@@ -38,11 +39,11 @@ export const useCart = create<CartState>()(
       },
 
       updateQuantity: (id, quantity) => {
-        if (quantity < 1) return
+        const clamped = Math.max(1, Math.min(quantity, MAX_CART_QUANTITY))
         set((state) => ({
           items: state.items.map((item) =>
             item.id === id
-              ? { ...item, quantity, line_total: quantity * item.unit_price }
+              ? { ...item, quantity: clamped, line_total: clamped * item.unit_price }
               : item
           ),
         }))
@@ -55,18 +56,18 @@ export const useCart = create<CartState>()(
       },
 
       getTax: () => {
-        return get().getSubtotal() * VAT_RATE
+        return get().getSubtotal() * livePricing.vatRate
       },
 
       getShippingCost: () => {
         const subtotal = get().getSubtotal()
-        return subtotal >= FREE_DELIVERY_THRESHOLD ? 0 : FLAT_SHIPPING_RATE
+        return subtotal >= livePricing.freeDeliveryThreshold ? 0 : livePricing.flatShippingRate
       },
 
       getTotal: () => {
         const subtotal = get().getSubtotal()
         const shipping = get().getShippingCost()
-        return subtotal + subtotal * VAT_RATE + shipping
+        return subtotal + subtotal * livePricing.vatRate + shipping
       },
 
       getItemCount: () => {

@@ -16,7 +16,9 @@
       "Bash(find \"/c/Users/Vikram Gondane/OneDrive/Desktop/Asmit/cluade projects/New folder/Speedyprint/src/app/\\(main\\)/account\" -type f -name \"*.tsx\")",
       "Bash(cat '/c/Users/Vikram Gondane/OneDrive/Desktop/Asmit/cluade projects/New folder/Speedyprint/src/app/\\(main\\)/account/designs/page.tsx')",
       "WebFetch(domain:github.kuaitu.cc)",
-      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/)"
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/)",
+      "Bash(ls \"/c/Users/Vikram Gondane/OneDrive/Desktop/Asmit/cluade projects/New folder/Speedyprint/src/app/\\(main\\)/checkout/cancel/\")",
+      "Bash(ls \"/c/Users/Vikram Gondane/OneDrive/Desktop/Asmit/cluade projects/New folder/Speedyprint/src/app/\\(main\\)/checkout/success/\")"
     ]
   }
 }

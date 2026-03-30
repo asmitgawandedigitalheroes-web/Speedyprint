@@ -276,6 +276,12 @@ export function Header() {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
                   <Link href="/account" className="flex items-center gap-2">
+                    <LayoutDashboard className="h-4 w-4" />
+                    Dashboard
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/account" className="flex items-center gap-2">
                     <UserCircle className="h-4 w-4" />
                     My Account
                   </Link>
@@ -420,6 +426,14 @@ export function Header() {
                         {user.email}
                       </p>
                     </div>
+                    <Link
+                      href="/account"
+                      onClick={() => setMobileOpen(false)}
+                      className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-brand-text hover:bg-gray-100"
+                    >
+                      <LayoutDashboard className="h-4 w-4" />
+                      Dashboard
+                    </Link>
                     <Link
                       href="/account"
                       onClick={() => setMobileOpen(false)}

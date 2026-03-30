@@ -238,6 +238,7 @@ export default function HomePage() {
                     src="/images/products/custom-labels.png"
                     alt="Custom labels and stickers showcase"
                     fill
+                    sizes="(max-width: 768px) 100vw, 50vw"
                     className="object-cover"
                     priority
                   />
@@ -350,6 +351,7 @@ export default function HomePage() {
                   src={PRODUCT_CARDS[0].image}
                   alt={PRODUCT_CARDS[0].title}
                   fill
+                  sizes="(max-width: 1024px) 100vw, 40vw"
                   className="object-cover transition-transform duration-700 group-hover:scale-105"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-transparent" />
@@ -380,6 +382,7 @@ export default function HomePage() {
                     src={card.image}
                     alt={card.title}
                     fill
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 30vw"
                     className="object-cover transition-transform duration-700 group-hover:scale-105"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent" />
