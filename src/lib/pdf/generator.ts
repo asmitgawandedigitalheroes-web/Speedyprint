@@ -2,6 +2,10 @@ import { PDFDocument, rgb, degrees, StandardFonts } from 'pdf-lib'
 
 const MM_TO_POINTS = 2.8346
 
+// Local type aliases for pdf-lib internal types
+type EmbeddedFont = Awaited<ReturnType<PDFDocument['embedFont']>>
+type PDFPageObj = ReturnType<PDFDocument['addPage']>
+
 interface CanvasObject {
   type: string
   left?: number
@@ -24,6 +28,11 @@ interface CanvasObject {
   fontStyle?: string
   textAlign?: string
   lineHeight?: number
+  // Per-placeholder VDP text fitting config
+  minFontSize?: number
+  maxFontSize?: number
+  overflowBehavior?: 'truncate' | 'shrink' | 'stretch'
+  multiline?: boolean
   // Image
   src?: string
   // Circle
@@ -35,6 +44,119 @@ interface CanvasObject {
   rawText?: string
   originX?: string
   originY?: string
+}
+
+// ─── Text fitting helpers ─────────────────────────────────────────────────────
+
+/**
+ * Truncate text with "…" so it fits within maxWidth at the given font size.
+ * Returns the original string if it already fits.
+ */
+function truncateTextToWidth(
+  text: string,
+  font: EmbeddedFont,
+  fontSize: number,
+  maxWidth: number
+): string {
+  if (!text || maxWidth <= 0) return text
+  if (font.widthOfTextAtSize(text, fontSize) <= maxWidth) return text
+  const ellipsis = '...'
+  const ellipsisW = font.widthOfTextAtSize(ellipsis, fontSize)
+  if (ellipsisW >= maxWidth) return text.slice(0, 1)
+  let t = text
+  while (t.length > 1 && font.widthOfTextAtSize(t, fontSize) + ellipsisW > maxWidth) {
+    t = t.slice(0, -1)
+  }
+  return t + ellipsis
+}
+
+/**
+ * Word-wrap a single line of text into multiple lines that each fit maxWidth.
+ */
+function wrapTextToWidth(
+  text: string,
+  font: EmbeddedFont,
+  fontSize: number,
+  maxWidth: number
+): string[] {
+  if (!text || maxWidth <= 0) return [text ?? '']
+  const words = text.split(' ')
+  const lines: string[] = []
+  let current = ''
+  for (const word of words) {
+    const candidate = current ? `${current} ${word}` : word
+    if (font.widthOfTextAtSize(candidate, fontSize) <= maxWidth) {
+      current = candidate
+    } else {
+      if (current) lines.push(current)
+      current = word
+    }
+  }
+  if (current) lines.push(current)
+  return lines.length > 0 ? lines : [text]
+}
+
+/**
+ * Binary-search (via 0.5pt steps) for the largest font size ≤ maxFontSize
+ * that makes all lines fit within (boxW × boxH).
+ */
+function shrinkFontToFit(
+  rawLines: string[],
+  font: EmbeddedFont,
+  maxFontSize: number,
+  minFontSize: number,
+  boxW: number,
+  boxH: number,
+  lineHeightMult: number,
+  doWordWrap: boolean
+): number {
+  let size = maxFontSize
+  while (size > minFontSize) {
+    const lineH = size * lineHeightMult
+    let allLines: string[] = []
+    for (const line of rawLines) {
+      if (doWordWrap && boxW > 0) {
+        allLines = allLines.concat(wrapTextToWidth(line, font, size, boxW))
+      } else {
+        allLines.push(line)
+      }
+    }
+    const maxW = allLines.reduce((m, l) =>
+      Math.max(m, l ? font.widthOfTextAtSize(l, size) : 0), 0)
+    const totalH = allLines.length * lineH
+    if (maxW <= boxW && (boxH <= 0 || totalH <= boxH)) break
+    size = Math.max(size - 0.5, minFontSize)
+  }
+  return size
+}
+
+/**
+ * Draw text stretched horizontally to fill targetWidth by distributing
+ * extra space evenly between characters.
+ */
+function drawStretchedText(
+  page: PDFPageObj,
+  text: string,
+  font: EmbeddedFont,
+  fontSize: number,
+  x: number,
+  y: number,
+  targetWidth: number,
+  color: ReturnType<typeof rgb>,
+  opacity: number,
+  rotate?: ReturnType<typeof degrees>
+) {
+  const naturalW = font.widthOfTextAtSize(text, fontSize)
+  if (text.length <= 1 || naturalW <= 0 || Math.abs(naturalW - targetWidth) < 0.5) {
+    page.drawText(text, { x, y, size: fontSize, font, color, opacity, ...(rotate ? { rotate } : {}) })
+    return
+  }
+  const extraPerGap = (targetWidth - naturalW) / (text.length - 1)
+  let curX = x
+  for (const char of text) {
+    page.drawText(char, { x: curX, y, size: fontSize, font, color, opacity, ...(rotate ? { rotate } : {}) })
+    curX += font.widthOfTextAtSize(char, fontSize) + extraPerGap
+  }
 }
 
 export interface CanvasJSON {
@@ -283,7 +405,20 @@ async function renderObject(
     const text = obj.text ?? ''
     if (!text.trim()) return
 
-    const rawSize = (obj.fontSize ?? 16) * sy
+    // ── Per-placeholder VDP settings ──────────────────────────────────────
+    const overflowBehavior = (obj.overflowBehavior ?? 'truncate') as 'truncate' | 'shrink' | 'stretch'
+    // multiline defaults true for textbox, false for itext/text
+    const isMultiline = obj.multiline !== undefined
+      ? obj.multiline
+      : (type === 'textbox')
+    const alignment = (obj.textAlign ?? 'left') as 'left' | 'center' | 'right'
+
+    // Font size: scaled canvas→PDF, clamped by maxFontSize if set
+    const baseFontSize = (obj.fontSize ?? 16) * sy
+    const minFontSizePt = (obj.minFontSize ?? 4) * sy
+    const maxFontSizePt = obj.maxFontSize ? obj.maxFontSize * sy : baseFontSize
+    const cappedFontSize = Math.min(baseFontSize, maxFontSizePt)
+
     const isBold = obj.fontWeight === 'bold' || String(obj.fontWeight) === '700' || obj.fontWeight === 700
     const isItalic = obj.fontStyle === 'italic' || obj.fontStyle === 'oblique'
     const font =
@@ -295,21 +430,78 @@ async function renderObject(
     const fillColor = obj.fill as string | undefined
     const [r, g, b] = parseColor(fillColor)
     const colorOpacity = parseOpacity(fillColor, opacity)
-    const lineHeightPt = rawSize * (obj.lineHeight ?? 1.16)
-    const lines = text.split('\n')
+    const lineHeightMult = obj.lineHeight ?? 1.16
 
-    lines.forEach((line, i) => {
-      if (!line) return
-      page.drawText(line, {
-        x: pdfX,
-        y: pdfY + objH - rawSize - i * lineHeightPt,
-        size: rawSize,
-        font,
-        color: rgb(r, g, b),
-        opacity: colorOpacity,
-        ...(rot ? { rotate: rot } : {}),
-        maxWidth: objW > 0 ? objW : undefined,
-      })
+    // ── Prepare raw lines (respect multiline flag) ─────────────────────────
+    const rawLines = isMultiline
+      ? text.split('\n')
+      : [text.replace(/\n/g, ' ')]
+
+    // ── Shrink-to-fit: find final font size ────────────────────────────────
+    let finalFontSize = cappedFontSize
+    if (overflowBehavior === 'shrink' && objW > 0) {
+      finalFontSize = shrinkFontToFit(
+        rawLines, font, cappedFontSize, minFontSizePt,
+        objW, objH, lineHeightMult, isMultiline
+      )
+    }
+
+    const lineHeightPt = finalFontSize * lineHeightMult
+
+    // ── Build display lines (word-wrap for multiline non-stretch) ──────────
+    let displayLines: string[]
+    if (isMultiline && objW > 0 && overflowBehavior !== 'stretch') {
+      displayLines = []
+      for (const line of rawLines) {
+        displayLines.push(...wrapTextToWidth(line, font, finalFontSize, objW))
+      }
+    } else {
+      displayLines = rawLines
+    }
+
+    // ── Render each line ──────────────────────────────────────────────────
+    displayLines.forEach((line, i) => {
+      if (line === null || line === undefined) return
+
+      let lineText = line
+
+      // Apply overflow behavior per line
+      if (overflowBehavior === 'truncate' && objW > 0) {
+        lineText = truncateTextToWidth(line, font, finalFontSize, objW)
+      }
+
+      if (!lineText) return
+
+      const lineY = pdfY + objH - finalFontSize - i * lineHeightPt
+
+      // Clip lines that fall below the bounding box bottom
+      if (objH > 0 && lineY < pdfY - finalFontSize) return
+
+      // Compute alignment X offset
+      const lineW = font.widthOfTextAtSize(lineText, finalFontSize)
+      let lineX = pdfX
+      if (objW > 0) {
+        if (alignment === 'center') {
+          lineX = pdfX + (objW - lineW) / 2
+        } else if (alignment === 'right') {
+          lineX = pdfX + objW - lineW
+        }
+      }
+
+      if (overflowBehavior === 'stretch' && objW > 0 && lineText.length > 1) {
+        drawStretchedText(page, lineText, font, finalFontSize, lineX, lineY,
+          objW, rgb(r, g, b), colorOpacity, rot)
+      } else {
+        page.drawText(lineText, {
+          x: lineX,
+          y: lineY,
+          size: finalFontSize,
+          font,
+          color: rgb(r, g, b),
+          opacity: colorOpacity,
+          ...(rot ? { rotate: rot } : {}),
+        })
+      }
     })
     return
   }
@@ -400,31 +592,57 @@ async function renderObject(
 
 // ─── Variable data merge ──────────────────────────────────────────────────────
 
+const PLACEHOLDER_RE = /\{\{([^}]+)\}\}/g
+
 /**
  * Deep-clone a canvas JSON and replace {{placeholder}} patterns in all
  * text objects with values from `variables`.
  *
- * @param canvasJSON  Original Fabric.js canvas JSON
- * @param variables   Map of placeholder key → replacement value
+ * - Placeholder keys must match `variables` keys exactly (case-sensitive).
+ * - Missing keys fall back to empty string — no crash, no leftover {{…}}.
+ * - Pass `warnOnMissing: true` to emit console warnings for unresolved keys
+ *   (useful during server-side batch processing for debugging).
+ *
+ * @param canvasJSON      Original Fabric.js canvas JSON
+ * @param variables       Map of placeholder key → replacement value
+ * @param options.warnOnMissing  Log a warning for each unresolved placeholder
  */
 export function mergeVariables(
   canvasJSON: CanvasJSON,
-  variables: Record<string, string>
+  variables: Record<string, string>,
+  options?: { warnOnMissing?: boolean }
 ): CanvasJSON {
   const json = JSON.parse(JSON.stringify(canvasJSON)) as CanvasJSON
+  const warn = options?.warnOnMissing ?? false
 
   function processObject(obj: CanvasObject) {
-    // If rawText exists, it's the original template text (e.g. "Hello {{name}}")
-    // If not, we use obj.text as the source.
+    // rawText is the original template source; text is the live (possibly
+    // already-merged) value. Always derive from rawText when present so that
+    // re-merging a canvas works correctly.
     const sourceText = obj.rawText || obj.text
-    
+
     if (sourceText) {
-      let t = sourceText
-      for (const [key, val] of Object.entries(variables)) {
-        t = t.replaceAll(`{{${key}}}`, val)
+      if (warn) {
+        // Collect all placeholder keys used in this object
+        for (const [, key] of sourceText.matchAll(new RegExp(PLACEHOLDER_RE.source, 'g'))) {
+          if (!(key in variables)) {
+            console.warn(
+              `[VDP] Unresolved placeholder "{{${key}}}" — no matching CSV column. Replacing with empty string.`
+            )
+          }
+        }
       }
+
+      let t = sourceText
+      // Replace known variables
+      for (const [key, val] of Object.entries(variables)) {
+        t = t.replaceAll(`{{${key}}}`, val ?? '')
+      }
+      // Clear any remaining unmatched {{…}} so they don't appear in output
+      t = t.replace(PLACEHOLDER_RE, '')
       obj.text = t
     }
+
     if (obj.objects) obj.objects.forEach(processObject)
   }
 

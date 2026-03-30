@@ -6,7 +6,8 @@ import { useAuth } from '@/hooks/useAuth'
 import { useCart } from '@/hooks/useCart'
 import { createClient } from '@/lib/supabase/client'
 import { formatCurrency } from '@/lib/utils/format'
-import { SA_PROVINCES, VAT_RATE } from '@/lib/utils/constants'
+import { SA_PROVINCES } from '@/lib/utils/constants'
+import { livePricing } from '@/hooks/useSiteSettings'
 import { toast } from 'sonner'
 import { ArrowRight, Check } from 'lucide-react'
 
@@ -16,7 +17,7 @@ const LABEL_CLASS = 'mb-1.5 block text-xs font-medium uppercase tracking-widest 
 export default function CheckoutPage() {
   const router = useRouter()
   const { user } = useAuth()
-  const { items, getSubtotal, getTax, getTotal, clearCart } = useCart()
+  const { items, getSubtotal, getTax, getTotal, getShippingCost, clearCart } = useCart()
   const [loading, setLoading] = useState(false)
   const [step, setStep] = useState(1)
   const [shipping, setShipping] = useState({
@@ -49,6 +50,23 @@ export default function CheckoutPage() {
     setShipping((prev) => ({ ...prev, [e.target.name]: e.target.value }))
   }
 
+  const validateShipping = (): boolean => {
+    const required: Array<[keyof typeof shipping, string]> = [
+      ['full_name', 'Full name'],
+      ['address_line1', 'Address line 1'],
+      ['city', 'City'],
+      ['province', 'Province'],
+      ['postal_code', 'Postal code'],
+    ]
+    for (const [field, label] of required) {
+      if (!shipping[field]?.trim()) {
+        toast.error(`${label} is required`)
+        return false
+      }
+    }
+    return true
+  }
+
   const handlePlaceOrder = async () => {
     if (!user) {
       toast.error('Please log in to place an order')
@@ -60,8 +78,8 @@ export default function CheckoutPage() {
     try {
       const supabase = createClient()
       const subtotal = getSubtotal()
-      const tax = subtotal * VAT_RATE
-      const shippingCost = 0
+      const tax = subtotal * livePricing.vatRate
+      const shippingCost = getShippingCost()
       const total = subtotal + tax + shippingCost
 
       const { data: order, error: orderError } = await supabase
@@ -125,9 +143,7 @@ export default function CheckoutPage() {
         }
       }
 
-      clearCart()
-      
-      // Redirect to Stripe Checkout
+      // Redirect to Stripe Checkout — clear cart ONLY after URL is confirmed
       const response = await fetch('/api/checkout/stripe', {
         method: 'POST',
         headers: {
@@ -139,6 +155,7 @@ export default function CheckoutPage() {
       const { url, error } = await response.json()
 
       if (url) {
+        clearCart()
         window.location.href = url
       } else {
         throw new Error(error || 'Failed to initialize payment')
@@ -152,8 +169,8 @@ export default function CheckoutPage() {
   }
 
   useEffect(() => {
-    if (items.length === 0) router.push('/cart')
-  }, [items.length, router])
+    if (items.length === 0 && !loading) router.push('/cart')
+  }, [items.length, loading, router])
 
   if (items.length === 0) return null
 
@@ -234,7 +251,7 @@ export default function CheckoutPage() {
                     </div>
                   </div>
                   <button
-                    onClick={() => setStep(2)}
+                    onClick={() => { if (validateShipping()) setStep(2) }}
                     className="inline-flex items-center gap-2 rounded-md bg-brand-primary px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-primary-dark"
                   >
                     Continue to review <ArrowRight className="h-4 w-4" />
@@ -311,7 +328,10 @@ export default function CheckoutPage() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-brand-text-muted">Shipping</span>
-                  <span className="text-green-600 font-medium">Free</span>
+                  {getShippingCost() === 0
+                    ? <span className="text-green-600 font-medium">Free</span>
+                    : <span className="text-brand-text">{formatCurrency(getShippingCost())}</span>
+                  }
                 </div>
               </div>
               <div className="my-4 h-px bg-gray-100" />

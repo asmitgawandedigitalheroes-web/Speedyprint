@@ -39,11 +39,26 @@ export async function updateSession(request: NextRequest) {
   const pathname = request.nextUrl.pathname
 
   // Protect /account routes
-  if (pathname.startsWith('/account') && !user) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/login'
-    url.searchParams.set('redirect', pathname)
-    return NextResponse.redirect(url)
+  if (pathname.startsWith('/account')) {
+    if (!user) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/login'
+      url.searchParams.set('redirect', pathname)
+      return NextResponse.redirect(url)
+    }
+
+    // Admin / staff have their own panel — send them there
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+
+    if (profile && ['admin', 'production_staff'].includes(profile.role)) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/admin'
+      return NextResponse.redirect(url)
+    }
   }
 
   // Protect /admin routes
@@ -64,7 +79,8 @@ export async function updateSession(request: NextRequest) {
 
     if (!profile || !['admin', 'production_staff'].includes(profile.role)) {
       const url = request.nextUrl.clone()
-      url.pathname = '/'
+      url.pathname = '/forbidden'
+      url.searchParams.set('from', pathname)
       return NextResponse.redirect(url)
     }
 

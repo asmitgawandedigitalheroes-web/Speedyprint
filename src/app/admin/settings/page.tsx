@@ -36,6 +36,23 @@ export default function AdminSettingsPage() {
   }
 
   async function handleSave() {
+    // Validate pricing fields before saving
+    const vatRate = parseFloat(settings.vat_rate || '0')
+    if (settings.vat_rate !== undefined && (isNaN(vatRate) || vatRate < 0 || vatRate > 1)) {
+      toast.error('VAT rate must be between 0 and 1 (e.g. 0.15 for 15%)')
+      return
+    }
+    const freeThreshold = parseFloat(settings.free_delivery_threshold || '0')
+    if (settings.free_delivery_threshold !== undefined && (isNaN(freeThreshold) || freeThreshold < 0)) {
+      toast.error('Free delivery threshold must be 0 or greater')
+      return
+    }
+    const flatShipping = parseFloat(settings.flat_shipping_rate || '0')
+    if (settings.flat_shipping_rate !== undefined && (isNaN(flatShipping) || flatShipping < 0)) {
+      toast.error('Flat shipping rate must be 0 or greater')
+      return
+    }
+
     setSaving(true)
     try {
       const res = await fetch('/api/admin/settings', {

@@ -36,6 +36,26 @@ export async function PUT(req: NextRequest) {
       )
     }
 
+    // Validate pricing fields
+    if (settings.vat_rate !== undefined) {
+      const v = parseFloat(settings.vat_rate)
+      if (isNaN(v) || v < 0 || v > 1) {
+        return NextResponse.json({ error: 'VAT rate must be between 0 and 1' }, { status: 400 })
+      }
+    }
+    if (settings.free_delivery_threshold !== undefined) {
+      const v = parseFloat(settings.free_delivery_threshold)
+      if (isNaN(v) || v < 0) {
+        return NextResponse.json({ error: 'Free delivery threshold must be 0 or greater' }, { status: 400 })
+      }
+    }
+    if (settings.flat_shipping_rate !== undefined) {
+      const v = parseFloat(settings.flat_shipping_rate)
+      if (isNaN(v) || v < 0) {
+        return NextResponse.json({ error: 'Flat shipping rate must be 0 or greater' }, { status: 400 })
+      }
+    }
+
     const supabase = createAdminClient()
 
     for (const [key, value] of Object.entries(settings)) {

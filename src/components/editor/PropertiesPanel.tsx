@@ -19,6 +19,11 @@ interface ObjectProperties {
   textAlign: string
   scaleX: number
   scaleY: number
+  // VDP per-placeholder controls
+  overflowBehavior: 'truncate' | 'shrink' | 'stretch'
+  minFontSize: number
+  maxFontSize: number
+  multiline: boolean
 }
 
 const FONT_OPTIONS = [
@@ -82,6 +87,11 @@ export default function PropertiesPanel() {
       textAlign: (obj.textAlign as string) ?? 'left',
       scaleX: (obj.scaleX as number) ?? 1,
       scaleY: (obj.scaleY as number) ?? 1,
+      // VDP fields
+      overflowBehavior: ((obj.overflowBehavior as string) ?? 'truncate') as 'truncate' | 'shrink' | 'stretch',
+      minFontSize: (obj.minFontSize as number) ?? 8,
+      maxFontSize: (obj.maxFontSize as number) ?? ((obj.fontSize as number) ?? 24),
+      multiline: (obj.multiline as boolean) ?? (activeObject?.type === 'textbox'),
     })
   }, [activeObject])
 
@@ -106,6 +116,9 @@ export default function PropertiesPanel() {
     activeObject?.type === 'text' ||
     activeObject?.type === 'i-text' ||
     activeObject?.type === 'textbox'
+
+  const isVdpPlaceholder = isTextObject &&
+    /\{\{[^}]+\}\}/.test((activeObject as unknown as Record<string, unknown>)?.rawText as string ?? (activeObject as unknown as Record<string, unknown>)?.text as string ?? '')
 
   return (
     <div className="flex flex-col h-full">
@@ -300,6 +313,84 @@ export default function PropertiesPanel() {
                     ))}
                   </div>
                 </PropertyRow>
+              </div>
+            )}
+
+            {/* VDP placeholder settings — shown whenever a text object contains {{…}} */}
+            {isVdpPlaceholder && (
+              <div>
+                <p className="text-xs font-medium text-gray-600 mb-1 flex items-center gap-1">
+                  <span className="inline-block w-2 h-2 rounded-full bg-blue-500" />
+                  Variable Data (VDP)
+                </p>
+
+                {/* Multiline toggle */}
+                <div className="flex items-center justify-between py-1">
+                  <span className="text-xs text-gray-500">Multi-line</span>
+                  <button
+                    onClick={() => updateProp('multiline', !props.multiline)}
+                    className={`relative inline-flex h-4 w-8 items-center rounded-full transition-colors ${
+                      props.multiline ? 'bg-blue-500' : 'bg-gray-300'
+                    }`}
+                  >
+                    <span
+                      className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
+                        props.multiline ? 'translate-x-4' : 'translate-x-0.5'
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                {/* Overflow behavior */}
+                <div className="py-1">
+                  <p className="text-xs text-gray-500 mb-1">Overflow</p>
+                  <div className="flex gap-1">
+                    {(['truncate', 'shrink', 'stretch'] as const).map((mode) => (
+                      <button
+                        key={mode}
+                        onClick={() => updateProp('overflowBehavior', mode)}
+                        title={
+                          mode === 'truncate' ? 'Clip text with ellipsis'
+                          : mode === 'shrink' ? 'Shrink font size to fit'
+                          : 'Stretch letter spacing to fill width'
+                        }
+                        className={`flex-1 py-0.5 text-xs rounded border ${
+                          props.overflowBehavior === mode
+                            ? 'bg-blue-50 border-blue-300 text-blue-700'
+                            : 'border-gray-200 text-gray-500 hover:bg-gray-50'
+                        }`}
+                      >
+                        {mode.charAt(0).toUpperCase() + mode.slice(1)}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Min / Max font size */}
+                <div className="grid grid-cols-2 gap-2 py-1">
+                  <div>
+                    <p className="text-xs text-gray-500 mb-0.5">Min size</p>
+                    <input
+                      type="number"
+                      value={props.minFontSize ?? 8}
+                      onChange={(e) => updateProp('minFontSize', Number(e.target.value))}
+                      className="w-full text-xs border border-gray-200 rounded px-2 py-1"
+                      min={4}
+                      max={props.fontSize ?? 200}
+                    />
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 mb-0.5">Max size</p>
+                    <input
+                      type="number"
+                      value={props.maxFontSize ?? props.fontSize ?? 24}
+                      onChange={(e) => updateProp('maxFontSize', Number(e.target.value))}
+                      className="w-full text-xs border border-gray-200 rounded px-2 py-1"
+                      min={props.minFontSize ?? 4}
+                      max={500}
+                    />
+                  </div>
+                </div>
               </div>
             )}
           </>

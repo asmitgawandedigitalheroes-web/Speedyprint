@@ -19,6 +19,7 @@ import { createClient } from '@/lib/supabase/client'
 import type { ProductTemplate, TemplateParameter } from '@/types'
 import { useCart } from '@/hooks/useCart'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { MAX_CSV_ROWS } from '@/lib/utils/constants'
 
 type Step = 'upload' | 'preview' | 'mapping' | 'processing' | 'complete'
 
@@ -61,6 +62,7 @@ export default function DesignerCsvPage({ params }: DesignerCsvPageProps) {
   const [headers, setHeaders] = useState<string[]>([])
   const [columnMapping, setColumnMapping] = useState<Record<string, string>>({})
   const [validationErrors, setValidationErrors] = useState<ValidationError[]>([])
+  const [headerWarnings, setHeaderWarnings] = useState<string[]>([])
   const [uploading, setUploading] = useState(false)
   const [jobId, setJobId] = useState<string | null>(null)
   const [jobStatus, setJobStatus] = useState<CsvJobResult | null>(null)
@@ -120,6 +122,21 @@ export default function DesignerCsvPage({ params }: DesignerCsvPageProps) {
       setError(null)
 
       try {
+        // BUG-13: Validate file content is valid UTF-8 text, not a binary file
+        const rawBytes = await selectedFile.arrayBuffer()
+        const firstBytes = new Uint8Array(rawBytes.slice(0, 4))
+        // Common binary magic bytes: PNG (89 50 4E 47), JPEG (FF D8), PDF (25 50 44 46), ZIP/DOCX (50 4B)
+        const isBinary =
+          (firstBytes[0] === 0x89 && firstBytes[1] === 0x50) || // PNG
+          (firstBytes[0] === 0xff && firstBytes[1] === 0xd8) || // JPEG
+          (firstBytes[0] === 0x25 && firstBytes[1] === 0x50) || // PDF
+          (firstBytes[0] === 0x50 && firstBytes[1] === 0x4b)    // ZIP/DOCX
+        if (isBinary) {
+          setError('The selected file does not appear to be a valid CSV text file.')
+          setFile(null)
+          return
+        }
+
         const Papa = (await import('papaparse')).default
         const text = await selectedFile.text()
 
@@ -130,8 +147,21 @@ export default function DesignerCsvPage({ params }: DesignerCsvPageProps) {
             const data = results.data as Record<string, string>[]
             const csvHeaders = results.meta.fields || []
 
+            // BUG-12: Check for parse errors (e.g. unterminated quotes)
+            if (results.errors && results.errors.length > 0) {
+              const firstErr = results.errors[0]
+              setError(`CSV parse error on row ${firstErr.row ?? '?'}: ${firstErr.message}. Please fix the file and try again.`)
+              return
+            }
+
             if (data.length === 0) {
               setError('CSV file is empty')
+              return
+            }
+
+            // BUG-11: Enforce row limit
+            if (data.length > MAX_CSV_ROWS) {
+              setError(`CSV contains ${data.length.toLocaleString()} rows. Maximum allowed is ${MAX_CSV_ROWS.toLocaleString()} rows.`)
               return
             }
 
@@ -153,6 +183,22 @@ export default function DesignerCsvPage({ params }: DesignerCsvPageProps) {
               }
             }
             setColumnMapping(mapping)
+
+            // Warn about template parameters not matched to any CSV column
+            const warnings: string[] = []
+            for (const param of templateParams) {
+              const isMapped = !!mapping[param.param_key]
+              const hasDirectMatch = csvHeaders.some(
+                (h) => h === param.param_key || h.toLowerCase() === param.param_key.toLowerCase()
+              )
+              if (!isMapped && !hasDirectMatch) {
+                warnings.push(
+                  `"{{${param.param_key}}}" (${param.param_label}) has no matching column — will use empty string`
+                )
+              }
+            }
+            setHeaderWarnings(warnings)
+
             setStep('preview')
           },
           error: (err: Error) => {
@@ -309,6 +355,7 @@ export default function DesignerCsvPage({ params }: DesignerCsvPageProps) {
     setHeaders([])
     setColumnMapping({})
     setValidationErrors([])
+    setHeaderWarnings([])
     setJobId(null)
     setJobStatus(null)
     setSampleProofUrl(null)
@@ -591,6 +638,23 @@ export default function DesignerCsvPage({ params }: DesignerCsvPageProps) {
                 )}
               </div>
             </div>
+
+            {/* Header mismatch warnings */}
+            {headerWarnings.length > 0 && (
+              <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
+                <p className="text-xs font-semibold text-amber-700 mb-1">
+                  {headerWarnings.length} placeholder{headerWarnings.length > 1 ? 's' : ''} not matched to a CSV column:
+                </p>
+                <ul className="space-y-0.5">
+                  {headerWarnings.map((w, i) => (
+                    <li key={i} className="text-xs text-amber-600">{w}</li>
+                  ))}
+                </ul>
+                <p className="text-xs text-amber-500 mt-1">
+                  You can fix the mapping below, or these fields will be left blank in output.
+                </p>
+              </div>
+            )}
 
             {/* Column Mapping */}
             {templateParams.length > 0 && (

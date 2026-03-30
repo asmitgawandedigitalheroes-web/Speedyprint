@@ -151,6 +151,12 @@ export default function Sidebar() {
   const [lineHeight, setLineHeight] = useState(1.16)
   const [charSpacing, setCharSpacing] = useState(0)
 
+  // VDP per-placeholder controls
+  const [overflowBehavior, setOverflowBehavior] = useState<'truncate' | 'shrink' | 'stretch'>('truncate')
+  const [minFontSize, setMinFontSize] = useState(8)
+  const [maxFontSize, setMaxFontSize] = useState(24)
+  const [multiline, setMultiline] = useState(false)
+
   // SVG group colors
   const [svgColors, setSvgColors] = useState<string[]>([])
 
@@ -161,6 +167,7 @@ export default function Sidebar() {
     appearance: true,
     text: true,
     textStyle: true,
+    vdp: true,
     shadow: false,
     svgColors: true,
     actions: true,
@@ -247,6 +254,12 @@ export default function Sidebar() {
     setCharSpacing((obj.charSpacing as number) ?? 0)
     setTextContent((obj.text as string) ?? '')
     setTextColor((obj.fill as string) ?? '#000000')
+
+    // VDP fields
+    setOverflowBehavior(((obj.overflowBehavior as string) ?? 'truncate') as 'truncate' | 'shrink' | 'stretch')
+    setMinFontSize((obj.minFontSize as number) ?? 8)
+    setMaxFontSize((obj.maxFontSize as number) ?? ((obj.fontSize as number) ?? 24))
+    setMultiline((obj.multiline as boolean) ?? (activeObject.type === 'textbox'))
 
     // Extract colors from SVG groups
     if (activeObject.type === 'group') {
@@ -702,6 +715,78 @@ export default function Sidebar() {
                         min={-200}
                         max={1000}
                         onChange={(e) => { setCharSpacing(Number(e.target.value)); updateProp('charSpacing', Number(e.target.value)) }}
+                        className={inputClass}
+                      />
+                    </PropRow>
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* VDP — shown when text contains {{placeholder}} */}
+            {isTextObject && /\{\{[^}]+\}\}/.test(
+              (activeObject as unknown as Record<string, unknown>)?.rawText as string
+              ?? (activeObject as unknown as Record<string, unknown>)?.text as string
+              ?? ''
+            ) && (
+              <div>
+                <SectionHeader title="Variable Data (VDP)" expanded={sections.vdp} onToggle={() => toggleSection('vdp')} />
+                {sections.vdp && (
+                  <>
+                    {/* Multi-line toggle */}
+                    <div className="flex items-center justify-between py-1">
+                      <span className="text-[11px] text-ed-text-dim">Multi-line wrap</span>
+                      <button
+                        onClick={() => { const v = !multiline; setMultiline(v); updateProp('multiline', v) }}
+                        className={`relative inline-flex h-4 w-8 items-center rounded-full transition-colors ${multiline ? 'bg-blue-500' : 'bg-ed-border'}`}
+                      >
+                        <span className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${multiline ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                      </button>
+                    </div>
+
+                    {/* Overflow behavior */}
+                    <div className="py-1">
+                      <p className="text-[11px] text-ed-text-dim mb-1">Overflow behavior</p>
+                      <div className="flex gap-1">
+                        {(['truncate', 'shrink', 'stretch'] as const).map((mode) => (
+                          <button
+                            key={mode}
+                            onClick={() => { setOverflowBehavior(mode); updateProp('overflowBehavior', mode) }}
+                            title={
+                              mode === 'truncate' ? 'Keep font size, clip with ellipsis'
+                              : mode === 'shrink' ? 'Shrink font size until text fits'
+                              : 'Keep font size, stretch letter spacing to fill width'
+                            }
+                            className={`flex-1 py-0.5 text-[11px] rounded border transition-colors ${
+                              overflowBehavior === mode
+                                ? 'bg-blue-500 border-blue-500 text-white'
+                                : 'border-ed-border text-ed-text-dim hover:bg-ed-surface-hover'
+                            }`}
+                          >
+                            {mode.charAt(0).toUpperCase() + mode.slice(1)}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Min / Max font size */}
+                    <PropRow label="Min size">
+                      <input
+                        type="number"
+                        value={minFontSize}
+                        min={4}
+                        max={fontSize}
+                        onChange={(e) => { setMinFontSize(Number(e.target.value)); updateProp('minFontSize', Number(e.target.value)) }}
+                        className={inputClass}
+                      />
+                    </PropRow>
+                    <PropRow label="Max size">
+                      <input
+                        type="number"
+                        value={maxFontSize}
+                        min={minFontSize}
+                        max={500}
+                        onChange={(e) => { setMaxFontSize(Number(e.target.value)); updateProp('maxFontSize', Number(e.target.value)) }}
                         className={inputClass}
                       />
                     </PropRow>

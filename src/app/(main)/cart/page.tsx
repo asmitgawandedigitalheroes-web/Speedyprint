@@ -63,7 +63,14 @@ export default function CartPage() {
                     <p className="text-sm text-brand-text-muted">{item.template_name}</p>
                     {Object.entries(item.selected_params).length > 0 && (
                       <p className="mt-1 text-xs text-brand-text-muted">
-                        {Object.entries(item.selected_params).map(([k, v]) => `${k}: ${v}`).join(' · ')}
+                        {Object.entries(item.selected_params).map(([k, v]) => {
+                          const label = k
+                            .replace(/_mm$/, '')
+                            .replace(/_/g, ' ')
+                            .replace(/\b\w/g, (c) => c.toUpperCase())
+                          const unit = k.endsWith('_mm') ? 'mm' : ''
+                          return `${label}: ${v}${unit}`
+                        }).join(' · ')}
                       </p>
                     )}
                   </div>

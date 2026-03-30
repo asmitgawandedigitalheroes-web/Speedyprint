@@ -31,7 +31,12 @@ export const ORDER_STATUS_LABELS: Record<string, { label: string; color: string 
   draft: { label: 'Draft', color: 'bg-gray-100 text-gray-700' },
   pending_payment: { label: 'Pending Payment', color: 'bg-yellow-100 text-yellow-700' },
   paid: { label: 'Paid', color: 'bg-blue-100 text-blue-700' },
+  pending_design: { label: 'Pending Design', color: 'bg-orange-100 text-orange-700' },
+  proof_pending_review: { label: 'Proof: Pending Review', color: 'bg-amber-100 text-amber-700' },
   in_production: { label: 'In Production', color: 'bg-purple-100 text-purple-700' },
+  ready_to_ship: { label: 'Ready to Ship', color: 'bg-teal-100 text-teal-700' },
+  shipped: { label: 'Shipped', color: 'bg-indigo-100 text-indigo-700' },
+  delivered: { label: 'Delivered', color: 'bg-emerald-100 text-emerald-700' },
   completed: { label: 'Completed', color: 'bg-green-100 text-green-700' },
   cancelled: { label: 'Cancelled', color: 'bg-red-100 text-red-700' },
 }
@@ -56,6 +61,7 @@ export const WHATSAPP_NUMBER = '27123456789' // Update with real number
 export const WHATSAPP_URL = `https://wa.me/${WHATSAPP_NUMBER}`
 export const FREE_DELIVERY_THRESHOLD = 500 // R500
 export const FLAT_SHIPPING_RATE = 85 // R85
+export const MAX_CART_QUANTITY = 10000
 
 // V2 Sticker/Label Divisions
 export const V2_DIVISIONS = [
