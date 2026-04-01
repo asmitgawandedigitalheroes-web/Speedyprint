@@ -1,12 +1,13 @@
 import type { Metadata } from 'next'
-import { SITE_NAME } from '@/lib/utils/constants'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { BlogCard } from '@/components/blog/BlogCard'
 import type { BlogPost } from '@/types'
 
 export const metadata: Metadata = {
-  title: `Blog | ${SITE_NAME}`,
-  description: 'Tips, guides, and insights about custom stickers, labels, and printing from the Speedy Labels team.',
+  // BUG-023 FIX: Use just 'Blog' — the root layout template appends '| SpeedyPrint'.
+  // Previously 'Blog | SpeedyPrint' + template '...| SpeedyPrint' = 'Blog | SpeedyPrint | SpeedyPrint'.
+  title: 'Blog',
+  description: 'Tips, guides, and insights about custom stickers, labels, and printing from the SpeedyPrint team.',
 }
 
 export const dynamic = 'force-dynamic'

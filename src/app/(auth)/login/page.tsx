@@ -26,7 +26,11 @@ function LoginForm() {
     const { error } = await login(email, password)
     if (error) { toast.error(error); return }
     toast.success('Signed in successfully')
-    router.push(redirect || '/account')
+    // BUG-012 FIX: Validate that redirect is a relative path to prevent open redirect attacks.
+    // An attacker could craft /login?redirect=https://phishing.com — after login the user
+    // would be silently redirected to an external site. Only allow paths starting with '/'.
+    const safeRedirect = redirect && redirect.startsWith('/') ? redirect : '/account'
+    router.push(safeRedirect)
   }
 
   return (

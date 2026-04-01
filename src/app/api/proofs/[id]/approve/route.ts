@@ -17,6 +17,13 @@ export async function POST(
   const body = await request.json()
   const admin = createAdminClient()
 
+  // BUG-020 FIX: Sanitize customer notes before storing to prevent stored XSS.
+  // A user could submit notes with <script> or event-handler attributes.
+  // Strip all HTML tags and limit length to prevent abuse.
+  // Note: If a full HTML-rendering context is ever needed, use DOMPurify on the server.
+  const rawNotes: string = typeof body.notes === 'string' ? body.notes : ''
+  const sanitizedNotes = rawNotes.replace(/<[^>]*>/g, '').trim().slice(0, 2000) || null
+
   // Determine the actual role of the caller (admin/production_staff vs customer)
   const { data: callerProfile } = await admin
     .from('profiles')
@@ -39,7 +46,7 @@ export async function POST(
     .from('proofs')
     .update({
       status: 'approved',
-      customer_notes: body.notes || null,
+      customer_notes: sanitizedNotes,
       responded_at: respondedAt,
       approved_by: user.id,
       approved_ip: clientIp,
@@ -51,7 +58,7 @@ export async function POST(
   if (error?.message?.includes('approved_by') || error?.message?.includes('approved_ip')) {
     const retry = await admin
       .from('proofs')
-      .update({ status: 'approved', customer_notes: body.notes || null, responded_at: respondedAt })
+      .update({ status: 'approved', customer_notes: sanitizedNotes, responded_at: respondedAt })
       .eq('id', id)
       .select()
       .single()
@@ -71,7 +78,7 @@ export async function POST(
     action:        'proof_approved',
     actor_id:      user.id,
     actor_role:    actorRole,
-    notes:         body.notes || null,
+    notes:         sanitizedNotes,
     client_ip:     clientIp,
     metadata:      {
       version: proof!.version,

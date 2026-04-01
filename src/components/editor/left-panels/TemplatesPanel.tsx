@@ -35,11 +35,27 @@ function getGroupColor(groupId: string) {
 
 /* ───── SVG preview generator ───── */
 
+// BUG-021 FIX: Escape XML special characters before interpolating any value into SVG strings.
+// Without this, a malicious DB entry (e.g. template name or color containing </text><script>)
+// could execute arbitrary JS via dangerouslySetInnerHTML. Encode all 5 XML entities.
+function escapeXml(unsafe: string): string {
+  return unsafe
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
 function generatePreviewSvg(t: ProductTemplate, color: { stroke: string; text: string }): string {
   const w = t.print_width_mm
   const h = t.print_height_mm
   const isCircle = w === h && (t.name.toLowerCase().includes('circle') || t.name.toLowerCase().includes('round'))
   const isSquare = w === h
+
+  // Escape color values — they come from a hardcoded constant but are interpolated into SVG attributes
+  const safeStroke = escapeXml(color.stroke)
+  const safeText = escapeXml(color.text)
 
   // Scale to fit in 80x80 viewBox with padding
   const maxDim = Math.max(w, h)
@@ -52,18 +68,20 @@ function generatePreviewSvg(t: ProductTemplate, color: { stroke: string; text: s
   let shape: string
   if (isCircle) {
     const r = Math.round(rw / 2)
-    shape = `<circle cx="40" cy="40" r="${r}" fill="white" stroke="${color.stroke}" stroke-width="2"/>`
+    shape = `<circle cx="40" cy="40" r="${r}" fill="white" stroke="${safeStroke}" stroke-width="2"/>`
   } else {
-    shape = `<rect x="${rx}" y="${ry}" width="${rw}" height="${rh}" rx="3" fill="white" stroke="${color.stroke}" stroke-width="2"/>`
+    shape = `<rect x="${rx}" y="${ry}" width="${rw}" height="${rh}" rx="3" fill="white" stroke="${safeStroke}" stroke-width="2"/>`
   }
 
-  const label = isCircle
+  // label is derived from numeric DB columns — still escaping as defence-in-depth
+  const rawLabel = isCircle
     ? `⌀${w}`
     : isSquare
       ? `${w}×${h}`
       : `${w}×${h}`
+  const label = escapeXml(rawLabel)
 
-  const text = `<text x="40" y="44" text-anchor="middle" fill="${color.text}" font-size="${label.length > 6 ? 7 : 8}" font-weight="bold">${label}</text>`
+  const text = `<text x="40" y="44" text-anchor="middle" fill="${safeText}" font-size="${label.length > 6 ? 7 : 8}" font-weight="bold">${label}</text>`
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 80 80">${shape}${text}</svg>`
 }

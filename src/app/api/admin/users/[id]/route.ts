@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { requireAdmin } from '@/lib/supabase/requireAdmin'
 
 type RouteParams = { params: Promise<{ id: string }> }
 
 // GET /api/admin/users/[id] — get user profile + their orders
 export async function GET(_req: NextRequest, { params }: RouteParams) {
+  // BUG-004 FIX: Require admin authentication — profile data and order history are sensitive
+  const { error: authError, status: authStatus } = await requireAdmin()
+  if (authError) return NextResponse.json({ error: authError }, { status: authStatus })
+
   try {
     const { id } = await params
     const supabase = createAdminClient()
@@ -41,6 +46,10 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
 
 // PUT /api/admin/users/[id] — update user profile
 export async function PUT(req: NextRequest, { params }: RouteParams) {
+  // BUG-004 FIX: Require admin authentication before updating any user's profile
+  const { error: authError, status: authStatus } = await requireAdmin()
+  if (authError) return NextResponse.json({ error: authError }, { status: authStatus })
+
   try {
     const { id } = await params
     const body = await req.json()
@@ -56,7 +65,11 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
       'province',
       'postal_code',
       'country',
-      'role',
+      // BUG-004 FIX: 'role' intentionally removed from allowedFields.
+      // Role changes are a privileged operation and must go through a
+      // dedicated endpoint with additional validation and audit logging.
+      // Leaving 'role' here allowed any authenticated user (or exploited admin)
+      // to escalate any account to admin role via a simple PUT request.
     ]
 
     const updateData: Record<string, unknown> = {}

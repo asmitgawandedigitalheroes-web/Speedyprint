@@ -1,28 +1,41 @@
-interface RateLimitEntry {
-  count: number
-  resetAt: number
-}
-
-const store = new Map<string, RateLimitEntry>()
+import { redis } from './upstash'
+import { Ratelimit } from '@upstash/ratelimit'
 
 /**
- * Simple in-memory rate limiter.
- * @param key     Unique identifier (e.g. IP address)
- * @param limit   Max requests allowed within the window
- * @param windowMs Time window in milliseconds
+ * Redis-backed rate limiter using Upstash.
+ * @param key       Unique identifier (e.g. IP address)
+ * @param limit     Max requests allowed within the window
+ * @param windowMs  Time window in milliseconds
  * @returns true if the request is allowed, false if rate limited
  */
-export function rateLimit(key: string, limit: number, windowMs: number): boolean {
-  const now = Date.now()
-  const entry = store.get(key)
-
-  if (!entry || now > entry.resetAt) {
-    store.set(key, { count: 1, resetAt: now + windowMs })
+export async function rateLimit(key: string, limit: number, windowMs: number): Promise<boolean> {
+  if (!redis) {
+    // If Redis is not configured, we allow the request to prevent app breakage
     return true
   }
 
-  if (entry.count >= limit) return false
+  try {
+    // Upstash Ratelimit expects a time string like "10 s", "1 m", "1 h"
+    // We'll convert ms to seconds
+    const seconds = Math.floor(windowMs / 1000)
+    const windowStr = `${seconds} s`
 
-  entry.count++
-  return true
+    // Create a specific limiter instance for this request configuration
+    // Note: Upstash recommendation is to reuse instances where possible, 
+    // but for the sake of mirroring the original API, we create one here.
+    // In a high-traffic app, we should use a Map to cache these instances.
+    const limiter = new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(limit, windowStr as any),
+      analytics: true,
+      prefix: '@upstash/ratelimit',
+    })
+
+    const { success } = await limiter.limit(key)
+    return success
+  } catch (error) {
+    console.error('Rate limit error:', error)
+    // Fallback: allow request on error
+    return true
+  }
 }

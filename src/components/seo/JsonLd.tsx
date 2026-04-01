@@ -41,7 +41,7 @@ export function JsonLd({ type, data }: JsonLdProps) {
           '@type': 'PostalAddress',
           addressCountry: 'ZA',
         },
-        priceRange: 'R',
+        priceRange: '₹',
         ...data,
       }
       break
@@ -119,7 +119,7 @@ interface ProductJsonLdProps {
   currency?: string
 }
 
-export function ProductJsonLd({ name, description, image, slug, price, currency = 'ZAR' }: ProductJsonLdProps) {
+export function ProductJsonLd({ name, description, image, slug, price, currency = 'INR' }: ProductJsonLdProps) {
   return (
     <JsonLd
       type="Product"

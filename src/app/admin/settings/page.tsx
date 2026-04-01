@@ -219,7 +219,7 @@ export default function AdminSettingsPage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="free_delivery_threshold">
-                Free Delivery Over (R)
+                Free Delivery Over (₹)
               </Label>
               <Input
                 id="free_delivery_threshold"
@@ -232,7 +232,7 @@ export default function AdminSettingsPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="flat_shipping_rate">Flat Shipping (R)</Label>
+              <Label htmlFor="flat_shipping_rate">Flat Shipping (₹)</Label>
               <Input
                 id="flat_shipping_rate"
                 value={settings.flat_shipping_rate || ''}
@@ -320,10 +320,10 @@ export default function AdminSettingsPage() {
             <div>
               <p className="text-sm font-medium">Default Currency</p>
               <p className="text-xs text-muted-foreground">
-                South African Rand
+                Indian Rupee
               </p>
             </div>
-            <span className="text-lg font-bold">R (ZAR)</span>
+            <span className="text-lg font-bold">₹ (INR)</span>
           </div>
         </CardContent>
       </Card>

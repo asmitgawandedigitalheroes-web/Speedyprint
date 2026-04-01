@@ -6,7 +6,8 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import type { ProductGroup, ProductTemplate } from '@/types'
 
 export const metadata: Metadata = {
-  title: `Design Templates | ${SITE_NAME}`,
+  // BUG-023 FIX: Use just the page name — the root layout template appends '| SpeedyPrint'.
+  title: 'Design Templates',
   description: 'Browse our library of sticker and label templates. Design online using our free design wizard.',
 }
 

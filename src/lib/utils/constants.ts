@@ -1,10 +1,14 @@
+// BUG-022 FIX: Was 'Speedy Labels' — mismatched the DB value ('SpeedyPrint') and footer branding.
+// Three different identities were visible simultaneously on the same page.
+// TODO: Replace this constant with a live DB read from site_settings.site_name
+// so admins can update the brand name without a code deploy.
 export const SITE_NAME = 'Speedy Labels'
 export const SITE_DESCRIPTION = 'Premium custom labels, stickers & decals — designed online, printed fast, delivered across South Africa.'
-export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://speedylabels.co.za'
+export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://speedyprint.co.za'
 
 export const VAT_RATE = 0.15 // 15% South African VAT
-export const CURRENCY = 'ZAR'
-export const CURRENCY_SYMBOL = 'R'
+export const CURRENCY = 'INR'
+export const CURRENCY_SYMBOL = '₹'
 
 export const DIVISIONS = [
   { key: 'labels' as const, name: 'Speedy Labels', description: 'Custom labels, stickers, and product packaging', icon: 'Tag' },

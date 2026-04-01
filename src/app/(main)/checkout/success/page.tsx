@@ -4,11 +4,20 @@ import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { CheckCircle2, Package, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
+import { useCart } from '@/hooks/useCart'
 
 function SuccessPageContent() {
   const searchParams = useSearchParams()
   const orderId = searchParams.get('order_id')
   const router = useRouter()
+  const { clearCart } = useCart()
+
+  // BUG-009 FIX: Clear cart here — only after Stripe redirects back to this page.
+  // This ensures the cart is preserved if the user abandons Stripe or their payment fails.
+  useEffect(() => {
+    clearCart()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   return (
     <div className="flex min-h-[70vh] flex-col items-center justify-center bg-brand-bg px-4 py-12 sm:px-6 lg:px-8">

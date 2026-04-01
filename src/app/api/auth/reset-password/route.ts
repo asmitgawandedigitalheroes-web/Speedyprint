@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
     'unknown'
 
   // 5 reset attempts per IP per 15 minutes
-  if (!rateLimit(`reset_password:${ip}`, 5, 15 * 60 * 1000)) {
+  if (!(await rateLimit(`reset_password:${ip}`, 5, 15 * 60 * 1000))) {
     return NextResponse.json({ error: 'Too many requests. Please wait before trying again.' }, { status: 429 })
   }
 

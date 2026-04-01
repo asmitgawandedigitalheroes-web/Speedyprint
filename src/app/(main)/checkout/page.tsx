@@ -155,7 +155,10 @@ export default function CheckoutPage() {
       const { url, error } = await response.json()
 
       if (url) {
-        clearCart()
+        // BUG-009 FIX: Do NOT clear the cart here.
+        // clearCart() was being called before the user even completed payment on Stripe.
+        // If they abandon Stripe or their card declines, their cart is permanently gone.
+        // Cart is now cleared on the /checkout/success page (after Stripe confirms payment).
         window.location.href = url
       } else {
         throw new Error(error || 'Failed to initialize payment')

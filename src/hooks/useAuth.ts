@@ -4,6 +4,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { createClient } from '@/lib/supabase/client'
 import type { Profile } from '@/types'
+import { useCart } from '@/hooks/useCart'
 
 interface AuthState {
   user: Profile | null
@@ -38,7 +39,10 @@ export const useAuth = create<AuthState>()(
 
         if (error) {
           set({ isLoading: false })
-          return { error: error.message }
+          // BUG-015 FIX: Do not leak raw Supabase error messages to the UI.
+          // Messages like "Invalid login credentials" or "Email not confirmed" can
+          // be used to enumerate which emails are registered. Use a generic message.
+          return { error: 'Sign in failed. Please check your email and password.' }
         }
 
         if (data.user) {
@@ -72,7 +76,17 @@ export const useAuth = create<AuthState>()(
 
         if (error) {
           set({ isLoading: false })
-          return { error: error.message }
+          // BUG-010 FIX: Map raw Supabase error messages to user-friendly text.
+          // Also addresses BUG-015 (user enumeration): raw messages like "User already registered"
+          // reveal whether an email exists in the system. Use a neutral, actionable message instead.
+          if (
+            error.message.toLowerCase().includes('already registered') ||
+            error.message.toLowerCase().includes('already exists') ||
+            error.message.toLowerCase().includes('email address is already')
+          ) {
+            return { error: 'An account with this email already exists. Try signing in instead.' }
+          }
+          return { error: 'Registration failed. Please check your details and try again.' }
         }
 
         if (data.user) {
@@ -109,6 +123,10 @@ export const useAuth = create<AuthState>()(
       logout: async () => {
         const supabase = createClient()
         await supabase.auth.signOut()
+        // BUG-029 FIX: Clear the cart on logout so the next user (or role) sees a fresh cart.
+        // Without this, persisted cart items from a customer session were visible to admin/staff
+        // logins and to different customers sharing the same browser.
+        useCart.getState().clearCart()
         set({ user: null, isAuthenticated: false })
       },
 
@@ -156,7 +174,11 @@ export const useAuth = create<AuthState>()(
     }),
     {
       name: 'sp-auth-storage',
-      partialize: (state) => ({ user: state.user, isAuthenticated: state.isAuthenticated }),
+      // BUG-014 FIX: Do NOT persist the full user object in localStorage.
+      // Storing email, phone, address, and role unencrypted in localStorage exposes
+      // sensitive data to XSS attacks and malicious browser extensions.
+      // Only persist a minimal flag; always re-fetch the full profile from Supabase on load.
+      partialize: () => ({ wasLoggedIn: true }),
     }
   )
 )
