@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
     'unknown'
 
   // 20 callback attempts per IP per 10 minutes
-  if (!rateLimit(`auth_callback:${ip}`, 20, 10 * 60 * 1000)) {
+  if (!(await rateLimit(`auth_callback:${ip}`, 20, 10 * 60 * 1000))) {
     return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
   }
 

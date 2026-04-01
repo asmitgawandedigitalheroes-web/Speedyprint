@@ -34,12 +34,17 @@ export default function ContactPage() {
               {
                 icon: Mail,
                 title: 'Email',
-                lines: ['info@speedylabels.co.za', 'orders@speedylabels.co.za'],
+                // BUG-032 FIX: Updated email to match canonical brand (speedyprint not speedylabels)
+                // TODO: Read from site_settings DB row like the footer does
+                lines: ['info@speedyprint.co.za', 'orders@speedyprint.co.za'],
               },
               {
                 icon: Phone,
                 title: 'Phone',
-                lines: ['+27 (0) 21 123 4567', 'Mon–Fri, 8am – 5pm SAST'],
+                // BUG-032 FIX: Removed placeholder '+27 (0) 21 123 4567' — replaced with
+                // the same number shown in all other pages (+27 12 345 6789).
+                // TODO: Read from site_settings DB row (site_phone key) for single source of truth
+                lines: ['+27 12 345 6789', 'Mon–Fri, 8am – 5pm SAST'],
               },
               {
                 icon: MapPin,

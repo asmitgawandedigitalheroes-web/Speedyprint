@@ -232,6 +232,17 @@ export default function EditorCanvas() {
     return () => {
       if (keydownRef.current) window.removeEventListener('keydown', keydownRef.current)
       history.dispose()
+      // BUG-033 FIX: Explicitly remove canvas event listeners before dispose.
+      // canvas.dispose() removes them in Fabric.js v6, but being explicit prevents leaks
+      // if the Fabric.js version changes. These were being attached on every init.
+      canvas.off('mouse:wheel')
+      canvas.off('object:added')
+      canvas.off('object:modified')
+      canvas.off('object:removed')
+      canvas.off('selection:created')
+      canvas.off('selection:updated')
+      canvas.off('selection:cleared')
+      canvas.off('text:editing:exited')
       canvas.dispose()
       fabricRef.current = null
       setCanvas(null)

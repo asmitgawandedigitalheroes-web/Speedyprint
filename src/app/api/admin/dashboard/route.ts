@@ -12,6 +12,16 @@ export async function GET(_req: NextRequest) {
 
   try {
     const supabase = createAdminClient()
+    
+    // BUG-024 FIX: Lazy Cleanup of orphaned orders.
+    // Instead of a dedicated CRON, we trigger the cleanup whenever an admin 
+    // views the dashboard stats. This purges 'pending_payment' orders > 24h old.
+    try {
+      await supabase.rpc('cleanup_orphaned_orders', { expiry_hours: 24 })
+    } catch (cleanupErr) {
+      console.error('[Dashboard] Order cleanup failed:', cleanupErr)
+      // We don't throw here to avoid breaking the dashboard if cleanup fails
+    }
 
     const todayStart = new Date()
     todayStart.setHours(0, 0, 0, 0)

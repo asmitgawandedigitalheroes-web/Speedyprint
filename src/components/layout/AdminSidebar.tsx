@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import {
   LayoutDashboard,
   ShoppingCart,
@@ -19,6 +19,7 @@ import {
   TableProperties,
   ShieldCheck,
   Printer,
+  LogOut,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -42,7 +43,8 @@ const ALL_NAV = [
 
 export function AdminSidebar() {
   const pathname = usePathname()
-  const { user } = useAuth()
+  const router = useRouter()
+  const { user, logout } = useAuth()
   const [collapsed, setCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
 
@@ -140,11 +142,11 @@ export function AdminSidebar() {
           </Button>
         </div>
 
-        {/* Navigation */}
-        <div className="flex-1 overflow-y-auto">{navContent}</div>
+        {/* Navigation — BUG-034 FIX: overflow-y-auto ensures items below viewport are reachable */}
+        <div className="flex-1 overflow-y-auto scrollbar-thin">{navContent}</div>
 
-        {/* Back to Site Link */}
-        <div className="border-t border-gray-200 px-3 py-4">
+        {/* Footer: Back to Site + Logout — BUG-011 FIX: Logout button added */}
+        <div className="border-t border-gray-200 px-3 py-4 space-y-1">
           <Link
             href="/"
             className={cn(
@@ -156,6 +158,17 @@ export function AdminSidebar() {
             <ChevronLeft className="h-4 w-4 shrink-0" />
             {!collapsed && <span>Back to Site</span>}
           </Link>
+          <button
+            onClick={async () => { await logout(); router.push('/login') }}
+            className={cn(
+              'flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium text-red-500 transition-colors hover:bg-red-50 hover:text-red-600',
+              collapsed && 'justify-center'
+            )}
+            title={collapsed ? 'Sign out' : undefined}
+          >
+            <LogOut className="h-4 w-4 shrink-0" />
+            {!collapsed && <span>Sign out</span>}
+          </button>
         </div>
       </aside>
     </>

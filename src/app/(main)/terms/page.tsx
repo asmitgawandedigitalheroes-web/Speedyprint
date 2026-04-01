@@ -13,11 +13,11 @@ const SECTIONS = [
   },
   {
     title: '2. Services',
-    content: 'Speedy Labels provides custom printing services including stickers, labels, decals, and related products. We offer online design tools, artwork upload, and printing services delivered across South Africa.',
+    content: 'Speedy Labels provides custom printing services including stickers, labels, decals, and related products. We offer online design tools, artwork upload, and printing services delivered across India.',
   },
   {
     title: '3. Orders and Pricing',
-    content: 'All prices are quoted in South African Rand (ZAR) and include VAT at 15%. Prices are subject to change without notice. Once an order is confirmed and paid for, the quoted price will be honoured.',
+    content: 'All prices are quoted in Indian Rupee (INR) and include GST. Prices are subject to change without notice. Once an order is confirmed and paid for, the quoted price will be honoured.',
   },
   {
     title: '4. Artwork and Design',

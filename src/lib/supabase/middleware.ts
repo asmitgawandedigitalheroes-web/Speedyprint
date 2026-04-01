@@ -1,7 +1,20 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { rateLimit } from '../rateLimit'
 
 export async function updateSession(request: NextRequest) {
+  const pathname = request.nextUrl.pathname
+  // @ts-ignore - request.ip exists on Vercel/Next.js but might not be in the type definition depending on version
+  const ip = request.ip ?? request.headers.get('x-forwarded-for')?.split(',')[0] ?? '127.0.0.1'
+
+  // BUG-013/028 FIX: Rate limit auth pages to prevent brute-force and DDoS
+  if (pathname === '/login' || pathname === '/register' || pathname === '/reset-password') {
+    const isAllowed = await rateLimit(`auth_page:${ip}`, 30, 60 * 1000) // 30 per minute
+    if (!isAllowed) {
+      return new NextResponse('Too Many Requests', { status: 429 })
+    }
+  }
+
   let supabaseResponse = NextResponse.next({ request })
 
   // Guard: if Supabase env vars are missing, skip auth checks
@@ -36,7 +49,7 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  const pathname = request.nextUrl.pathname
+  // pathname is already defined at the top
 
   // Protect /account routes
   if (pathname.startsWith('/account')) {
@@ -47,14 +60,11 @@ export async function updateSession(request: NextRequest) {
       return NextResponse.redirect(url)
     }
 
-    // Admin / staff have their own panel — send them there
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
+    // BUG-025 FIX: Admin / staff have their own panel — send them there
+    // Extract role from JWT app_metadata (synced via trigger) instead of DB query
+    const role = user.app_metadata?.role
 
-    if (profile && ['admin', 'production_staff'].includes(profile.role)) {
+    if (role && ['admin', 'production_staff'].includes(role)) {
       const url = request.nextUrl.clone()
       url.pathname = '/admin'
       return NextResponse.redirect(url)
@@ -70,14 +80,10 @@ export async function updateSession(request: NextRequest) {
       return NextResponse.redirect(url)
     }
 
-    // Check admin role
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
+    // BUG-025 FIX: Check role from JWT app_metadata
+    const role = user.app_metadata?.role
 
-    if (!profile || !['admin', 'production_staff'].includes(profile.role)) {
+    if (!role || !['admin', 'production_staff'].includes(role)) {
       const url = request.nextUrl.clone()
       url.pathname = '/forbidden'
       url.searchParams.set('from', pathname)
@@ -86,16 +92,20 @@ export async function updateSession(request: NextRequest) {
 
     // Production staff: restrict to production-related routes only
     const PRODUCTION_STAFF_ALLOWED = [
-      '/admin',
       '/admin/orders',
       '/admin/production',
       '/admin/proofs',
       '/admin/csv',
     ]
-    if (profile.role === 'production_staff') {
-      const allowed = PRODUCTION_STAFF_ALLOWED.some(
-        (allowed) => pathname === allowed || pathname.startsWith(allowed + '/')
-      )
+
+    if (role === 'production_staff') {
+      // Allow exact-match OR sub-path match for each allowed route
+      // Also allow the /admin dashboard index page itself (exact match)
+      const allowed =
+        pathname === '/admin' ||
+        PRODUCTION_STAFF_ALLOWED.some(
+          (allowed) => pathname === allowed || pathname.startsWith(allowed + '/')
+        )
       if (!allowed) {
         const url = request.nextUrl.clone()
         url.pathname = '/admin/production'

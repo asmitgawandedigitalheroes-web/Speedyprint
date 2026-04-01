@@ -28,7 +28,18 @@ export default function RegisterPage() {
     const e: Record<string, string> = {}
     if (!fullName.trim()) e.fullName = 'Full name is required'
     if (!email.trim()) e.email = 'Email is required'
-    if (password.length < 8) e.password = 'Password must be at least 8 characters'
+    // BUG-035 FIX: Enforce password complexity — not just minimum length.
+    // Previously: only 8 characters required (e.g. 'password' or '12345678' accepted).
+    // Now requires: 8+ chars, 1 uppercase, 1 digit, 1 special character.
+    if (password.length < 8) {
+      e.password = 'Password must be at least 8 characters'
+    } else if (!/[A-Z]/.test(password)) {
+      e.password = 'Password must contain at least one uppercase letter'
+    } else if (!/[0-9]/.test(password)) {
+      e.password = 'Password must contain at least one number'
+    } else if (!/[^A-Za-z0-9]/.test(password)) {
+      e.password = 'Password must contain at least one special character (e.g. @, #, !)'
+    }
     if (password !== confirmPassword) e.confirmPassword = 'Passwords do not match'
     setErrors(e)
     return Object.keys(e).length === 0
@@ -96,7 +107,7 @@ export default function RegisterPage() {
 
         <div className="space-y-1.5">
           <Label htmlFor="password">Password</Label>
-          <Input id="password" type="password" placeholder="Minimum 8 characters" value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="new-password" disabled={isLoading} />
+          <Input id="password" type="password" placeholder="Min 8 chars, uppercase, number & symbol" value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="new-password" disabled={isLoading} />
           {errors.password && <p className="text-xs text-red-500">{errors.password}</p>}
         </div>
 

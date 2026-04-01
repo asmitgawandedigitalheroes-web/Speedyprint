@@ -348,7 +348,7 @@ export default function AdminProductEditPage({
         rule_type: editingRule.rule_type,
         conditions: parsedConditions,
         price_value: editingRule.price_value,
-        currency: 'ZAR',
+        currency: 'INR',
         is_active: editingRule.is_active,
         display_order: editingRule.display_order,
       }
@@ -955,7 +955,7 @@ export default function AdminProductEditPage({
 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <Label className="text-xs">Price Value (ZAR)</Label>
+                    <Label className="text-xs">Price Value (INR)</Label>
                     <Input
                       type="number"
                       step="0.01"

@@ -56,21 +56,20 @@ export async function POST(request: NextRequest) {
     }
 
     // --- Validate MIME type ---
+    // BUG-019 FIX: Do NOT fall back to file extension checking.
+    // An attacker can name 'malware.exe' with Content-Type: image/png —
+    // the MIME check fails but the filename extension fallback would previously accept it.
+    // Now we ONLY accept files with a MIME type in the explicit whitelist.
     const mimeType = file.type
     const extension = ALLOWED_MIME[mimeType]
 
     if (!extension) {
-      // Also try inferring from the file name
-      const name = file.name?.toLowerCase() ?? ''
-      const extFromName = Object.values(ALLOWED_MIME).find((ext) => name.endsWith(ext))
-      if (!extFromName) {
-        return NextResponse.json(
-          {
-            error: `Unsupported file type "${mimeType}". Accepted: PNG, JPG, WebP, SVG, PDF.`,
-          },
-          { status: 415 }
-        )
-      }
+      return NextResponse.json(
+        {
+          error: `Unsupported file type "${mimeType}". Accepted: PNG, JPG, WebP, SVG, PDF.`,
+        },
+        { status: 415 }
+      )
     }
 
     // --- Build storage path ---

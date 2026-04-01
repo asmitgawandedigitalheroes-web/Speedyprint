@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { requireAdmin } from '@/lib/supabase/requireAdmin'
 
 // GET /api/admin/settings — fetch all site settings
 export async function GET() {
+  // BUG-003 FIX: Require admin authentication before exposing any settings
+  const { error, status } = await requireAdmin(['admin'])
+  if (error) return NextResponse.json({ error }, { status })
+
   try {
     const supabase = createAdminClient()
     const { data, error } = await supabase.from('site_settings').select('*')
@@ -25,6 +30,11 @@ export async function GET() {
 
 // PUT /api/admin/settings — update site settings
 export async function PUT(req: NextRequest) {
+  // BUG-003 FIX: Require admin authentication before allowing any settings update
+  // Only 'admin' role allowed (not production_staff) to prevent privilege escalation
+  const { error: authError, status: authStatus } = await requireAdmin(['admin'])
+  if (authError) return NextResponse.json({ error: authError }, { status: authStatus })
+
   try {
     const body = await req.json()
     const { settings } = body as { settings: Record<string, string> }
