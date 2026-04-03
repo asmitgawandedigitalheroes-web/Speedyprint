@@ -3,26 +3,26 @@ import { Palette, Upload, Printer, Truck } from 'lucide-react'
 const STEPS = [
   {
     number: '01',
-    title: 'Design',
-    description: 'Use our online editor or upload your own print-ready artwork.',
-    icon: Palette,
-  },
-  {
-    number: '02',
-    title: 'Configure',
-    description: 'Choose material, size, quantity, and finish. Get an instant price.',
+    title: 'Upload Artwork',
+    description: 'Drop in your print-ready files or pick from our library of templates.',
     icon: Upload,
   },
   {
+    number: '02',
+    title: 'Customize Design',
+    description: 'Use our online editor to tweak text, fonts, and colors in real-time.',
+    icon: Palette,
+  },
+  {
     number: '03',
-    title: 'We print',
-    description: 'Premium materials, precision cutting, and rigorous quality checks.',
+    title: 'Get Instant Quote',
+    description: 'See real-time pricing as you configure your materials and quantity.',
     icon: Printer,
   },
   {
     number: '04',
-    title: 'We deliver',
-    description: 'Fast courier delivery across South Africa. Free shipping over R500.',
+    title: 'Print & Deliver',
+    description: 'Fast 24-hour turnaround and nationwide delivery across South Africa.',
     icon: Truck,
   },
 ]

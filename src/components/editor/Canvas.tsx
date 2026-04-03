@@ -167,6 +167,20 @@ export default function EditorCanvas() {
     canvas.on('selection:updated', (e) => setActiveObject(e.selected?.[0] ?? null))
     canvas.on('selection:cleared', () => setActiveObject(null))
 
+    // Artboard boundary enforcement — clamp object within artboard while dragging
+    canvas.on('object:moving', (e) => {
+      const obj = e.target
+      if (!obj) return
+      const { artboardWidth, artboardHeight } = useEditorStore.getState()
+      if (!artboardWidth || !artboardHeight) return
+      const objW = (obj.width ?? 0) * (obj.scaleX ?? 1)
+      const objH = (obj.height ?? 0) * (obj.scaleY ?? 1)
+      obj.set({
+        left: Math.min(Math.max(obj.left ?? 0, 0), artboardWidth - objW),
+        top:  Math.min(Math.max(obj.top  ?? 0, 0), artboardHeight - objH),
+      })
+    })
+
     // History capture (skip during undo/redo)
     canvas.on('object:modified', () => {
       if (!useEditorStore.getState().isRestoring) history.capture(canvas)
@@ -236,6 +250,7 @@ export default function EditorCanvas() {
       // canvas.dispose() removes them in Fabric.js v6, but being explicit prevents leaks
       // if the Fabric.js version changes. These were being attached on every init.
       canvas.off('mouse:wheel')
+      canvas.off('object:moving')
       canvas.off('object:added')
       canvas.off('object:modified')
       canvas.off('object:removed')

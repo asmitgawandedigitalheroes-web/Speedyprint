@@ -16,6 +16,8 @@ interface ObjectProperties {
   fontSize: number
   fontFamily: string
   fontWeight: string
+  fontStyle: string
+  underline: boolean
   textAlign: string
   scaleX: number
   scaleY: number
@@ -84,6 +86,8 @@ export default function PropertiesPanel() {
       fontSize: (obj.fontSize as number) ?? 24,
       fontFamily: (obj.fontFamily as string) ?? 'Inter, sans-serif',
       fontWeight: String((obj.fontWeight as string | number) ?? 'normal'),
+      fontStyle: (obj.fontStyle as string) ?? 'normal',
+      underline: (obj.underline as boolean) ?? false,
       textAlign: (obj.textAlign as string) ?? 'left',
       scaleX: (obj.scaleX as number) ?? 1,
       scaleY: (obj.scaleY as number) ?? 1,
@@ -311,6 +315,32 @@ export default function PropertiesPanel() {
                         {align.charAt(0).toUpperCase() + align.slice(1)}
                       </button>
                     ))}
+                  </div>
+                </PropertyRow>
+                <PropertyRow label="Style">
+                  <div className="flex gap-1">
+                    <button
+                      onClick={() => updateProp('fontStyle', props.fontStyle === 'italic' ? 'normal' : 'italic')}
+                      className={`px-2 py-0.5 text-xs rounded border italic ${
+                        props.fontStyle === 'italic'
+                          ? 'bg-blue-50 border-blue-300 text-blue-700'
+                          : 'border-gray-200 text-gray-500 hover:bg-gray-50'
+                      }`}
+                      title="Italic"
+                    >
+                      I
+                    </button>
+                    <button
+                      onClick={() => updateProp('underline', !props.underline)}
+                      className={`px-2 py-0.5 text-xs rounded border underline ${
+                        props.underline
+                          ? 'bg-blue-50 border-blue-300 text-blue-700'
+                          : 'border-gray-200 text-gray-500 hover:bg-gray-50'
+                      }`}
+                      title="Underline"
+                    >
+                      U
+                    </button>
                   </div>
                 </PropertyRow>
               </div>

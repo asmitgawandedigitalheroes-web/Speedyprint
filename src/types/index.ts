@@ -1,5 +1,14 @@
 export type UserRole = 'customer' | 'admin' | 'production_staff'
-export type Division = 'labels' | 'laser' | 'events' | 'stamps' | 'sleeves'
+
+export interface ProductFamily {
+  key: string
+  name: string
+  description: string
+  icon: string
+  products: string[]
+  divisionKey: string
+}
+export type Division = 'labels' | 'race-numbers' | 'mtb-boards' | 'laser' | 'trophies' | 'print'
 export type ParamType = 'select' | 'range' | 'number' | 'text'
 export type PricingRuleType = 'base_price' | 'quantity_break' | 'size_tier' | 'material_addon' | 'option_addon' | 'finish_addon'
 export type OrderStatus = 'draft' | 'pending_payment' | 'paid' | 'in_production' | 'completed' | 'cancelled'

@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
     // Prepare line items for Stripe
     const lineItems = order.items.map((item: any) => ({
       price_data: {
-        currency: 'inr', // Indian Rupee (Temporary testing fix)
+        currency: 'zar',
         product_data: {
           name: item.product_group?.name || 'Speedyprint Product',
           description: `Quantity: ${item.quantity}`,
@@ -63,7 +63,7 @@ export async function POST(req: NextRequest) {
     if (order.shipping_cost > 0) {
       lineItems.push({
         price_data: {
-          currency: 'inr',
+          currency: 'zar',
           product_data: { name: 'Shipping' },
           unit_amount: Math.round(order.shipping_cost * 100),
         },

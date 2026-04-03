@@ -4,7 +4,7 @@ import { useState, type FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { toast } from 'sonner'
-import { Loader2, ArrowRight, Mail } from 'lucide-react'
+import { Loader2, ArrowRight } from 'lucide-react'
 
 import { useAuth } from '@/hooks/useAuth'
 import { SITE_NAME } from '@/lib/utils/constants'
@@ -22,7 +22,6 @@ export default function RegisterPage() {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [errors, setErrors] = useState<Record<string, string>>({})
-  const [emailSent, setEmailSent] = useState(false)
 
   function validate(): boolean {
     const e: Record<string, string> = {}
@@ -50,33 +49,13 @@ export default function RegisterPage() {
     if (!validate()) return
     const { error, emailConfirmationRequired } = await register(email, password, fullName.trim(), companyName.trim() || undefined)
     if (error) { toast.error(error); return }
-    if (emailConfirmationRequired) { setEmailSent(true); return }
+    if (emailConfirmationRequired) {
+      toast.success('Check your email to activate your account.')
+      router.push('/login')
+      return
+    }
     toast.success('Account created successfully!')
     router.push('/account')
-  }
-
-  if (emailSent) {
-    return (
-      <div className="space-y-6 text-center">
-        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-lg bg-brand-primary/10">
-          <Mail className="h-8 w-8 text-brand-primary" />
-        </div>
-        <div>
-          <h1 className="font-heading text-2xl font-bold text-brand-text">Check your email</h1>
-          <p className="mt-2 text-sm text-brand-text-muted">
-            We sent a confirmation link to{' '}
-            <span className="font-medium text-brand-text">{email}</span>.
-            Click the link to activate your account.
-          </p>
-        </div>
-        <p className="text-sm text-brand-text-muted">
-          Already confirmed?{' '}
-          <Link href="/login" className="font-medium text-brand-primary hover:text-brand-primary-dark transition-colors">
-            Sign in
-          </Link>
-        </p>
-      </div>
-    )
   }
 
   return (

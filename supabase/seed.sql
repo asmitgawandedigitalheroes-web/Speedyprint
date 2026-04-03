@@ -15,17 +15,17 @@ VALUES
    'Precision laser-cut acrylic signs. Perfect for businesses, offices, and events.', '/images/products/acrylic-signs.png', true, 3),
   ('11111111-1111-1111-1111-111111111104', 'Wooden Plaques', 'wooden-plaques', 'laser',
    'Laser-engraved wooden plaques for awards, gifts, and decor.', '/images/products/wooden-plaques.png', true, 4),
-  ('11111111-1111-1111-1111-111111111105', 'Race Bibs', 'race-bibs', 'events',
+  ('11111111-1111-1111-1111-111111111105', 'Race Bibs', 'race-bibs', 'race-numbers',
    'Professional race bibs with custom numbering. Tyvek material, waterproof, with tear-off tabs.', '/images/products/race-bibs.png', true, 5),
-  ('11111111-1111-1111-1111-111111111106', 'Event Tags', 'event-tags', 'events',
+  ('11111111-1111-1111-1111-111111111106', 'Event Tags', 'event-tags', 'race-numbers',
    'Custom event identification tags, lanyards, and badges.', '/images/products/event-tags.png', true, 6),
-  ('11111111-1111-1111-1111-111111111107', 'MTB Number Boards', 'mtb-number-boards', 'events',
+  ('11111111-1111-1111-1111-111111111107', 'MTB Number Boards', 'mtb-number-boards', 'mtb-boards',
    'Mountain bike number boards. Durable, lightweight, and UV resistant.', '/images/products/mtb-number-boards.png', true, 7),
-  ('11111111-1111-1111-1111-111111111108', 'Self-Inking Stamps', 'self-inking-stamps', 'stamps',
+  ('11111111-1111-1111-1111-111111111108', 'Self-Inking Stamps', 'self-inking-stamps', 'print',
    'Professional self-inking rubber stamps for businesses. Multiple sizes available.', '/images/products/self-inking-stamps.png', true, 8),
-  ('11111111-1111-1111-1111-111111111109', 'Coffee Cup Sleeves', 'coffee-cup-sleeves', 'sleeves',
+  ('11111111-1111-1111-1111-111111111109', 'Coffee Cup Sleeves', 'coffee-cup-sleeves', 'print',
    'Branded coffee cup sleeves for cafes and events. Full-color printing on recycled cardboard.', '/images/products/coffee-cup-sleeves.png', true, 9),
-  ('11111111-1111-1111-1111-111111111110', 'Award Trophies', 'award-trophies', 'sleeves',
+  ('11111111-1111-1111-1111-111111111110', 'Award Trophies', 'award-trophies', 'trophies',
    'Custom laser-cut acrylic trophies and awards for corporate events.', '/images/products/award-trophies.png', true, 10)
 ON CONFLICT (id) DO NOTHING;
 

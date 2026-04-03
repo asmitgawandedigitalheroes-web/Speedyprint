@@ -19,9 +19,9 @@ const QUICK_LINKS = [
 const PRODUCT_LINKS = [
   { href: '/products?division=labels', label: 'Custom Stickers' },
   { href: '/products?division=labels', label: 'Product Labels' },
-  { href: '/products?division=laser', label: 'Vehicle Decals' },
-  { href: '/products?division=events', label: 'Window Graphics' },
-  { href: '/products?division=stamps', label: 'Specialty & 3D Domed' },
+  { href: '/products?division=vehicle-decals', label: 'Vehicle Decals' },
+  { href: '/products?division=window-wall', label: 'Window Graphics' },
+  { href: '/products?division=specialty-3d', label: 'Specialty & 3D Domed' },
 ]
 
 export function Footer() {
@@ -141,7 +141,7 @@ export function Footer() {
               <li className="flex items-start gap-2">
                 <Phone className="mt-0.5 h-4 w-4 shrink-0 text-white" />
                 <a
-                  href={`tel:${companyPhone.replace(/[^+0-9]/g, '')}`}
+                  href={`tel:${companyPhone.replace(/\(0\)/g, '').replace(/[^+0-9]/g, '')}`}
                   className="transition-colors hover:text-white"
                 >
                   {companyPhone}

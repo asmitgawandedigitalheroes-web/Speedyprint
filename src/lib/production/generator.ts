@@ -164,7 +164,8 @@ export async function generateOrderProductionFiles(
 
         // Primary field value (first variable) used in filename for human readability
         const primaryVal = safe(Object.values(variables)[0] ?? `Row${rowIdx + 1}`, 30)
-        const fileName = `${safe(orderNum)}_${productName}_${pad(rowIdx + 1)}_${primaryVal}.pdf`
+        const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '')
+        const fileName = `${safe(orderNum)}_${productName}_${pad(rowIdx + 1)}_${primaryVal}_${dateStr}.pdf`
         const storagePath = `${basePath}/${fileName}`
 
         try {

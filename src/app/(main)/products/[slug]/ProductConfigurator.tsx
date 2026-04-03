@@ -150,7 +150,7 @@ export function ProductConfigurator({
     return p
   }, [paramValues, dimensionConstraints, customWidth, customHeight, sponsorValues])
 
-  const isEventsProduct = division === 'events'
+  const isEventsProduct = division === 'race-numbers' || division === 'mtb-boards'
 
   return (
     <div className="space-y-6">

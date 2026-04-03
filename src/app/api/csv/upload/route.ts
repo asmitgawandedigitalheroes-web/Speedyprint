@@ -105,6 +105,38 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  // ── Duplicate detection for number-type columns (e.g. race numbers) ────────
+  if (template_id && column_mapping && typeof column_mapping === 'object') {
+    const { data: numericParams } = await admin
+      .from('template_parameters')
+      .select('param_key, param_label')
+      .eq('product_template_id', template_id)
+      .eq('param_type', 'number')
+
+    if (numericParams && numericParams.length > 0) {
+      const mappingObj = column_mapping as Record<string, string>
+      for (const { param_key, param_label } of numericParams) {
+        const csvHeader = mappingObj[param_key]
+        if (!csvHeader) continue
+        const seen = new Map<string, number>() // value → first display row
+        for (let i = 0; i < parsed_data.length; i++) {
+          const row = parsed_data[i] as Record<string, string>
+          const val = String(row[csvHeader] ?? '').trim()
+          if (val === '') continue
+          if (seen.has(val)) {
+            formatErrors.push({
+              row: i + 2,
+              column: param_label,
+              message: `Duplicate value "${val}" — already used on row ${seen.get(val)}`,
+            })
+          } else {
+            seen.set(val, i + 2)
+          }
+        }
+      }
+    }
+  }
+
   // Return all format errors so the UI can display them before creating the job
   if (formatErrors.length > 0) {
     return NextResponse.json({

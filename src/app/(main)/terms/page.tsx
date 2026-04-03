@@ -3,21 +3,21 @@ import { SITE_NAME } from '@/lib/utils/constants'
 
 export const metadata: Metadata = {
   title: `Terms of Service | ${SITE_NAME}`,
-  description: 'Speedy Labels terms of service and conditions of use.',
+  description: 'SpeedyPrint terms of service and conditions of use.',
 }
 
 const SECTIONS = [
   {
     title: '1. Acceptance of Terms',
-    content: "By accessing and using Speedy Labels' website and services, you agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use our services.",
+    content: "By accessing and using SpeedyPrint's website and services, you agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use our services.",
   },
   {
     title: '2. Services',
-    content: 'Speedy Labels provides custom printing services including stickers, labels, decals, and related products. We offer online design tools, artwork upload, and printing services delivered across India.',
+    content: 'SpeedyPrint provides custom printing services including stickers, labels, decals, and related products. We offer online design tools, artwork upload, and printing services delivered across South Africa.',
   },
   {
     title: '3. Orders and Pricing',
-    content: 'All prices are quoted in Indian Rupee (INR) and include GST. Prices are subject to change without notice. Once an order is confirmed and paid for, the quoted price will be honoured.',
+    content: 'All prices are quoted in South African Rand (ZAR) and include VAT at 15%. Prices are subject to change without notice. Once an order is confirmed and paid for, the quoted price will be honoured.',
   },
   {
     title: '4. Artwork and Design',
@@ -33,11 +33,11 @@ const SECTIONS = [
   },
   {
     title: '7. Limitation of Liability',
-    content: "Speedy Labels' liability is limited to the value of the order. We are not liable for any indirect, consequential, or special damages arising from the use of our products or services.",
+    content: "SpeedyPrint's liability is limited to the value of the order. We are not liable for any indirect, consequential, or special damages arising from the use of our products or services.",
   },
   {
     title: '8. Contact',
-    content: 'For questions about these terms, please contact us at info@speedylabels.co.za.',
+    content: 'For questions about these terms, please contact us at info@speedyprint.co.za.',
   },
 ]
 
