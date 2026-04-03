@@ -5,7 +5,7 @@
 -- ENUMS
 -- ============================================
 CREATE TYPE user_role AS ENUM ('customer', 'admin', 'production_staff');
-CREATE TYPE division_type AS ENUM ('labels', 'laser', 'events', 'stamps', 'sleeves');
+CREATE TYPE division_type AS ENUM ('labels', 'laser', 'race-numbers', 'mtb-boards', 'print', 'trophies');
 CREATE TYPE param_type AS ENUM ('select', 'range', 'number', 'text');
 CREATE TYPE pricing_rule_type AS ENUM ('base_price', 'quantity_break', 'size_tier', 'material_addon', 'option_addon', 'finish_addon');
 CREATE TYPE order_status AS ENUM ('draft', 'pending_payment', 'paid', 'in_production', 'completed', 'cancelled');

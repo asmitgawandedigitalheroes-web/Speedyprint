@@ -7,8 +7,8 @@ export const SITE_DESCRIPTION = 'Premium custom labels, stickers & decals — de
 export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://speedyprint.co.za'
 
 export const VAT_RATE = 0.15 // 15% South African VAT
-export const CURRENCY = 'INR'
-export const CURRENCY_SYMBOL = '₹'
+export const CURRENCY = 'ZAR'
+export const CURRENCY_SYMBOL = 'R'
 
 export const DIVISIONS = [
   { key: 'labels' as const, name: 'Speedy Labels', description: 'Custom labels, stickers, and product packaging', icon: 'Tag' },
@@ -16,7 +16,7 @@ export const DIVISIONS = [
   { key: 'mtb-boards' as const, name: 'Speedy MTB Boards', description: 'Mountain bike number boards and cycling accessories', icon: 'Bike' },
   { key: 'laser' as const, name: 'Speedy Laser', description: 'Laser-cut and engraved signage and gifts', icon: 'Zap' },
   { key: 'trophies' as const, name: 'Speedy Trophies', description: 'Award trophies, medals, and recognition products', icon: 'Trophy' },
-  { key: 'print' as const, name: 'Speedy Print', description: 'General commercial printing and branded materials', icon: 'Printer' },
+  { key: 'print' as const, name: 'Speedy Print', description: 'Stamps, sleeves, and general commercial printing', icon: 'Printer' },
 ]
 
 export const SA_PROVINCES = [
@@ -74,6 +74,55 @@ export const V2_DIVISIONS = [
   { key: 'vehicle-decals' as const, name: 'Vehicle & Fleet Decals', description: 'Durable decals for vehicles and fleets', icon: 'Truck', color: '#14B8A6' },
   { key: 'window-wall' as const, name: 'Window & Wall Graphics', description: 'Eye-catching window and wall graphics', icon: 'Layout', color: '#8B5CF6' },
   { key: 'specialty-3d' as const, name: 'Specialty & 3D Domed', description: 'Premium 3D domed stickers and specialty items', icon: 'Diamond', color: '#EC4899' },
+]
+
+// Product Families — grouped navigation for the homepage
+export const PRODUCT_FAMILIES = [
+  {
+    key: 'labels-stickers',
+    name: 'Labels & Stickers',
+    description: 'Custom stickers and product labels for every surface and industry.',
+    imageUrl: '/images/products/custom-labels.png',
+    icon: 'Tag',
+    products: ['Custom Stickers', 'Product Labels', 'Die-Cut Stickers'],
+    divisionKey: 'labels',
+  },
+  {
+    key: 'event-products',
+    name: 'Event Products',
+    description: 'Race bibs, event numbers, and MTB boards built for performance days.',
+    imageUrl: '/images/products/race-bibs.png',
+    icon: 'Hash',
+    products: ['Race Numbers', 'MTB Boards', 'Event Tags'],
+    divisionKey: 'race-numbers',
+  },
+  {
+    key: 'stamps-office',
+    name: 'Stamps & Office',
+    description: 'Self-inking and pre-inked stamps for businesses and offices.',
+    imageUrl: '/images/products/self-inking-stamps.png',
+    icon: 'Stamp',
+    products: ['Self-Inking Stamps', 'Pre-Inked Stamps', 'Custom Stamps'],
+    divisionKey: 'print',
+  },
+  {
+    key: 'laser-fabrication',
+    name: 'Laser & Custom Fabrication',
+    description: 'Precision laser-cut signs, engraved gifts, and acrylic plaques.',
+    imageUrl: '/images/products/acrylic-signs.png',
+    icon: 'Zap',
+    products: ['Laser-Cut Signs', 'Engraved Gifts', 'Acrylic Plaques'],
+    divisionKey: 'laser',
+  },
+  {
+    key: 'signs-display',
+    name: 'Signs & Display',
+    description: 'Coffee cup sleeves, branded packaging, and award trophies.',
+    imageUrl: '/images/products/coffee-cup-sleeves.png',
+    icon: 'Layout',
+    products: ['Coffee Cup Sleeves', 'Award Trophies', 'Branded Packaging'],
+    divisionKey: 'trophies',
+  },
 ]
 
 // Pricing Constants

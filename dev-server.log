@@ -2,13 +2,30 @@
 > speedyprint@0.1.0 dev
 > next dev
 
- ⚠ Port 3000 is in use by process 6912, using available port 3003 instead.
-   ▲ Next.js 15.5.12
-   - Local:        http://localhost:3003
-   - Network:      http://192.168.1.3:3003
-   - Environments: .env.local
-   - Experiments (use with caution):
-     · serverActions
+   Downloading swc package @next/swc-linux-x64-gnu... to /sessions/brave-busy-mayer/.cache/next-swc
+node:internal/deps/undici/undici:14902
+      Error.captureStackTrace(err);
+            ^
 
- ✓ Starting...
- ✓ Ready in 4.8s
+TypeError: fetch failed
+    at node:internal/deps/undici/undici:14902:13
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async extractBinary (/sessions/brave-busy-mayer/mnt/Speedyprint/node_modules/next/dist/lib/download-swc.js:92:9)
+    at async downloadNativeNextSwc (/sessions/brave-busy-mayer/mnt/Speedyprint/node_modules/next/dist/lib/download-swc.js:165:9)
+    at async tryLoadNativeWithFallback (/sessions/brave-busy-mayer/mnt/Speedyprint/node_modules/next/dist/build/swc/index.js:309:5)
+    at async /sessions/brave-busy-mayer/mnt/Speedyprint/node_modules/next/dist/build/swc/index.js:286:40 {
+  [cause]: Error: getaddrinfo EAI_AGAIN registry.npmjs.org
+      at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26) {
+    errno: -3001,
+    code: 'EAI_AGAIN',
+    syscall: 'getaddrinfo',
+    hostname: 'registry.npmjs.org'
+  }
+}
+
+Node.js v22.22.0
+npm notice
+npm notice New major version of npm available! 10.9.4 -> 11.12.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.12.1
+npm notice To update run: npm install -g npm@11.12.1
+npm notice

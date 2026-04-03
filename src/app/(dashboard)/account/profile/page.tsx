@@ -82,6 +82,18 @@ export default function ProfilePage() {
       setPasswordError('Password must be at least 8 characters.')
       return
     }
+    if (!/[A-Z]/.test(newPassword)) {
+      setPasswordError('Password must contain at least one uppercase letter.')
+      return
+    }
+    if (!/[0-9]/.test(newPassword)) {
+      setPasswordError('Password must contain at least one number.')
+      return
+    }
+    if (!/[^A-Za-z0-9]/.test(newPassword)) {
+      setPasswordError('Password must contain at least one special character (e.g. @, #, !).')
+      return
+    }
     if (newPassword !== confirmPassword) {
       setPasswordError('Passwords do not match.')
       return
