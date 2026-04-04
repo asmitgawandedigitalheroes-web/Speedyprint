@@ -41,7 +41,16 @@ function findArtboard(canvas: FabricCanvas) {
 
 export function addText(
   canvas: FabricCanvas,
-  options?: { text?: string; fontSize?: number; fill?: string }
+  options?: { 
+    text?: string; 
+    fontSize?: number; 
+    fill?: string; 
+    fontFamily?: string; 
+    fontWeight?: string;
+    fontStyle?: string;
+    stroke?: string;
+    strokeWidth?: number;
+  }
 ) {
   const { artboardWidth, artboardHeight } = useEditorStore.getState()
   const w = artboardWidth || 800
@@ -53,12 +62,22 @@ export function addText(
   const text = new Textbox(options?.text ?? 'Double-click to edit', {
     left,
     top,
-    width: textWidth,
     fontSize: options?.fontSize ?? 24,
     fill: options?.fill ?? '#333333',
-    fontFamily: 'Inter, sans-serif',
+    fontFamily: options?.fontFamily ?? 'Inter, sans-serif',
+    fontWeight: options?.fontWeight as any ?? 'normal',
+    fontStyle: options?.fontStyle as any ?? 'normal',
+    stroke: options?.stroke ?? null,
+    strokeWidth: options?.strokeWidth ?? 0,
     editable: true,
+    originX: 'left',
+    originY: 'top',
   })
+  
+  // Set width to fit the content initially, with a fallback
+  const initialWidth = text.getLineWidth(0) || 200
+  text.set('width', initialWidth + 2) // +2 for a tiny bit of breathing room
+
   canvas.add(text)
   canvas.setActiveObject(text)
   canvas.renderAll()
@@ -89,6 +108,8 @@ export async function addImage(canvas: FabricCanvas, file: File) {
           top: center.y - ((img.height ?? 0) * scale) / 2,
           scaleX: scale,
           scaleY: scale,
+          originX: 'left',
+          originY: 'top',
         })
         canvas.add(img)
         canvas.setActiveObject(img)
@@ -116,6 +137,8 @@ export async function addImageFromURL(canvas: FabricCanvas, url: string, maxSize
     top: center.y - ((img.height ?? 0) * scale) / 2,
     scaleX: scale,
     scaleY: scale,
+    originX: 'left',
+    originY: 'top',
   })
   canvas.add(img)
   canvas.setActiveObject(img)
@@ -164,6 +187,8 @@ export function addRect(canvas: FabricCanvas) {
     strokeWidth: 1,
     rx: 4,
     ry: 4,
+    originX: 'left',
+    originY: 'top',
   })
   canvas.add(rect)
   canvas.setActiveObject(rect)
@@ -180,6 +205,8 @@ export function addCircle(canvas: FabricCanvas) {
     fill: '#059669',
     stroke: '#047857',
     strokeWidth: 1,
+    originX: 'left',
+    originY: 'top',
   })
   canvas.add(circle)
   canvas.setActiveObject(circle)
@@ -197,6 +224,8 @@ export function addTriangle(canvas: FabricCanvas) {
     fill: '#DC2626',
     stroke: '#B91C1C',
     strokeWidth: 1,
+    originX: 'left',
+    originY: 'top',
   })
   canvas.add(tri)
   canvas.setActiveObject(tri)
@@ -255,6 +284,45 @@ export function deleteSelected(canvas: FabricCanvas) {
   canvas.renderAll()
 }
 
+/* ──────────────────────── Clipboard ──────────────────────── */
+
+let _clipboard: FabricObject | null = null
+
+export function copyToClipboard(canvas: FabricCanvas) {
+  const active = canvas.getActiveObject()
+  if (!active || (active as unknown as Record<string, unknown>).isArtboard) return
+  active.clone().then((cloned: FabricObject) => {
+    _clipboard = cloned
+  })
+}
+
+export function pasteFromClipboard(canvas: FabricCanvas) {
+  if (!_clipboard) return
+  _clipboard.clone().then((cloned: FabricObject) => {
+    canvas.discardActiveObject()
+    cloned.set({
+      left: (cloned.left ?? 0) + 20,
+      top: (cloned.top ?? 0) + 20,
+      evented: true,
+    })
+    if (cloned.type === 'activeSelection') {
+      // ActiveSelection needs to be added object by object
+      cloned.canvas = canvas
+      ;(cloned as any).forEachObject((obj: FabricObject) => canvas.add(obj))
+      cloned.setCoords()
+    } else {
+      canvas.add(cloned)
+    }
+    // Update clipboard position for next paste
+    if (_clipboard) {
+      _clipboard.top = (_clipboard.top ?? 0) + 20
+      _clipboard.left = (_clipboard.left ?? 0) + 20
+    }
+    canvas.setActiveObject(cloned)
+    canvas.renderAll()
+  })
+}
+
 export function duplicateSelected(canvas: FabricCanvas) {
   const active = canvas.getActiveObject()
   if (!active || (active as unknown as Record<string, unknown>).isArtboard) return
@@ -264,6 +332,38 @@ export function duplicateSelected(canvas: FabricCanvas) {
     canvas.setActiveObject(cloned)
     canvas.renderAll()
   })
+}
+
+/* ──────────────────────── Style Copy ──────────────────────── */
+
+let _styleClipboard: Record<string, any> | null = null
+
+export function copyStyle(canvas: FabricCanvas) {
+  const obj = canvas.getActiveObject()
+  if (!obj) return
+  _styleClipboard = {
+    fill: obj.fill,
+    stroke: obj.stroke,
+    strokeWidth: obj.strokeWidth,
+    opacity: obj.opacity,
+    // Text specific
+    fontSize: (obj as any).fontSize,
+    fontFamily: (obj as any).fontFamily,
+    fontWeight: (obj as any).fontWeight,
+    fontStyle: (obj as any).fontStyle,
+    lineHeight: (obj as any).lineHeight,
+    textAlign: (obj as any).textAlign,
+    underline: (obj as any).underline,
+    overline: (obj as any).overline,
+    linethrough: (obj as any).linethrough,
+  }
+}
+
+export function pasteStyle(canvas: FabricCanvas) {
+  const obj = canvas.getActiveObject()
+  if (!obj || !_styleClipboard) return
+  obj.set(_styleClipboard)
+  canvas.renderAll()
 }
 
 /* ──────────────────────── Layer ordering ──────────────────────── */
@@ -330,7 +430,7 @@ export function flipVertical(canvas: FabricCanvas) {
   canvas.renderAll()
 }
 
-/* ──────────────────────── Center ──────────────────────── */
+/* ──────────────────────── Center & Alignment ──────────────────────── */
 
 export function centerOnArtboard(canvas: FabricCanvas) {
   const obj = canvas.getActiveObject()
@@ -345,21 +445,78 @@ export function centerOnArtboard(canvas: FabricCanvas) {
   canvas.renderAll()
 }
 
+export function alignLeft(canvas: FabricCanvas) {
+  const obj = canvas.getActiveObject()
+  if (!obj) return
+  obj.set({ left: 0 })
+  obj.setCoords()
+  canvas.renderAll()
+}
+
+export function alignRight(canvas: FabricCanvas) {
+  const obj = canvas.getActiveObject()
+  if (!obj) return
+  const { artboardWidth } = useEditorStore.getState()
+  const bound = obj.getBoundingRect()
+  obj.set({ left: artboardWidth - bound.width })
+  obj.setCoords()
+  canvas.renderAll()
+}
+
+export function alignTop(canvas: FabricCanvas) {
+  const obj = canvas.getActiveObject()
+  if (!obj) return
+  obj.set({ top: 0 })
+  obj.setCoords()
+  canvas.renderAll()
+}
+
+export function alignBottom(canvas: FabricCanvas) {
+  const obj = canvas.getActiveObject()
+  if (!obj) return
+  const { artboardHeight } = useEditorStore.getState()
+  const bound = obj.getBoundingRect()
+  obj.set({ top: artboardHeight - bound.height })
+  obj.setCoords()
+  canvas.renderAll()
+}
+
+export function alignCenterHorizontal(canvas: FabricCanvas) {
+  const obj = canvas.getActiveObject()
+  if (!obj) return
+  const { artboardWidth } = useEditorStore.getState()
+  const bound = obj.getBoundingRect()
+  obj.set({ left: (artboardWidth - bound.width) / 2 })
+  obj.setCoords()
+  canvas.renderAll()
+}
+
+export function alignCenterVertical(canvas: FabricCanvas) {
+  const obj = canvas.getActiveObject()
+  if (!obj) return
+  const { artboardHeight } = useEditorStore.getState()
+  const bound = obj.getBoundingRect()
+  obj.set({ top: (artboardHeight - bound.height) / 2 })
+  obj.setCoords()
+  canvas.renderAll()
+}
+
 /* ──────────────────────── Lock ──────────────────────── */
 
-export function toggleLock(canvas: FabricCanvas) {
-  const obj = canvas.getActiveObject()
+export function toggleLock(canvas: FabricCanvas, target?: FabricObject) {
+  const obj = target || canvas.getActiveObject()
   if (!obj) return
   const locked = !obj.selectable
   obj.set({
     selectable: !locked ? false : true,
-    evented: !locked ? false : true,
+    evented: true, // Keep it true so we can still click it to show the "Unlock" toolbar
     lockMovementX: !locked,
     lockMovementY: !locked,
     lockRotation: !locked,
     lockScalingX: !locked,
     lockScalingY: !locked,
   })
+  canvas.fire('object:modified', { target: obj })
   canvas.renderAll()
 }
 

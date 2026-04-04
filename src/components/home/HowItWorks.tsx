@@ -1,28 +1,28 @@
-import { Palette, Upload, Printer, Truck } from 'lucide-react'
+import { Layout, Upload, CheckCircle2, Truck } from 'lucide-react'
 
 const STEPS = [
   {
     number: '01',
-    title: 'Upload Artwork',
-    description: 'Drop in your print-ready files or pick from our library of templates.',
-    icon: Upload,
+    title: 'Choose your product',
+    description: 'Select from our wide range of labels, stamps, trophies or custom laser products.',
+    icon: Layout,
   },
   {
     number: '02',
-    title: 'Customize Design',
-    description: 'Use our online editor to tweak text, fonts, and colors in real-time.',
-    icon: Palette,
+    title: 'Upload artwork or request help',
+    description: 'Provide your existing designs or work with our specialists for the perfect result.',
+    icon: Upload,
   },
   {
     number: '03',
-    title: 'Get Instant Quote',
-    description: 'See real-time pricing as you configure your materials and quantity.',
-    icon: Printer,
+    title: 'Approve and place your order',
+    description: 'Review your personalized proofs, confirm details, and complete your secure checkout.',
+    icon: CheckCircle2,
   },
   {
     number: '04',
-    title: 'Print & Deliver',
-    description: 'Fast 24-hour turnaround and nationwide delivery across South Africa.',
+    title: 'Delivery or collection',
+    description: 'Get your orders delivered nationwide or opt for local collection from our workshop.',
     icon: Truck,
   },
 ]

@@ -111,6 +111,8 @@ export default function EditorCanvas() {
     const artboard = new Rect({
       left: 0,
       top: 0,
+      originX: 'left',
+      originY: 'top',
       width: artboardW,
       height: artboardH,
       fill: '#ffffff',
@@ -167,18 +169,57 @@ export default function EditorCanvas() {
     canvas.on('selection:updated', (e) => setActiveObject(e.selected?.[0] ?? null))
     canvas.on('selection:cleared', () => setActiveObject(null))
 
+    // Handle clicks on locked (non-selectable) objects to show the floating toolbar
+    canvas.on('mouse:down', (opt) => {
+      if (opt.target) {
+        const meta = opt.target as unknown as Record<string, unknown>
+        // Ignore artboard and guides
+        if (meta.isArtboard || meta.isGuide) {
+          // If we click the background, Fabric clears selection normally, 
+          // but we ensure store is cleared too.
+          if (!canvas.getActiveObject()) setActiveObject(null)
+          return
+        }
+        
+        // If it's a valid object, set it in the store
+        // This handles cases where Fabric doesn't fire 'selection' events for locked objects
+        setActiveObject(opt.target)
+      } else {
+        // Clicked empty canvas
+        setActiveObject(null)
+      }
+    })
+
     // Artboard boundary enforcement — clamp object within artboard while dragging
     canvas.on('object:moving', (e) => {
       const obj = e.target
       if (!obj) return
       const { artboardWidth, artboardHeight } = useEditorStore.getState()
       if (!artboardWidth || !artboardHeight) return
-      const objW = (obj.width ?? 0) * (obj.scaleX ?? 1)
-      const objH = (obj.height ?? 0) * (obj.scaleY ?? 1)
-      obj.set({
-        left: Math.min(Math.max(obj.left ?? 0, 0), artboardWidth - objW),
-        top:  Math.min(Math.max(obj.top  ?? 0, 0), artboardHeight - objH),
-      })
+
+      // Use setCoords() before getting bounds to ensure accuracy during drag
+      obj.setCoords()
+      const bound = obj.getBoundingRect()
+      
+      let nextLeft = obj.left ?? 0
+      let nextTop = obj.top ?? 0
+
+      // Clamp Left/Right
+      if (bound.left < 0) {
+        nextLeft -= bound.left
+      } else if (bound.left + bound.width > artboardWidth) {
+        nextLeft -= (bound.left + bound.width - artboardWidth)
+      }
+
+      // Clamp Top/Bottom
+      if (bound.top < 0) {
+        nextTop -= bound.top
+      } else if (bound.top + bound.height > artboardHeight) {
+        nextTop -= (bound.top + bound.height - artboardHeight)
+      }
+
+      obj.set({ left: nextLeft, top: nextTop })
+      obj.setCoords()
     })
 
     // History capture (skip during undo/redo)
@@ -284,6 +325,29 @@ export default function EditorCanvas() {
 
     // Update store
     setArtboardSize(artboardW, artboardH)
+
+    // Re-clamp all objects into the new artboard bounds
+    canvas.getObjects().forEach((obj) => {
+      const meta = obj as unknown as Record<string, unknown>
+      if (meta.isArtboard || meta.isGuide) return
+
+      obj.setCoords()
+      const bound = obj.getBoundingRect()
+      let nextLeft = obj.left ?? 0
+      let nextTop = obj.top ?? 0
+
+      // If object is now completely or partially outside, bring it back or center it
+      if (bound.left < 0 || bound.left + bound.width > artboardW) {
+        // Simple approach: center it if it's lost
+        nextLeft = (artboardW - bound.width) / 2
+      }
+      if (bound.top < 0 || bound.top + bound.height > artboardH) {
+        nextTop = (artboardH - bound.height) / 2
+      }
+
+      obj.set({ left: nextLeft, top: nextTop })
+      obj.setCoords()
+    })
 
     // Recalculate zoom to fit new artboard with padding
     const containerW = canvas.getWidth()

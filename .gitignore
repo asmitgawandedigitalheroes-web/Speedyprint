@@ -12,13 +12,25 @@
 /blob-report/
 /playwright/.cache/
 /tests
+/SpeedyPrint Testing/
+src/__tests__/
+src/__mocks__/
 
 # next.js
 /.next/
+/.swc/
 /out/
 
 # production
 /build
+
+# project reports & artifacts
+SpeedyPrint_*.md
+SpeedyPrint_*.docx
+testp.md
+dev-server.log
+tsc_errors.txt
+failing_design.json
 
 # misc
 .DS_Store

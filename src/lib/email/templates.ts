@@ -74,7 +74,7 @@ export function orderShippedTemplate(orderNumber: string, trackingNumber: string
 export function welcomeTemplate(name: string): string {
   return emailWrapper(`
     <h2 style="color:#1A1A1A;margin:0 0 16px;">Welcome to ${SITE_NAME}!</h2>
-    <p style="color:#6B7280;line-height:1.6;">Hi ${name}, welcome aboard! You're all set to start ordering custom stickers, labels, and decals.</p>
+    <p style="color:#6B7280;line-height:1.6;">Hi ${name}, welcome aboard! You're all set to start ordering custom print and fabrication solutions.</p>
     <p style="color:#6B7280;line-height:1.6;">Here's what you can do:</p>
     <ul style="color:#6B7280;line-height:1.8;">
       <li>Get an instant quote with our pricing calculator</li>

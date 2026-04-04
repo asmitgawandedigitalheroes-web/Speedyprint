@@ -75,6 +75,10 @@
   body {
     @apply bg-white text-brand-text antialiased;
   }
+
+  h1, h2, h3, h4 {
+    text-transform: capitalize;
+  }
 }
 
 /* Marquee animation for homepage ticker */

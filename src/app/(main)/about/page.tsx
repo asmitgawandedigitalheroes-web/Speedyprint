@@ -5,7 +5,7 @@ import { Check } from 'lucide-react'
 export const metadata: Metadata = {
   title: `About ${SITE_NAME} | Custom Printing in South Africa`,
   description:
-    "Learn about Speedy Labels — South Africa's precision printing platform with six specialized divisions serving small businesses, makers, and event organisers.",
+    "Learn about Speedy Print Suite — South Africa's precision printing platform with six specialized divisions serving small businesses, makers, and event organisers.",
   alternates: {
     canonical: `${SITE_URL}/about`,
   },
@@ -17,7 +17,7 @@ export const metadata: Metadata = {
 }
 
 const DIVISIONS = [
-  { name: 'Speedy Labels', desc: 'Custom labels, stickers, and product packaging for any application' },
+  { name: 'Labels & Stickers', desc: 'Custom labels, stickers, and product packaging for any application' },
   { name: 'Speedy Race Numbers', desc: 'Professional race bibs and event numbering systems' },
   { name: 'Speedy MTB Boards', desc: 'Durable mountain bike number boards and cycling accessories' },
   { name: 'Speedy Laser', desc: 'Precision laser-cut and engraved signage, plaques, and gifts' },
@@ -50,7 +50,7 @@ export default function AboutPage() {
         {/* Intro */}
         <div className="rounded-md border border-gray-100 bg-white p-8">
           <p className="text-brand-text-muted leading-relaxed">
-            Speedy Labels is a South African printing business built for small businesses, makers, and event organisers.
+            Speedy Print Suite is a South African printing business built for small businesses, makers, and event organisers.
             Clean, technical, and warm — we combine industrial-grade precision with a personal, approachable service.
             From event race bibs to laser-cut signage, custom labels to branded coffee cup sleeves, we handle it all
             with speed and care.

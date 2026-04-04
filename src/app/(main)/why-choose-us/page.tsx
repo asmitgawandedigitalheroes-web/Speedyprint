@@ -5,15 +5,15 @@ import Link from 'next/link'
 
 export const metadata: Metadata = {
   title: `Why choose us | ${SITE_NAME}`,
-  description: 'Discover why thousands of South African businesses trust Speedy Labels for their custom stickers, labels, and decals.',
+  description: 'Discover why thousands of South African businesses trust Speedy for their custom print and fabrication needs.',
 }
 
 const REASONS = [
   { icon: Shield, title: 'Quality guaranteed', description: "We use only premium-grade vinyl and inks. Every order undergoes quality checks before shipping. If you're not satisfied, we'll reprint it." },
   { icon: Truck, title: 'Free delivery over R500', description: 'Free delivery on orders over R500, anywhere in South Africa. Standard delivery takes 3-5 business days, with express options available.' },
-  { icon: Clock, title: 'Quick turnaround', description: 'Most orders are produced within 24-48 hours. We understand deadlines matter and work efficiently to get your stickers to you fast.' },
+  { icon: Clock, title: 'Quick turnaround', description: 'Most orders are produced within 24-48 hours. We understand deadlines matter and work efficiently to get your order to you fast.' },
   { icon: Award, title: 'Premium materials', description: 'From white vinyl to holographic and 3D domed finishes, we offer a wide range of premium materials to suit any application.' },
-  { icon: Palette, title: 'Online design tool', description: 'Design your stickers directly in your browser with our easy-to-use design wizard. No design software needed.' },
+  { icon: Palette, title: 'Online design tool', description: 'Design your products directly in your browser with our easy-to-use design wizard. No design software needed.' },
   { icon: HeadphonesIcon, title: 'Expert support', description: 'Our team of printing experts is available to help with artwork, material selection, and any questions you might have.' },
   { icon: Leaf, title: 'Eco-friendly options', description: 'We offer eco-friendly vinyl options and use sustainable practices in our production process wherever possible.' },
   { icon: CreditCard, title: 'Competitive pricing', description: 'Volume discounts starting from just 50 units. The more you order, the more you save — up to 35% off on orders of 1000+.' },
@@ -28,7 +28,7 @@ export default function WhyChooseUsPage() {
           <h1 className="font-heading text-4xl font-bold text-white">Why choose us?</h1>
           <p className="mx-auto mt-4 max-w-2xl text-lg text-white/60">
             Trusted by thousands of businesses across South Africa for premium
-            custom stickers, labels, and decals.
+            custom print and fabrication solutions.
           </p>
         </div>
       </div>

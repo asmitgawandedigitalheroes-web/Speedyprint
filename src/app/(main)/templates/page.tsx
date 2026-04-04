@@ -8,7 +8,7 @@ import type { ProductGroup, ProductTemplate } from '@/types'
 export const metadata: Metadata = {
   // BUG-023 FIX: Use just the page name — the root layout template appends '| SpeedyPrint'.
   title: 'Design Templates',
-  description: 'Browse our library of sticker and label templates. Design online using our free design wizard.',
+  description: 'Browse our library of professional print templates. Design online using our free design wizard.',
 }
 
 export const dynamic = 'force-dynamic'

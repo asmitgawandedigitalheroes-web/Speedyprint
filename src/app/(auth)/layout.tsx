@@ -30,7 +30,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
             Quality printing,<br />delivered fast.
           </h2>
           <p className="text-lg text-white/60 max-w-sm">
-            South Africa&apos;s trusted online custom sticker and label printing platform.
+            South Africa&apos;s complete online custom print and fabrication platform.
           </p>
 
           {/* Stats */}

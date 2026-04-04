@@ -128,7 +128,7 @@ export default function AdminBlogNewPage() {
                 id="author"
                 value={author}
                 onChange={(e) => setAuthor(e.target.value)}
-                placeholder="e.g., Speedy Labels Team"
+                placeholder="e.g., Speedy Print Team"
               />
             </div>
 

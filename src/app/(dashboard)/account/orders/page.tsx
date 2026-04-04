@@ -5,8 +5,11 @@ import Link from 'next/link'
 import { useAuth } from '@/hooks/useAuth'
 import { createClient } from '@/lib/supabase/client'
 import { formatCurrency, formatDate } from '@/lib/utils/format'
-import { ArrowRight, Search, SlidersHorizontal, ShoppingBag, ChevronRight } from 'lucide-react'
+import { ArrowRight, Search, ShoppingBag, ChevronRight, ShieldCheck } from 'lucide-react'
 import type { Order, OrderStatus } from '@/types'
+
+/* Map orderId → first proof_sent itemId */
+type ProofMap = Record<string, string>
 
 /* ─── Brand-safe status config ─── */
 const ORDER_BADGE: Record<string, { label: string; bg: string; text: string }> = {
@@ -40,23 +43,46 @@ const FILTER_TABS: { label: string; value: string }[] = [
 
 export default function OrdersPage() {
   const { user } = useAuth()
-  const [orders,  setOrders]  = useState<Order[]>([])
-  const [loading, setLoading] = useState(true)
-  const [tab,     setTab]     = useState('all')
-  const [search,  setSearch]  = useState('')
+  const [orders,   setOrders]   = useState<Order[]>([])
+  const [proofMap, setProofMap] = useState<ProofMap>({})
+  const [loading,  setLoading]  = useState(true)
+  const [tab,      setTab]      = useState('all')
+  const [search,   setSearch]   = useState('')
 
   useEffect(() => {
     if (!user) return
     const supabase = createClient()
-    supabase
-      .from('orders')
-      .select('id, order_number, status, total, created_at')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .then(({ data }) => {
-        setOrders((data as Order[]) || [])
-        setLoading(false)
-      })
+
+    async function fetchOrders() {
+      const { data } = await supabase
+        .from('orders')
+        .select('id, order_number, status, total, created_at')
+        .eq('user_id', user!.id)
+        .order('created_at', { ascending: false })
+
+      const orderList = (data as Order[]) || []
+      setOrders(orderList)
+
+      /* Fetch which orders have a proof_sent item so we can show inline CTA */
+      if (orderList.length > 0) {
+        const ids = orderList.map((o) => o.id)
+        const { data: items } = await supabase
+          .from('order_items')
+          .select('id, order_id')
+          .in('order_id', ids)
+          .eq('status', 'proof_sent')
+
+        const map: ProofMap = {}
+        for (const item of items ?? []) {
+          if (!map[item.order_id]) map[item.order_id] = item.id
+        }
+        setProofMap(map)
+      }
+
+      setLoading(false)
+    }
+
+    fetchOrders()
   }, [user])
 
   const filtered = useMemo(() => {
@@ -164,9 +190,9 @@ export default function OrdersPage() {
       ) : (
         <div className="overflow-hidden rounded-xl border border-[#E7E5E4] bg-white shadow-sm">
           {/* Table header — desktop */}
-          <div className="hidden border-b border-[#F0F0F0] bg-[#FAFAFA] px-6 py-3 sm:grid sm:grid-cols-[1fr_140px_100px_120px_44px] sm:gap-4">
-            {['Order', 'Date', 'Total', 'Status', ''].map((h) => (
-              <p key={h} className="text-xs font-semibold uppercase tracking-widest text-brand-text-muted">
+          <div className="hidden border-b border-[#F0F0F0] bg-[#FAFAFA] px-6 py-3 sm:grid sm:grid-cols-[1fr_140px_100px_120px_140px_44px] sm:gap-4">
+            {['Order', 'Date', 'Total', 'Status', '', ''].map((h, i) => (
+              <p key={i} className="text-xs font-semibold uppercase tracking-widest text-brand-text-muted">
                 {h}
               </p>
             ))}
@@ -174,35 +200,68 @@ export default function OrdersPage() {
 
           {/* Rows */}
           <div className="divide-y divide-[#F0F0F0]">
-            {filtered.map((order) => (
-              <Link
-                key={order.id}
-                href={`/account/orders/${order.id}`}
-                className="group flex flex-col gap-2 px-6 py-4 transition hover:bg-[#FAFAFA] sm:grid sm:grid-cols-[1fr_140px_100px_120px_44px] sm:items-center sm:gap-4"
-              >
-                {/* Order # */}
-                <div>
-                  <p className="text-sm font-semibold text-brand-text group-hover:text-brand-primary transition">
-                    {order.order_number}
-                  </p>
-                  <p className="mt-0.5 text-xs text-brand-text-muted sm:hidden">
-                    {formatDate(order.created_at)}
-                  </p>
+            {filtered.map((order) => {
+              const proofItemId = proofMap[order.id]
+              return (
+                <div key={order.id} className="group relative">
+                  <Link
+                    href={`/account/orders/${order.id}`}
+                    className="flex flex-col gap-2 px-6 py-4 transition hover:bg-[#FAFAFA] sm:grid sm:grid-cols-[1fr_140px_100px_120px_140px_44px] sm:items-center sm:gap-4"
+                  >
+                    {/* Order # */}
+                    <div>
+                      <p className="text-sm font-semibold text-brand-text transition group-hover:text-brand-primary">
+                        {order.order_number}
+                      </p>
+                      <p className="mt-0.5 text-xs text-brand-text-muted sm:hidden">
+                        {formatDate(order.created_at)}
+                      </p>
+                    </div>
+                    {/* Date */}
+                    <p className="hidden text-sm text-brand-text-muted sm:block">
+                      {formatDate(order.created_at)}
+                    </p>
+                    {/* Total */}
+                    <p className="text-sm font-semibold text-brand-text">
+                      {formatCurrency(order.total)}
+                    </p>
+                    {/* Status badge */}
+                    <StatusBadge status={order.status} />
+                    {/* Proof CTA — only when a proof_sent item exists */}
+                    {proofItemId && (
+                      <span
+                        onClick={(e) => e.stopPropagation()}
+                        className="hidden sm:block"
+                      >
+                        <Link
+                          href={`/account/orders/${order.id}/proof/${proofItemId}`}
+                          className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-white transition hover:opacity-90"
+                          style={{ background: '#FFC107', color: '#1a1a2e' }}
+                        >
+                          <ShieldCheck className="h-3.5 w-3.5" />
+                          Approve Proof
+                        </Link>
+                      </span>
+                    )}
+                    {/* Arrow */}
+                    <ChevronRight className="hidden h-4 w-4 text-brand-text-muted transition group-hover:text-brand-primary sm:block" />
+                  </Link>
+                  {/* Mobile proof CTA */}
+                  {proofItemId && (
+                    <div className="px-6 pb-3 sm:hidden">
+                      <Link
+                        href={`/account/orders/${order.id}/proof/${proofItemId}`}
+                        className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition hover:opacity-90"
+                        style={{ background: '#FFC107', color: '#1a1a2e' }}
+                      >
+                        <ShieldCheck className="h-3.5 w-3.5" />
+                        Approve Proof
+                      </Link>
+                    </div>
+                  )}
                 </div>
-                {/* Date */}
-                <p className="hidden text-sm text-brand-text-muted sm:block">
-                  {formatDate(order.created_at)}
-                </p>
-                {/* Total */}
-                <p className="text-sm font-semibold text-brand-text">
-                  {formatCurrency(order.total)}
-                </p>
-                {/* Status badge */}
-                <StatusBadge status={order.status} />
-                {/* Arrow */}
-                <ChevronRight className="hidden h-4 w-4 text-brand-text-muted transition group-hover:text-brand-primary sm:block" />
-              </Link>
-            ))}
+              )
+            })}
           </div>
 
           {/* Footer count */}

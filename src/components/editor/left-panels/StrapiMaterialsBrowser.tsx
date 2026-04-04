@@ -199,12 +199,15 @@ export default function StrapiMaterialsBrowser({ onClose }: { onClose: () => voi
     [canvas]
   )
 
+  const BLACKLISTED_CATEGORIES = ['中国元素', '传统印章', '测试分类']
+
   const filtered = categories.filter(
     (cat) =>
       cat.attributes.name &&
       cat.attributes.name.trim() !== '' &&
       cat.attributes.sort !== undefined &&
-      ['pod_only', 'img_only', 'img_pod'].includes(cat.attributes.type?.toLowerCase())
+      ['pod_only', 'img_only', 'img_pod'].includes(cat.attributes.type?.toLowerCase()) &&
+      !BLACKLISTED_CATEGORIES.includes(cat.attributes.name)
   ).filter(
     (cat) => !catSearch || cat.attributes.name.toLowerCase().includes(catSearch.toLowerCase())
   )

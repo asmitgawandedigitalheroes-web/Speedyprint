@@ -23,12 +23,12 @@ const TEXT_PRESETS: TextPreset[] = [
 ]
 
 const STYLED_TEXTS = [
-  { id: 'brand-title', label: 'Brand Title', text: 'BRAND', fontSize: 56, fill: '#E30613' },
-  { id: 'elegant', label: 'Elegant', text: 'Elegant', fontSize: 40, fill: '#8B5CF6' },
-  { id: 'bold-impact', label: 'Bold Impact', text: 'IMPACT', fontSize: 52, fill: '#1E293B' },
-  { id: 'subtle', label: 'Subtle', text: 'subtle', fontSize: 28, fill: '#94A3B8' },
-  { id: 'gold-label', label: 'Gold Label', text: 'PREMIUM', fontSize: 36, fill: '#D97706' },
-  { id: 'white-on-dark', label: 'Light Text', text: 'LIGHT', fontSize: 36, fill: '#FFFFFF' },
+  { id: 'brand-title', label: 'Brand Title', text: 'BRAND', fontSize: 56, fill: '#E30613', fontWeight: 'bold' },
+  { id: 'elegant', label: 'Elegant', text: 'Elegant', fontSize: 40, fill: '#8B5CF6', fontFamily: 'Georgia, serif', fontStyle: 'italic' },
+  { id: 'bold-impact', label: 'Bold Impact', text: 'IMPACT', fontSize: 52, fill: '#1E293B', fontFamily: 'Impact, sans-serif' },
+  { id: 'subtle', label: 'Subtle', text: 'subtle', fontSize: 28, fill: '#94A3B8', fontWeight: '300', fontStyle: 'italic' },
+  { id: 'gold-label', label: 'Gold Label', text: 'PREMIUM', fontSize: 36, fill: '#D97706', fontFamily: 'Poppins, sans-serif', fontWeight: '600' },
+  { id: 'white-on-dark', label: 'Light Text', text: 'LIGHT', fontSize: 36, fill: '#FFFFFF', fontWeight: '500', stroke: '#000000', strokeWidth: 0.5 },
 ]
 
 export default function TextPanel() {
@@ -37,7 +37,12 @@ export default function TextPanel() {
   const handleAddPreset = useCallback(
     (preset: TextPreset) => {
       if (!canvas) return
-      addText(canvas, { text: preset.text, fontSize: preset.fontSize, fill: preset.fill })
+      addText(canvas, { 
+        text: preset.text, 
+        fontSize: preset.fontSize, 
+        fill: preset.fill,
+        fontWeight: preset.fontWeight,
+      })
     },
     [canvas]
   )
@@ -45,7 +50,16 @@ export default function TextPanel() {
   const handleAddStyled = useCallback(
     (item: typeof STYLED_TEXTS[0]) => {
       if (!canvas) return
-      addText(canvas, { text: item.text, fontSize: item.fontSize, fill: item.fill })
+      addText(canvas, { 
+        text: item.text, 
+        fontSize: item.fontSize, 
+        fill: item.fill,
+        fontFamily: (item as any).fontFamily,
+        fontWeight: (item as any).fontWeight,
+        fontStyle: (item as any).fontStyle,
+        stroke: (item as any).stroke,
+        strokeWidth: (item as any).strokeWidth,
+      })
     },
     [canvas]
   )
@@ -88,10 +102,13 @@ export default function TextPanel() {
               }}
             >
               <span
-                className="font-semibold truncate"
+                className="truncate"
                 style={{
                   color: item.fill,
                   fontSize: Math.min(item.fontSize * 0.35, 18),
+                  fontFamily: (item as any).fontFamily,
+                  fontWeight: (item as any).fontWeight ?? 'semibold',
+                  fontStyle: (item as any).fontStyle,
                 }}
               >
                 {item.text}

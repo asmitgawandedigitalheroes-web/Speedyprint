@@ -62,7 +62,7 @@ export function generatePaymentData(
     email_address: email,
     m_payment_id: order.id,
     amount: order.total.toFixed(2),
-    item_name: `Speedy Labels Order #${order.order_number}`,
+    item_name: `Speedy Print Order #${order.order_number}`,
     item_description: `Custom sticker/label order`,
   }
 
