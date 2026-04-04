@@ -12,11 +12,25 @@ import {
   CheckCircle2,
   ArrowRight,
   AlertTriangle,
-  PenLine,
-  RotateCcw,
   ChevronRight,
+  Tag,
+  Hash,
+  Zap,
+  Stamp,
+  Trophy,
+  Bike,
 } from 'lucide-react'
 import type { Order } from '@/types'
+
+/* ── Product category shortcuts ── */
+const PRODUCT_SHORTCUTS = [
+  { label: 'Labels & Stickers', href: '/products?division=labels',       icon: Tag,    color: '#E30613', bg: 'rgba(227,6,19,0.08)'   },
+  { label: 'Race Numbers',      href: '/products?division=race-numbers', icon: Hash,   color: '#1E293B', bg: 'rgba(30,41,59,0.08)'   },
+  { label: 'MTB Boards',        href: '/products?division=mtb-boards',   icon: Bike,   color: '#0284c7', bg: 'rgba(2,132,199,0.08)'  },
+  { label: 'Laser Products',    href: '/products?division=laser',        icon: Zap,    color: '#7c3aed', bg: 'rgba(124,58,237,0.08)' },
+  { label: 'Stamps',            href: '/products?division=print',        icon: Stamp,  color: '#d97706', bg: 'rgba(217,119,6,0.08)'  },
+  { label: 'Trophies',          href: '/products?division=trophies',     icon: Trophy, color: '#16a34a', bg: 'rgba(22,163,74,0.08)'  },
+]
 
 /* ─── Brand-safe status badge ─── */
 const ORDER_BADGE: Record<string, { label: string; bg: string; text: string }> = {
@@ -298,37 +312,42 @@ export default function AccountDashboard() {
           </div>
         </div>
 
-        {/* Quick Actions + Proof Alerts — 2/5 width */}
+        {/* Order New + Proof Alerts — 2/5 width */}
         <div className="flex flex-col gap-6 xl:col-span-2">
 
-          {/* Quick Actions */}
+          {/* Product category shortcuts */}
           <div className="rounded-xl border border-[#E7E5E4] bg-white p-5 shadow-sm">
-            <h2 className="mb-4 font-heading text-base font-semibold text-brand-text">Quick Actions</h2>
-            <div className="flex flex-col gap-2.5">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="font-heading text-base font-semibold text-brand-text">Order a Product</h2>
               <Link
-                href="/order-now"
-                className="flex items-center gap-3 rounded-lg bg-brand-primary px-4 py-3 text-sm font-semibold text-white transition hover:bg-brand-primary-dark"
+                href="/products"
+                className="inline-flex items-center gap-1 text-xs font-medium text-brand-primary hover:underline"
               >
-                <PenLine className="h-4 w-4 shrink-0" />
-                Start New Design
-                <ArrowRight className="ml-auto h-4 w-4" />
+                All products <ArrowRight className="h-3 w-3" />
               </Link>
-              <Link
-                href="/templates"
-                className="flex items-center gap-3 rounded-lg border border-[#E7E5E4] px-4 py-3 text-sm font-semibold text-brand-text transition hover:border-brand-primary hover:text-brand-primary"
-              >
-                <PenLine className="h-4 w-4 shrink-0" />
-                Browse Templates
-              </Link>
-              {orders.some((o) => o.status === 'completed') && (
-                <Link
-                  href="/account/orders"
-                  className="flex items-center gap-3 rounded-lg border border-[#E7E5E4] px-4 py-3 text-sm font-semibold text-brand-text transition hover:border-brand-primary hover:text-brand-primary"
-                >
-                  <RotateCcw className="h-4 w-4 shrink-0" />
-                  Reorder Previous
-                </Link>
-              )}
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {PRODUCT_SHORTCUTS.map((cat) => {
+                const Icon = cat.icon
+                return (
+                  <Link
+                    key={cat.href}
+                    href={cat.href}
+                    className="group flex items-center gap-2.5 rounded-lg border border-[#E7E5E4] px-3 py-2.5 text-xs font-semibold text-brand-text transition hover:border-transparent hover:shadow-sm"
+                    style={{ ['--cat-bg' as string]: cat.bg }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = cat.bg)}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = '')}
+                  >
+                    <span
+                      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md"
+                      style={{ background: cat.bg }}
+                    >
+                      <Icon className="h-3.5 w-3.5" style={{ color: cat.color }} />
+                    </span>
+                    <span className="leading-tight">{cat.label}</span>
+                  </Link>
+                )
+              })}
             </div>
           </div>
 

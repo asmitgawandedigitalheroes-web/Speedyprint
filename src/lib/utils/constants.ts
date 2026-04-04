@@ -2,8 +2,8 @@
 // Three different identities were visible simultaneously on the same page.
 // TODO: Replace this constant with a live DB read from site_settings.site_name
 // so admins can update the brand name without a code deploy.
-export const SITE_NAME = 'Speedy Labels'
-export const SITE_DESCRIPTION = 'Premium custom labels, stickers & decals — designed online, printed fast, delivered across South Africa.'
+export const SITE_NAME = 'Speedy Print Suite'
+export const SITE_DESCRIPTION = 'Premium custom print and fabrication solutions for business, events and brands — South Africa\'s complete print suite.'
 export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://speedyprint.co.za'
 
 export const VAT_RATE = 0.15 // 15% South African VAT
@@ -11,12 +11,21 @@ export const CURRENCY = 'ZAR'
 export const CURRENCY_SYMBOL = 'R'
 
 export const DIVISIONS = [
-  { key: 'labels' as const, name: 'Speedy Labels', description: 'Custom labels, stickers, and product packaging', icon: 'Tag' },
-  { key: 'race-numbers' as const, name: 'Speedy Race Numbers', description: 'Professional race bibs and event numbering', icon: 'Hash' },
-  { key: 'mtb-boards' as const, name: 'Speedy MTB Boards', description: 'Mountain bike number boards and cycling accessories', icon: 'Bike' },
-  { key: 'laser' as const, name: 'Speedy Laser', description: 'Laser-cut and engraved signage and gifts', icon: 'Zap' },
-  { key: 'trophies' as const, name: 'Speedy Trophies', description: 'Award trophies, medals, and recognition products', icon: 'Trophy' },
-  { key: 'print' as const, name: 'Speedy Print', description: 'Stamps, sleeves, and general commercial printing', icon: 'Printer' },
+  { key: 'labels' as const, name: 'Labels', description: 'Custom labels, stickers, and product packaging', icon: 'Tag' },
+  { key: 'race-numbers' as const, name: 'Race Numbers', description: 'Professional race bibs and event numbering', icon: 'Hash' },
+  { key: 'mtb-boards' as const, name: 'MTB Boards', description: 'Mountain bike number boards and cycling accessories', icon: 'Bike' },
+  { key: 'laser' as const, name: 'Laser', description: 'Laser-cut and engraved signage and gifts', icon: 'Zap' },
+  { key: 'trophies' as const, name: 'Trophies', description: 'Award trophies, medals, and recognition products', icon: 'Trophy' },
+  { key: 'print' as const, name: 'Print', description: 'Stamps, sleeves, and general commercial printing', icon: 'Printer' },
+]
+
+export const HEADER_PRODUCTS = [
+  { href: '/products?division=labels', label: 'Labels', description: 'Custom stickers & product labels', icon: 'Tag' },
+  { href: '/products?division=laser', label: 'Laser', description: 'Laser cutting & engraving', icon: 'Zap' },
+  { href: '/products?division=mtb-boards', label: 'MTB Boards', description: 'Durable cycling number boards', icon: 'Bike' },
+  { href: '/products?division=race-numbers', label: 'Race Numbers', description: 'Professional race bibs & timing', icon: 'Hash' },
+  { href: '/products?division=print', label: 'Stamps', description: 'Self-inking & custom stamps', icon: 'Stamp' },
+  { href: '/products?division=trophies', label: 'Trophies', description: 'Awards, medals & recognition', icon: 'Trophy' },
 ]
 
 export const SA_PROVINCES = [
@@ -81,7 +90,7 @@ export const PRODUCT_FAMILIES = [
   {
     key: 'labels-stickers',
     name: 'Labels & Stickers',
-    description: 'Custom stickers and product labels for every surface and industry.',
+    description: 'Professional custom products for every surface, industry and application.',
     imageUrl: '/images/products/custom-labels.png',
     icon: 'Tag',
     products: ['Custom Stickers', 'Product Labels', 'Die-Cut Stickers'],

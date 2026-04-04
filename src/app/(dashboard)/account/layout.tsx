@@ -2,15 +2,17 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
+import Link from 'next/link'
 import { UserSidebar } from '@/components/layout/UserSidebar'
 import { useAuth } from '@/hooks/useAuth'
+import { createClient } from '@/lib/supabase/client'
 import { Bell, ChevronRight } from 'lucide-react'
 
 /* ── Breadcrumb map ── */
 const ROUTE_LABELS: Record<string, string> = {
   '/account':         'Dashboard',
   '/account/orders':  'My Orders',
-  '/account/proofs':  'Proofs',
+  '/account/proofs':  'Proof Approvals',
   '/account/designs': 'Saved Designs',
   '/account/profile': 'Profile Settings',
 }
@@ -18,6 +20,27 @@ const ROUTE_LABELS: Record<string, string> = {
 function TopBar() {
   const { user }   = useAuth()
   const pathname   = usePathname()
+  const [proofCount, setProofCount] = useState(0)
+
+  /* Fetch pending proof count for bell badge */
+  useEffect(() => {
+    if (!user) return
+    const supabase = createClient()
+    async function fetchCount() {
+      const { data: orders } = await supabase
+        .from('orders')
+        .select('id')
+        .eq('user_id', user!.id)
+      if (!orders?.length) return
+      const { count } = await supabase
+        .from('order_items')
+        .select('id', { count: 'exact', head: true })
+        .in('order_id', orders.map((o) => o.id))
+        .eq('status', 'proof_sent')
+      setProofCount(count ?? 0)
+    }
+    fetchCount()
+  }, [user])
 
   /* Build simple breadcrumb: Account › Page */
   const currentLabel = pathname === '/account'
@@ -48,19 +71,29 @@ function TopBar() {
 
       {/* Right side */}
       <div className="flex items-center gap-3">
-        {/* Notification bell (visual only) */}
-        <button className="relative flex h-8 w-8 items-center justify-center rounded-full text-brand-text-muted transition hover:bg-[#F5F6F7] hover:text-brand-text">
+        {/* Notification bell — links to proofs when there are pending items */}
+        <Link
+          href="/account/proofs"
+          className="relative flex h-8 w-8 items-center justify-center rounded-full text-brand-text-muted transition hover:bg-[#F5F6F7] hover:text-brand-text"
+          title={proofCount > 0 ? `${proofCount} proof${proofCount > 1 ? 's' : ''} awaiting approval` : 'Notifications'}
+        >
           <Bell className="h-4 w-4" />
-        </button>
+          {proofCount > 0 && (
+            <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-brand-primary px-0.5 text-[10px] font-bold text-white">
+              {proofCount > 9 ? '9+' : proofCount}
+            </span>
+          )}
+        </Link>
 
         {/* Avatar */}
-        <div
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"
+        <Link
+          href="/account/profile"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white transition hover:opacity-80"
           style={{ background: '#E30613' }}
-          title={user?.full_name ?? ''}
+          title={user?.full_name ?? 'Profile'}
         >
           {initials}
-        </div>
+        </Link>
       </div>
     </header>
   )

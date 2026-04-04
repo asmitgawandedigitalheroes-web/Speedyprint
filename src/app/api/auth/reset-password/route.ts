@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
       type: 'recovery',
       email,
       options: {
-        redirectTo: `${origin}/api/auth/callback?next=/reset-password%3Ftype%3Drecovery`,
+        redirectTo: `${origin}/api/auth/callback?next=${encodeURIComponent('/reset-password?type=recovery')}`,
       },
     })
 

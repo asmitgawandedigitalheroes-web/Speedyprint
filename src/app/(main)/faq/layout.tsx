@@ -5,12 +5,12 @@ import { JsonLd } from '@/components/seo/JsonLd'
 export const metadata: Metadata = {
   title: 'Frequently Asked Questions',
   description:
-    'Find answers to common questions about Speedy Labels — ordering, pricing, turnaround times, file requirements, shipping, and custom design support.',
+    'Find answers to common questions about Speedy Print Suite — ordering, pricing, turnaround times, file requirements, shipping, and custom design support.',
   alternates: {
     canonical: `${SITE_URL}/faq`,
   },
   openGraph: {
-    title: 'FAQ | Speedy Labels',
+    title: 'FAQ | Speedy Print Suite',
     description: 'Answers to common questions about ordering, pricing, turnaround and more.',
     url: `${SITE_URL}/faq`,
   },

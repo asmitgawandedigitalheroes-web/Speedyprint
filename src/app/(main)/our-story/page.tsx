@@ -3,7 +3,7 @@ import { SITE_NAME } from '@/lib/utils/constants'
 
 export const metadata: Metadata = {
   title: `Our story | ${SITE_NAME}`,
-  description: 'Learn about Speedy Labels\'s journey from a small printing workshop to South Africa\'s trusted printing partner for small businesses and makers.',
+  description: 'Learn about Speedy’s journey from a small printing workshop to South Africa’s trusted printing partner for businesses and makers.',
 }
 
 const MILESTONES = [
@@ -12,11 +12,11 @@ const MILESTONES = [
   { year: '2019', title: 'Expansion', description: 'Expanded our product range to include vehicle decals, window graphics, and 3D domed stickers.' },
   { year: '2021', title: 'Online design tool', description: 'Introduced our online design wizard, allowing customers to create custom designs directly in their browser.' },
   { year: '2023', title: 'National coverage', description: 'Achieved full national delivery coverage with free shipping on orders over R500.' },
-  { year: '2024', title: 'Industry leader', description: 'Became one of South Africa\'s most trusted online sticker and label printing platforms.' },
+  { year: '2024', title: 'Industry leader', description: 'Became one of South Africa\'s most trusted online custom print and fabrication platforms.' },
 ]
 
 const VALUES = [
-  { title: 'Precision first', description: 'We use premium materials and state-of-the-art printing technology to ensure every label meets exacting standards — clean, technical, pixel-perfect.' },
+  { title: 'Precision first', description: 'We use premium materials and state-of-the-art technology to ensure every product meets exacting standards — clean, technical, pixel-perfect.' },
   { title: 'Fast and approachable', description: 'Speed without compromise. We work closely with every client — from makers to large businesses — to deliver exactly what they need, on time.' },
   { title: 'Modern innovation', description: 'We continuously invest in new technology and processes to stay at the forefront of the printing industry — because your brand deserves the best.' },
 ]

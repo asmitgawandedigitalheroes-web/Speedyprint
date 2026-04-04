@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { Upload, PencilLine, Eye, ArrowRight, CheckCircle2 } from 'lucide-react'
 
@@ -82,6 +82,19 @@ const PANELS = [
 export function DesignerDemo() {
   const [active, setActive] = useState(0)
 
+  const advance = useCallback(() => {
+    setActive((prev) => (prev + 1) % PANELS.length)
+  }, [])
+
+  useEffect(() => {
+    const timer = setInterval(advance, 2000)
+    return () => clearInterval(timer)
+  }, [advance])
+
+  const handleSelect = (i: number) => {
+    setActive(i)
+  }
+
   return (
     <section className="bg-brand-bg py-16 lg:py-24">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -107,7 +120,7 @@ export function DesignerDemo() {
                   return (
                     <button
                       key={panel.step}
-                      onClick={() => setActive(i)}
+                      onClick={() => handleSelect(i)}
                       className={`flex items-start gap-4 rounded-xl border p-4 text-left transition-all ${
                         active === i
                           ? 'border-brand-primary/40 bg-brand-primary/5 shadow-sm'

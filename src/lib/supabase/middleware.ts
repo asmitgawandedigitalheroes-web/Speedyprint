@@ -51,8 +51,8 @@ export async function updateSession(request: NextRequest) {
 
   // pathname is already defined at the top
 
-  // Protect /account routes
-  if (pathname.startsWith('/account')) {
+  // Protect /account and /checkout routes
+  if (pathname.startsWith('/account') || pathname.startsWith('/checkout')) {
     if (!user) {
       const url = request.nextUrl.clone()
       url.pathname = '/login'
@@ -64,7 +64,7 @@ export async function updateSession(request: NextRequest) {
     // Extract role from JWT app_metadata (synced via trigger) instead of DB query
     const role = user.app_metadata?.role
 
-    if (role && ['admin', 'production_staff'].includes(role)) {
+    if (role && ['admin', 'production_staff'].includes(role) && pathname.startsWith('/account')) {
       const url = request.nextUrl.clone()
       url.pathname = '/admin'
       return NextResponse.redirect(url)

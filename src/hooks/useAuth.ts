@@ -11,7 +11,7 @@ interface AuthState {
   isLoading: boolean
   isAuthenticated: boolean
   setUser: (user: Profile | null) => void
-  login: (email: string, password: string) => Promise<{ error: string | null }>
+  login: (email: string, password: string) => Promise<{ error: string | null; emailNotConfirmed?: boolean }>
   register: (email: string, password: string, fullName: string, companyName?: string) => Promise<{ error: string | null; emailConfirmationRequired?: boolean }>
   logout: () => Promise<void>
   resetPassword: (email: string) => Promise<{ error: string | null }>
@@ -39,9 +39,9 @@ export const useAuth = create<AuthState>()(
 
         if (error) {
           set({ isLoading: false })
-          // BUG-015 FIX: Do not leak raw Supabase error messages to the UI.
-          // Messages like "Invalid login credentials" or "Email not confirmed" can
-          // be used to enumerate which emails are registered. Use a generic message.
+          if (error.message.toLowerCase().includes('email not confirmed')) {
+            return { error: 'Please confirm your email address before signing in.', emailNotConfirmed: true }
+          }
           return { error: 'Sign in failed. Please check your email and password.' }
         }
 

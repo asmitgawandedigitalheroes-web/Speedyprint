@@ -7,7 +7,7 @@ import Link from 'next/link'
 
 export const metadata: Metadata = {
   title: `Testimonials | ${SITE_NAME}`,
-  description: 'Read what our customers say about Speedy Labels. Real reviews from businesses across South Africa.',
+  description: 'Read what our customers say about our custom print solutions. Real reviews from businesses across South Africa.',
 }
 
 export const dynamic = 'force-dynamic'

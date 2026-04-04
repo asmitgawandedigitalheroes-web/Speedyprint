@@ -13,7 +13,7 @@ const SECTIONS = [
   },
   {
     title: '2. Services',
-    content: 'SpeedyPrint provides custom printing services including stickers, labels, decals, and related products. We offer online design tools, artwork upload, and printing services delivered across South Africa.',
+    content: 'SpeedyPrint provides custom printing and fabrication services including stickers, labels, race numbers, stamps, and related products. We offer online design tools, artwork upload, and printing services delivered across South Africa.',
   },
   {
     title: '3. Orders and Pricing',
@@ -21,11 +21,11 @@ const SECTIONS = [
   },
   {
     title: '4. Artwork and Design',
-    content: 'Customers are responsible for ensuring their artwork is of sufficient quality and does not infringe on any third-party intellectual property rights. Speedy Labels reserves the right to refuse printing of any content deemed inappropriate or illegal.',
+    content: 'Customers are responsible for ensuring their artwork is of sufficient quality and does not infringe on any third-party intellectual property rights. We reserve the right to refuse printing of any content deemed inappropriate or illegal.',
   },
   {
     title: '5. Production and Delivery',
-    content: 'Production times are estimates and may vary depending on order complexity and volume. Delivery times are estimates and depend on courier availability and destination. Speedy Labels is not liable for delays caused by courier services.',
+    content: 'Production times are estimates and may vary depending on order complexity and volume. Delivery times are estimates and depend on courier availability and destination. We are not liable for delays caused by courier services.',
   },
   {
     title: '6. Returns and Refunds',

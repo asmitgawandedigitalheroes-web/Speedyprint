@@ -2,9 +2,11 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { useEditorStore } from '@/lib/editor/useEditorStore'
-import { setBackground, getBackgroundColor } from '@/lib/editor/fabricUtils'
+import { setBackground, getBackgroundColor, toggleLock } from '@/lib/editor/fabricUtils'
+import { Lock, Unlock } from 'lucide-react'
 
 interface ObjectProperties {
+  selectable: boolean
   fill: string
   stroke: string
   opacity: number
@@ -65,6 +67,7 @@ export default function PropertiesPanel() {
   const activeObject = useEditorStore((s) => s.activeObject)
   const [props, setProps] = useState<Partial<ObjectProperties>>({})
   const [bgColor, setBgColor] = useState('#ffffff')
+  const [tick, setTick] = useState(0)
 
   // Sync properties from active object
   useEffect(() => {
@@ -75,6 +78,7 @@ export default function PropertiesPanel() {
 
     const obj = activeObject as unknown as Record<string, unknown>
     setProps({
+      selectable: (obj.selectable as boolean) ?? true,
       fill: (obj.fill as string) ?? '#000000',
       stroke: (obj.stroke as string) ?? '',
       opacity: (obj.opacity as number) ?? 1,
@@ -97,12 +101,22 @@ export default function PropertiesPanel() {
       maxFontSize: (obj.maxFontSize as number) ?? ((obj.fontSize as number) ?? 24),
       multiline: (obj.multiline as boolean) ?? (activeObject?.type === 'textbox'),
     })
-  }, [activeObject])
+  }, [activeObject, tick])
 
   // Sync bg color from artboard
   useEffect(() => {
     if (canvas) {
       setBgColor(getBackgroundColor(canvas))
+    }
+  }, [canvas])
+
+  // Sync on object modification
+  useEffect(() => {
+    if (!canvas) return
+    const handler = () => setTick(prev => prev + 1)
+    canvas.on('object:modified', handler)
+    return () => {
+      canvas.off('object:modified', handler)
     }
   }, [canvas])
 
@@ -164,6 +178,25 @@ export default function PropertiesPanel() {
 
         {activeObject && (
           <>
+            {/* Lock Control */}
+            <div className="flex items-center justify-between py-2 border-b border-gray-100 mb-2">
+              <span className="text-xs font-medium text-gray-700">Object Status</span>
+              <button
+                onClick={() => toggleLock(canvas!, activeObject)}
+                className={`flex items-center gap-2 px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all ${
+                  props.selectable === false
+                    ? 'bg-red-50 text-red-600 border border-red-100 hover:bg-red-100'
+                    : 'bg-green-50 text-green-600 border border-green-100 hover:bg-green-100'
+                }`}
+              >
+                {props.selectable === false ? (
+                  <><Lock size={12} /> Locked</>
+                ) : (
+                  <><Unlock size={12} /> Unlocked</>
+                )}
+              </button>
+            </div>
+
             {/* Position */}
             <div>
               <p className="text-xs font-medium text-gray-600 mb-1">Position</p>

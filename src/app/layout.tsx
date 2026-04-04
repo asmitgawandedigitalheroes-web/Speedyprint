@@ -48,7 +48,7 @@ export const metadata: Metadata = {
     'award trophies',
     'South Africa printing',
     'online printing',
-    'Speedy Labels',
+    'Speedy Print Suite',
   ],
   authors: [{ name: SITE_NAME, url: SITE_URL }],
   creator: SITE_NAME,

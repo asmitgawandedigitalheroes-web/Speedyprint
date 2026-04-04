@@ -71,8 +71,23 @@ export default function AdminSettingsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      <div className="mx-auto max-w-3xl space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="space-y-2">
+            <div className="h-7 w-40 animate-pulse rounded bg-gray-200" />
+            <div className="h-4 w-64 animate-pulse rounded bg-gray-200" />
+          </div>
+          <div className="h-9 w-24 animate-pulse rounded bg-gray-200" />
+        </div>
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className="rounded-xl border border-[#E7E5E4] bg-white p-6 space-y-4">
+            <div className="h-5 w-40 animate-pulse rounded bg-gray-200" />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="h-9 animate-pulse rounded bg-gray-200" />
+              <div className="h-9 animate-pulse rounded bg-gray-200" />
+            </div>
+          </div>
+        ))}
       </div>
     )
   }
@@ -113,7 +128,7 @@ export default function AdminSettingsPage() {
                 id="site_name"
                 value={settings.site_name || ''}
                 onChange={(e) => updateSetting('site_name', e.target.value)}
-                placeholder="Speedy Labels"
+                placeholder="Speedy Print Suite"
               />
             </div>
             <div className="space-y-2">
@@ -219,7 +234,7 @@ export default function AdminSettingsPage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="free_delivery_threshold">
-                Free Delivery Over (₹)
+                Free Delivery Over (R)
               </Label>
               <Input
                 id="free_delivery_threshold"
@@ -232,7 +247,7 @@ export default function AdminSettingsPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="flat_shipping_rate">Flat Shipping (₹)</Label>
+              <Label htmlFor="flat_shipping_rate">Flat Shipping (R)</Label>
               <Input
                 id="flat_shipping_rate"
                 value={settings.flat_shipping_rate || ''}
@@ -320,10 +335,10 @@ export default function AdminSettingsPage() {
             <div>
               <p className="text-sm font-medium">Default Currency</p>
               <p className="text-xs text-muted-foreground">
-                Indian Rupee
+                South African Rand (ZAR)
               </p>
             </div>
-            <span className="text-lg font-bold">₹ (INR)</span>
+            <span className="text-lg font-bold">R (ZAR)</span>
           </div>
         </CardContent>
       </Card>

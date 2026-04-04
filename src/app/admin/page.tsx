@@ -4,9 +4,6 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
-  ShoppingCart,
-  Package,
-  Users,
   ArrowRight,
   Printer,
   Clock,
@@ -38,6 +35,7 @@ interface RecentOrder {
 export default function AdminDashboardPage() {
   const router = useRouter()
   const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([])
+  const [triage, setTriage] = useState({ pendingProofs: 0, readyForProduction: 0, processingCsv: 0 })
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -47,6 +45,11 @@ export default function AdminDashboardPage() {
         if (!res.ok) throw new Error('Failed to fetch dashboard')
         const data = await res.json()
         setRecentOrders(data.recentOrders ?? [])
+        setTriage({
+          pendingProofs:       data.stats?.pendingProofs       ?? 0,
+          readyForProduction:  data.stats?.readyForProduction  ?? 0,
+          processingCsv:       data.stats?.processingCsv       ?? 0,
+        })
       } catch (err) {
         console.error('Dashboard fetch error:', err)
       } finally {
@@ -59,46 +62,66 @@ export default function AdminDashboardPage() {
   return (
     <div className="space-y-8">
       {/* Page Header */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-brand-text">Dashboard</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Full visibility from quote through to completion
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button asChild>
-            <Link href="/admin/orders">
-              <ShoppingCart className="mr-2 h-4 w-4" />
-              Order Pipeline
-            </Link>
-          </Button>
-          <Button variant="outline" asChild>
-            <Link href="/admin/production">
-              <Printer className="mr-2 h-4 w-4" />
-              Production
-            </Link>
-          </Button>
-          <Button variant="outline" asChild>
-            <Link href="/admin/proofs">
-              <CheckCircle className="mr-2 h-4 w-4" />
-              Proofs
-            </Link>
-          </Button>
-          <Button variant="outline" asChild>
-            <Link href="/admin/products">
-              <Package className="mr-2 h-4 w-4" />
-              Products
-            </Link>
-          </Button>
-          <Button variant="outline" asChild>
-            <Link href="/admin/users">
-              <Users className="mr-2 h-4 w-4" />
-              Users
-            </Link>
-          </Button>
-        </div>
+      <div>
+        <h1 className="text-2xl font-bold text-brand-text">Dashboard</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Full visibility from quote through to completion
+        </p>
       </div>
+
+      {/* ── Needs Action triage strip ── */}
+      {!loading && (triage.pendingProofs > 0 || triage.readyForProduction > 0 || triage.processingCsv > 0) && (
+        <div className="grid gap-3 sm:grid-cols-3">
+          {triage.pendingProofs > 0 && (
+            <Link href="/admin/proofs">
+              <div className="flex items-center gap-3 rounded-xl border border-yellow-200 bg-yellow-50 p-4 transition-shadow hover:shadow-md">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-yellow-100">
+                  <Clock className="h-5 w-5 text-yellow-700" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-bold text-yellow-900">
+                    {triage.pendingProofs} Proof{triage.pendingProofs > 1 ? 's' : ''} Awaiting Review
+                  </p>
+                  <p className="text-xs text-yellow-700">Customer approval needed</p>
+                </div>
+                <ArrowRight className="h-4 w-4 shrink-0 text-yellow-600" />
+              </div>
+            </Link>
+          )}
+          {triage.readyForProduction > 0 && (
+            <Link href="/admin/production">
+              <div className="flex items-center gap-3 rounded-xl border border-orange-200 bg-orange-50 p-4 transition-shadow hover:shadow-md">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-orange-100">
+                  <Printer className="h-5 w-5 text-orange-700" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-bold text-orange-900">
+                    {triage.readyForProduction} Order{triage.readyForProduction > 1 ? 's' : ''} Ready to Print
+                  </p>
+                  <p className="text-xs text-orange-700">Proof approved, generate files</p>
+                </div>
+                <ArrowRight className="h-4 w-4 shrink-0 text-orange-600" />
+              </div>
+            </Link>
+          )}
+          {triage.processingCsv > 0 && (
+            <Link href="/admin/csv">
+              <div className="flex items-center gap-3 rounded-xl border border-blue-200 bg-blue-50 p-4 transition-shadow hover:shadow-md">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-100">
+                  <Table className="h-5 w-5 text-blue-700" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-bold text-blue-900">
+                    {triage.processingCsv} CSV Job{triage.processingCsv > 1 ? 's' : ''} Processing
+                  </p>
+                  <p className="text-xs text-blue-700">Variable data in progress</p>
+                </div>
+                <ArrowRight className="h-4 w-4 shrink-0 text-blue-600" />
+              </div>
+            </Link>
+          )}
+        </div>
+      )}
 
       {/* Stats + Pipeline Bar + Division Breakdown */}
       <DashboardStats />

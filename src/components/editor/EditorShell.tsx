@@ -5,10 +5,6 @@ import dynamic from 'next/dynamic'
 import { createClient } from '@/lib/supabase/client'
 import { useEditorStore } from '@/lib/editor/useEditorStore'
 import { loadJSON } from '@/lib/editor/fabricUtils'
-import Toolbar from './Toolbar'
-import Sidebar from './Sidebar'
-import LeftSidebar from './LeftSidebar'
-import StatusBar from './StatusBar'
 import type { ProductTemplate, Design } from '@/types'
 
 const EditorCanvas = dynamic(() => import('./Canvas'), {
@@ -22,6 +18,11 @@ const EditorCanvas = dynamic(() => import('./Canvas'), {
     </div>
   ),
 })
+
+const Toolbar = dynamic(() => import('./Toolbar'), { ssr: false })
+const Sidebar = dynamic(() => import('./Sidebar'), { ssr: false })
+const LeftSidebar = dynamic(() => import('./LeftSidebar'), { ssr: false })
+const StatusBar = dynamic(() => import('./StatusBar'), { ssr: false })
 
 interface EditorShellProps {
   templateId?: string

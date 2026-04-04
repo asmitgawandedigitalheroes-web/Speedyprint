@@ -3,7 +3,7 @@ import { SITE_NAME } from '@/lib/utils/constants'
 
 export const metadata: Metadata = {
   title: `Privacy Policy | ${SITE_NAME}`,
-  description: 'Speedy Labels privacy policy — how we collect, use, and protect your personal information.',
+  description: 'Speedy Print Suite privacy policy — how we collect, use, and protect your personal information.',
 }
 
 const SECTIONS = [

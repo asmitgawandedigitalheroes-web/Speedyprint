@@ -24,6 +24,12 @@ import {
   Stamp,
   ArrowRight,
   Sparkles,
+  Bike,
+  Trophy,
+  Printer,
+  Info,
+  Phone,
+  Briefcase,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -44,7 +50,7 @@ import {
 import { useAuth } from '@/hooks/useAuth'
 import { useCart } from '@/hooks/useCart'
 import { cn } from '@/lib/utils'
-import { SITE_NAME, WHATSAPP_URL, PRODUCT_FAMILIES } from '@/lib/utils/constants'
+import { SITE_NAME, WHATSAPP_URL, PRODUCT_FAMILIES, HEADER_PRODUCTS } from '@/lib/utils/constants'
 
 interface NavItem {
   href: string
@@ -57,25 +63,12 @@ const NAV_ITEMS: NavItem[] = [
   {
     href: '/products',
     label: 'Products',
-    children: PRODUCT_FAMILIES.map(family => ({
-      href: `/products?division=${family.divisionKey}`,
-      label: family.name,
-      description: family.description,
-      icon: family.icon
-    }))
+    children: HEADER_PRODUCTS
   },
   { href: '/#how-it-works', label: 'How It Works' },
   { href: '/#bulk-orders', label: 'Bulk Orders' },
-  {
-    href: '/our-story',
-    label: 'About Us',
-    children: [
-      { href: '/our-story', label: 'Our Story' },
-      { href: '/why-choose-us', label: 'Why Choose Us' },
-      { href: '/testimonials', label: 'Testimonials' },
-      { href: '/blog', label: 'Blog' },
-    ],
-  },
+  { href: '/about', label: 'About' },
+  { href: '/contact', label: 'Contact' },
 ]
 
 const ICON_MAP: Record<string, any> = {
@@ -84,6 +77,12 @@ const ICON_MAP: Record<string, any> = {
   Zap,
   Layout,
   Stamp,
+  Bike,
+  Trophy,
+  Printer,
+  Info,
+  Phone,
+  Briefcase,
 }
 
 function DesktopDropdown({ item }: { item: NavItem }) {
@@ -133,60 +132,24 @@ function DesktopDropdown({ item }: { item: NavItem }) {
         />
       </button>
       {open && (
-        <div className={cn(
-          "absolute left-1/2 top-full z-50 -translate-x-1/2 rounded-xl border bg-white p-2 shadow-xl ring-1 ring-black/5 mt-1",
-          item.label === 'Products' ? "w-[600px]" : "min-w-[200px]"
-        )}>
-          {item.label === 'Products' ? (
-            <div className="grid grid-cols-2 gap-2">
-              {item.children?.map((child) => {
-                const IconComp = child.icon ? ICON_MAP[child.icon] : null
-                return (
-                  <Link
-                    key={child.href}
-                    href={child.href}
-                    onClick={() => setOpen(false)}
-                    className={cn(
-                      'flex items-start gap-3 rounded-lg p-3 transition-all duration-200',
-                      pathname === child.href
-                        ? 'bg-brand-primary/5 text-brand-primary'
-                        : 'text-brand-text hover:bg-gray-50 hover:text-brand-primary group'
-                    )}
-                  >
-                    {IconComp && (
-                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gray-50 group-hover:bg-brand-primary/10 transition-colors">
-                        <IconComp className="h-4 w-4 text-brand-text-muted group-hover:text-brand-primary" />
-                      </div>
-                    )}
-                    <div>
-                      <p className="text-sm font-semibold">{child.label}</p>
-                      {child.description && (
-                        <p className="mt-0.5 text-xs text-brand-text-muted line-clamp-1">{child.description}</p>
-                      )}
-                    </div>
-                  </Link>
-                )
-              })}
-            </div>
-          ) : (
-            <div className="flex flex-col py-1">
-              {item.children?.map((child) => (
-                <Link
-                  key={child.href}
-                  href={child.href}
-                  onClick={() => setOpen(false)}
-                  className={cn(
-                    'block px-4 py-2 text-sm transition-all duration-200 rounded-md mx-1',
-                    pathname === child.href
-                      ? 'bg-brand-primary/5 text-brand-primary font-medium'
-                      : 'text-brand-text hover:bg-gray-50 hover:text-brand-primary'
-                  )}
-                >
-                  {child.label}
-                </Link>
-              ))}
-            </div>
-          )}
+        <div className="absolute left-1/2 top-full z-50 mt-1 -translate-x-1/2 rounded-xl border bg-white p-2 shadow-xl ring-1 ring-black/5 min-w-[200px]">
+          <div className="flex flex-col py-1">
+            {item.children?.map((child) => (
+              <Link
+                key={child.href}
+                href={child.href}
+                onClick={() => setOpen(false)}
+                className={cn(
+                  'block px-4 py-2 text-sm transition-all duration-200 rounded-md mx-1',
+                  pathname === child.href
+                    ? 'bg-brand-primary/5 text-brand-primary font-medium'
+                    : 'text-brand-text hover:bg-gray-50 hover:text-brand-primary'
+                )}
+              >
+                {child.label}
+              </Link>
+            ))}
+          </div>
         </div>
       )}
     </div>
@@ -219,6 +182,7 @@ export function Header() {
     if (searchQuery.trim()) {
       router.push(`/products?q=${encodeURIComponent(searchQuery.trim())}`)
       setSearchOpen(false)
+      setMobileOpen(false)
       setSearchQuery('')
     }
   }
@@ -227,16 +191,18 @@ export function Header() {
     <header className="sticky top-0 z-50 border-b border-gray-200 bg-white shadow-sm">
       <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Logo */}
-        <Link href="/" className="flex shrink-0 items-center gap-2">
-            <Image
-              src="/images/logo.png"
-              alt={SITE_NAME}
-              width={264}
-              height={56}
-              className="h-14 w-auto"
-              style={{ width: 'auto' }}
-              priority
-            />
+        <Link href="/" className="flex shrink-0 items-center gap-3 group">
+            <div className="relative">
+              <Image
+                src="/images/logo.png"
+                alt={SITE_NAME}
+                width={264}
+                height={56}
+                className="h-12 w-auto transition-transform duration-200 group-hover:scale-[1.02]"
+                style={{ width: 'auto' }}
+                priority
+              />
+            </div>
         </Link>
 
         {/* Desktop Navigation */}
@@ -263,57 +229,57 @@ export function Header() {
 
         {/* Right Side: CTAs + Utilities */}
         <div className="flex items-center gap-3">
-          {/* Secondary CTA: Try Designer Tool (Outline) */}
-          <Link href="/templates" className="hidden xl:block">
-            <Button variant="outline" size="sm" className="h-10 border-gray-200 px-5 text-sm font-semibold hover:border-brand-primary hover:text-brand-primary">
-              <Sparkles className="mr-2 h-4 w-4" />
-              Try Designer Tool
-            </Button>
-          </Link>
+          {!isAuthenticated && (
+            <>
+              {/* Secondary CTA: Try Designer Tool (Outline) */}
+              <Link href="/templates" className="hidden md:block">
+                <Button variant="outline" size="sm" className="h-10 border-gray-200 px-5 text-sm font-semibold hover:border-brand-primary hover:text-brand-primary">
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  Try Design
+                </Button>
+              </Link>
 
-          {/* Primary CTA: Get Instant Quote (Solid) */}
-          <Link href="/order-now">
-            <Button
-              size="sm"
-              className="h-10 bg-brand-primary px-6 text-sm font-bold text-white shadow-lg shadow-brand-primary/20 transition-all duration-200 hover:-translate-y-0.5 hover:bg-brand-primary-dark hover:shadow-brand-primary/30"
-            >
-              Get Instant Quote
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-          </Link>
+              {/* Primary CTA: Get Instant Quote (Solid) — hidden on mobile, shown md+ */}
+              <Link href="/order-now" className="hidden md:block">
+                <Button
+                  size="sm"
+                  className="h-10 bg-brand-primary px-6 text-sm font-bold text-white shadow-lg shadow-brand-primary/20 transition-all duration-200 hover:-translate-y-0.5 hover:bg-brand-primary-dark hover:shadow-brand-primary/30"
+                >
+                  Get Instant Quote
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </Link>
 
-          {/* Vertical Separator */}
-          <div className="hidden h-6 w-px bg-gray-200 sm:block mx-1" />
+              {/* Vertical Separator */}
+              <div className="hidden h-6 w-px bg-gray-200 sm:block mx-1" />
+            </>
+          )}
 
           {/* Utilities */}
           <div className="flex items-center gap-0.5">
-            {/* Search - Hidden for now */}
-            {/* 
+            {/* Desktop Search toggle */}
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => setSearchOpen(!searchOpen)}
-              className="hidden h-10 w-10 sm:flex"
+              className="hidden h-10 w-10 lg:flex"
+              onClick={() => setSearchOpen((o) => !o)}
+              aria-label="Search products"
             >
-              <Search className="h-[1.125rem] w-[1.125rem]" />
-              <span className="sr-only">Search</span>
+              {searchOpen ? <X className="h-[1.125rem] w-[1.125rem]" /> : <Search className="h-[1.125rem] w-[1.125rem]" />}
             </Button>
-            */}
 
-            {/* Cart - Hidden for now */}
-            {/* 
+            {/* Cart */}
             <Link href="/cart">
               <Button variant="ghost" size="icon" className="relative h-10 w-10">
                 <ShoppingCart className="h-[1.125rem] w-[1.125rem]" />
                 {itemCount > 0 && (
-                  <Badge className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-brand-primary p-0 text-[9px] text-white ring-2 ring-white">
+                  <Badge className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-brand-primary p-0 text-[10px] font-bold text-white ring-2 ring-white">
                     {itemCount > 99 ? '99+' : itemCount}
                   </Badge>
                 )}
                 <span className="sr-only">Cart</span>
               </Button>
             </Link>
-            */}
 
             {/* Auth/Account */}
             {isLoading ? (
@@ -331,43 +297,31 @@ export function Header() {
                     <p className="text-xs text-brand-text-muted truncate">{user.email}</p>
                   </div>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link href="/account" className="flex items-center gap-2">
-                      <LayoutDashboard className="h-4 w-4" />
-                      Account Dashboard
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/account" className="flex items-center gap-2">
-                      <UserCircle className="h-4 w-4" />
-                      My Account
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link
-                      href="/account/orders"
-                      className="flex items-center gap-2"
-                    >
-                      <Package className="h-4 w-4" />
-                      My Orders
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link
-                      href="/account/designs"
-                      className="flex items-center gap-2"
-                    >
-                      <Palette className="h-4 w-4" />
-                      My Designs
-                    </Link>
-                  </DropdownMenuItem>
-                  {(user.role === 'admin' || user.role === 'production_staff') && (
+                  {(user.role === 'admin' || user.role === 'production_staff') ? (
+                    <DropdownMenuItem asChild>
+                      <Link href="/admin" className="flex items-center gap-2">
+                        <LayoutDashboard className="h-4 w-4" />
+                        Admin Dashboard
+                      </Link>
+                    </DropdownMenuItem>
+                  ) : (
                     <>
-                      <DropdownMenuSeparator />
                       <DropdownMenuItem asChild>
-                        <Link href="/admin" className="flex items-center gap-2">
+                        <Link href="/account" className="flex items-center gap-2">
                           <LayoutDashboard className="h-4 w-4" />
-                          Admin Dashboard
+                          Account Dashboard
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link href="/account/orders" className="flex items-center gap-2">
+                          <Package className="h-4 w-4" />
+                          My Orders
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link href="/account/designs" className="flex items-center gap-2">
+                          <Palette className="h-4 w-4" />
+                          My Designs
                         </Link>
                       </DropdownMenuItem>
                     </>
@@ -425,70 +379,56 @@ export function Header() {
                         {item.label}
                       </p>
                       <div className="space-y-1">
-                        {item.children.map((child) => {
-                          const IconComp = child.icon ? ICON_MAP[child.icon] : null
-                          return (
-                            <Link
-                              key={child.href}
-                              href={child.href}
-                              onClick={() => setMobileOpen(false)}
-                              className={cn(
-                                'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors',
-                                isActive(child.href)
-                                  ? 'bg-brand-primary/10 text-brand-primary'
-                                  : 'text-brand-text hover:bg-gray-100'
-                              )}
-                            >
-                              {IconComp && (
-                                <div className={cn(
-                                  "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gray-100",
-                                  isActive(child.href) && "bg-brand-primary/20"
-                                )}>
-                                  <IconComp className={cn("h-4 w-4", isActive(child.href) ? "text-brand-primary" : "text-brand-text-muted")} />
-                                </div>
-                              )}
-                              <div>
-                                <p className="leading-none">{child.label}</p>
-                                {item.label === 'Products' && child.description && (
-                                  <p className="mt-1 text-[10px] text-brand-text-muted font-normal line-clamp-1">{child.description}</p>
-                                )}
-                              </div>
-                            </Link>
-                          )
-                        })}
+                        {item.children.map((child) => (
+                          <Link
+                            key={child.href}
+                            href={child.href}
+                            onClick={() => setMobileOpen(false)}
+                            className={cn(
+                              'block rounded-xl px-4 py-2 text-sm font-medium transition-colors',
+                              isActive(child.href)
+                                ? 'bg-brand-primary/10 text-brand-primary'
+                                : 'text-brand-text hover:bg-gray-100'
+                            )}
+                          >
+                            {child.label}
+                          </Link>
+                        ))}
                       </div>
                     </div>
                   ) : (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      onClick={() => setMobileOpen(false)}
-                      className={cn(
-                        'rounded-xl px-3 py-3 text-sm font-bold transition-colors',
-                        isActive(item.href)
-                          ? 'bg-brand-primary/10 text-brand-primary'
-                          : 'text-brand-text hover:bg-gray-100'
-                      )}
-                    >
-                      {item.label}
-                    </Link>
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        onClick={() => setMobileOpen(false)}
+                        className={cn(
+                          'rounded-xl px-3 py-3 text-sm font-bold transition-colors',
+                          isActive(item.href)
+                            ? 'bg-brand-primary/10 text-brand-primary'
+                            : 'text-brand-text hover:bg-gray-100'
+                        )}
+                      >
+                        {item.label}
+                      </Link>
                   )
                 )}
 
                 <div className="my-6 h-px bg-gray-100" />
 
-                <div className="px-3 space-y-3">
-                  <Link href="/order-now" onClick={() => setMobileOpen(false)}>
-                    <Button className="w-full h-12 bg-brand-primary text-white font-bold rounded-xl shadow-lg shadow-brand-primary/20">
-                      Get Instant Quote
-                    </Button>
-                  </Link>
-                  <Link href="/templates" onClick={() => setMobileOpen(false)}>
-                    <Button variant="outline" className="w-full h-12 font-bold rounded-xl border-gray-200">
-                      Try Designer Tool
-                    </Button>
-                  </Link>
-                </div>
+                {!isAuthenticated && (
+                  <div className="px-3 space-y-3">
+                    <Link href="/order-now" onClick={() => setMobileOpen(false)}>
+                      <Button className="w-full h-12 bg-brand-primary text-white font-bold rounded-xl shadow-lg shadow-brand-primary/20">
+                        Get Instant Quote
+                      </Button>
+                    </Link>
+                    <Link href="/templates" onClick={() => setMobileOpen(false)}>
+                      <Button variant="outline" className="w-full h-12 font-bold rounded-xl border-gray-200">
+                        Try Designer Tool
+                      </Button>
+                    </Link>
+                  </div>
+                )}
 
                 <div className="my-6 h-px bg-gray-100" />
 
@@ -497,61 +437,48 @@ export function Header() {
                 ) : isAuthenticated && user ? (
                   <>
                     <div className="px-3 py-2">
-                      <p className="text-sm font-medium">
-                        {user.full_name || 'User'}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {user.email}
-                      </p>
+                      <p className="text-sm font-medium">{user.full_name || 'User'}</p>
+                      <p className="text-xs text-muted-foreground">{user.email}</p>
                     </div>
-                    <Link
-                      href="/account"
-                      onClick={() => setMobileOpen(false)}
-                      className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-brand-text hover:bg-gray-100"
-                    >
-                      <LayoutDashboard className="h-4 w-4" />
-                      Dashboard
-                    </Link>
-                    <Link
-                      href="/account"
-                      onClick={() => setMobileOpen(false)}
-                      className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-brand-text hover:bg-gray-100"
-                    >
-                      <UserCircle className="h-4 w-4" />
-                      My Account
-                    </Link>
-                    <Link
-                      href="/account/orders"
-                      onClick={() => setMobileOpen(false)}
-                      className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-brand-text hover:bg-gray-100"
-                    >
-                      <Package className="h-4 w-4" />
-                      My Orders
-                    </Link>
-                    <Link
-                      href="/account/designs"
-                      onClick={() => setMobileOpen(false)}
-                      className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-brand-text hover:bg-gray-100"
-                    >
-                      <Palette className="h-4 w-4" />
-                      My Designs
-                    </Link>
-                    {(user.role === 'admin' ||
-                      user.role === 'production_staff') && (
+                    {(user.role === 'admin' || user.role === 'production_staff') ? (
+                      <Link
+                        href="/admin"
+                        onClick={() => setMobileOpen(false)}
+                        className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-brand-text hover:bg-gray-100"
+                      >
+                        <LayoutDashboard className="h-4 w-4" />
+                        Admin Dashboard
+                      </Link>
+                    ) : (
+                      <>
                         <Link
-                          href="/admin"
+                          href="/account"
                           onClick={() => setMobileOpen(false)}
                           className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-brand-text hover:bg-gray-100"
                         >
                           <LayoutDashboard className="h-4 w-4" />
-                          Admin Dashboard
+                          Dashboard
                         </Link>
-                      )}
+                        <Link
+                          href="/account/orders"
+                          onClick={() => setMobileOpen(false)}
+                          className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-brand-text hover:bg-gray-100"
+                        >
+                          <Package className="h-4 w-4" />
+                          My Orders
+                        </Link>
+                        <Link
+                          href="/account/designs"
+                          onClick={() => setMobileOpen(false)}
+                          className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-brand-text hover:bg-gray-100"
+                        >
+                          <Palette className="h-4 w-4" />
+                          My Designs
+                        </Link>
+                      </>
+                    )}
                     <button
-                      onClick={() => {
-                        logout()
-                        setMobileOpen(false)
-                      }}
+                      onClick={() => { logout(); setMobileOpen(false) }}
                       className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50"
                     >
                       <LogOut className="h-4 w-4" />

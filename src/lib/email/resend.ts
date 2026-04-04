@@ -20,14 +20,14 @@ function getResend() {
   }
   return _resend
 }
-const FROM = process.env.EMAIL_FROM || 'Speedy Labels <noreply@speedylabels.co.za>'
+const FROM = process.env.EMAIL_FROM || 'Speedy Print Suite <noreply@speedylabels.co.za>'
 const ADMIN_EMAIL = 'info@speedylabels.co.za'
 
 export async function sendPasswordResetEmail(email: string, resetLink: string) {
   const result = await getResend().emails.send({
     from: FROM,
     to: email,
-    subject: 'Reset your Speedy Labels password',
+    subject: 'Reset your Speedy Print password',
     html: passwordResetTemplate(resetLink),
   })
   if (result.error) {
@@ -89,7 +89,7 @@ export async function sendWelcomeEmail(name: string, email: string) {
   return getResend().emails.send({
     from: FROM,
     to: email,
-    subject: 'Welcome to Speedy Labels!',
+    subject: 'Welcome to Speedy Print Suite!',
     html: welcomeTemplate(name),
   })
 }

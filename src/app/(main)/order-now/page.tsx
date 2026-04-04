@@ -1,8 +1,10 @@
 import type { Metadata } from 'next'
 import { Suspense } from 'react'
-import { SITE_NAME } from '@/lib/utils/constants'
+import { SITE_NAME, DIVISIONS } from '@/lib/utils/constants'
 import { QuickOrderForm } from '@/components/order/QuickOrderForm'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Tag, Hash, Bike, Zap, Trophy, Printer } from 'lucide-react'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import Link from 'next/link'
 
 export const metadata: Metadata = {
   title: `Order now | ${SITE_NAME}`,
@@ -10,20 +12,68 @@ export const metadata: Metadata = {
     'Configure and order custom stickers, labels, and decals. Choose your size, material, finish, and quantity. Instant pricing with free delivery on orders over R500.',
 }
 
+const ICON_MAP: Record<string, any> = {
+  Tag,
+  Hash,
+  Bike,
+  Zap,
+  Trophy,
+  Printer,
+}
+
 interface PageProps {
-  searchParams: Promise<{ w?: string; h?: string; q?: string; m?: string; d?: string }>
+  searchParams: Promise<{ 
+    division?: string
+    w?: string 
+    h?: string 
+    q?: string 
+    m?: string 
+    d?: string 
+  }>
 }
 
 async function OrderFormWrapper({ searchParams }: PageProps) {
   const params = await searchParams
+  const activeDivision = params.division || 'labels'
+
   return (
-    <QuickOrderForm
-      initialWidth={params.w ? Number(params.w) : undefined}
-      initialHeight={params.h ? Number(params.h) : undefined}
-      initialQuantity={params.q ? Number(params.q) : undefined}
-      initialMaterial={params.m || undefined}
-      initialDoming={params.d === '1'}
-    />
+    <div className="space-y-8">
+      {/* Product Division Selector */}
+      <Tabs defaultValue={activeDivision} className="w-full">
+        <TabsList className="grid w-full grid-cols-2 md:grid-cols-3 lg:grid-cols-6 h-auto p-1 bg-gray-100/50">
+          {DIVISIONS.map((div) => {
+            const Icon = ICON_MAP[div.icon] || Tag
+            return (
+              <TabsTrigger
+                key={div.key}
+                value={div.key}
+                asChild
+                className="data-[state=active]:bg-white data-[state=active]:text-brand-primary data-[state=active]:shadow-sm py-3 transition-all"
+              >
+                <Link
+                  href={`/order-now?division=${div.key}${params.w ? `&w=${params.w}` : ''}${params.h ? `&h=${params.h}` : ''}`}
+                  className="flex flex-col items-center gap-1.5"
+                >
+                  <Icon className="h-4 w-4" />
+                  <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider whitespace-nowrap">
+                    {div.name}
+                  </span>
+                </Link>
+              </TabsTrigger>
+            )
+          })}
+        </TabsList>
+      </Tabs>
+
+      <QuickOrderForm
+        division={activeDivision}
+        initialWidth={params.w ? Number(params.w) : undefined}
+        initialHeight={params.h ? Number(params.h) : undefined}
+        initialQuantity={params.q ? Number(params.q) : undefined}
+        initialMaterial={params.m || undefined}
+        initialDoming={params.d === '1'}
+      />
+    </div>
   )
 }
 
@@ -32,11 +82,11 @@ export default async function OrderNowPage(props: PageProps) {
     <div className="bg-brand-bg min-h-screen">
       {/* Page header */}
       <div className="border-b border-gray-200 bg-white">
-        <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
           <div className="h-1 w-8 bg-brand-primary mb-4" />
-          <h1 className="font-heading text-3xl font-bold text-brand-text">Configure your order</h1>
+          <h1 className="font-heading text-3xl font-bold text-brand-text">Instant Quote</h1>
           <p className="mt-2 text-brand-text-muted">
-            Set your dimensions, material, and quantity — get an instant price. Free delivery on orders over R500.
+            Configure your product specifications — get an instant price. Free delivery on orders over R500.
           </p>
         </div>
       </div>

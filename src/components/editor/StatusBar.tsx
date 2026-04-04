@@ -15,13 +15,18 @@ export default function StatusBar() {
   const activeObject = useEditorStore((s) => s.activeObject)
   const canvasDimensions = useEditorStore((s) => s.canvasDimensions)
   const template = useEditorStore((s) => s.template)
+  const artboardWidth = useEditorStore((s) => s.artboardWidth)
   const zoom = useEditorStore((s) => s.zoom)
   const objects = useEditorStore((s) => s.objects)
 
   const [cursor, setCursor] = useState<CursorInfo>({ x: 0, y: 0 })
   const [selection, setSelection] = useState<SelectionInfo | null>(null)
 
-  const dpi = canvasDimensions?.dpi ?? 96
+  // Compute display DPI: artboardWidth (px) / total width (mm) * 25.4
+  const totalWidthMm = (template?.print_width_mm ?? 210) + (template?.bleed_mm ?? 0) * 2
+  const displayDpi = (artboardWidth / totalWidthMm) * 25.4
+  
+  const dpi = displayDpi || 96
 
   useEffect(() => {
     if (!canvas) return
@@ -33,14 +38,30 @@ export default function StatusBar() {
       }
     }
     canvas.on('mouse:move', handleMouseMove as never)
-    return () => { canvas.off('mouse:move', handleMouseMove as never) }
-  }, [canvas])
+    // Also update selection to show relative coordinates
+    const handleSelection = () => {
+      if (!activeObject) { setSelection(null); return }
+      const bound = activeObject.getBoundingRect()
+      // Find artboard for relative positioning if needed, but getBoundingRect is already absolute.
+      // However, we want to know its width/height in mm.
+      setSelection({ width: bound.width, height: bound.height })
+    }
+    canvas.on('selection:created', handleSelection)
+    canvas.on('selection:updated', handleSelection)
+    canvas.on('selection:cleared', () => setSelection(null))
+    
+    return () => { 
+      canvas.off('mouse:move', handleMouseMove as never)
+      canvas.off('selection:created', handleSelection)
+      canvas.off('selection:updated', handleSelection)
+      canvas.off('selection:cleared', () => setSelection(null))
+    }
+  }, [canvas, activeObject])
 
-  useEffect(() => {
-    if (!activeObject) { setSelection(null); return }
-    const bound = activeObject.getBoundingRect()
-    setSelection({ width: bound.width, height: bound.height })
-  }, [activeObject])
+  // Get artboard offset for relative mouse coordinates
+  const artboard = canvas?.getObjects().find(o => (o as any).isArtboard)
+  const offsetX = artboard?.left ?? 0
+  const offsetY = artboard?.top ?? 0
 
   const xMm = pxToMm(cursor.x, dpi).toFixed(1)
   const yMm = pxToMm(cursor.y, dpi).toFixed(1)

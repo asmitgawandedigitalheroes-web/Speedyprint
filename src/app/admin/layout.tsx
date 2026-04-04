@@ -1,11 +1,102 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { Loader2, ShieldX, Home, LogIn } from 'lucide-react'
+import { useRouter, usePathname } from 'next/navigation'
+import { Loader2, ShieldX, Home, LogIn, Bell, ChevronRight, Search } from 'lucide-react'
 import Link from 'next/link'
 import { AdminSidebar } from '@/components/layout/AdminSidebar'
 import { useAuth } from '@/hooks/useAuth'
+
+/* ── Breadcrumb label map ── */
+const ROUTE_LABELS: Record<string, string> = {
+  '/admin':              'Dashboard',
+  '/admin/orders':       'Order Pipeline',
+  '/admin/proofs':       'Proofs',
+  '/admin/production':   'Production',
+  '/admin/csv':          'CSV Jobs',
+  '/admin/products':     'Products',
+  '/admin/templates':    'Templates',
+  '/admin/designs':      'Designs',
+  '/admin/blog':         'Blog',
+  '/admin/testimonials': 'Testimonials',
+  '/admin/users':        'Users',
+  '/admin/settings':     'Settings',
+}
+
+function AdminTopBar() {
+  const { user } = useAuth()
+  const pathname = usePathname()
+
+  const currentLabel =
+    pathname === '/admin'
+      ? 'Dashboard'
+      : Object.entries(ROUTE_LABELS)
+          .filter(([route]) => route !== '/admin')
+          .sort((a, b) => b[0].length - a[0].length) // longest match first
+          .find(([route]) => pathname.startsWith(route))?.[1]
+
+  const initials =
+    user?.full_name
+      ?.split(' ')
+      .map((n) => n[0])
+      .slice(0, 2)
+      .join('')
+      .toUpperCase() ?? '?'
+
+  return (
+    <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center justify-between border-b border-[#E7E5E4] bg-white px-6 shadow-sm">
+      {/* Breadcrumb — pl-14 on mobile so hamburger doesn't overlap */}
+      <div className="flex items-center gap-1.5 pl-14 text-sm lg:pl-0">
+        <span className="font-medium text-brand-text-muted">Admin</span>
+        {currentLabel && (
+          <>
+            <ChevronRight className="h-3.5 w-3.5 text-brand-text-muted" />
+            <span className="font-semibold text-brand-text">{currentLabel}</span>
+          </>
+        )}
+      </div>
+
+      {/* Right side */}
+      <div className="flex items-center gap-2">
+        {/* Quick search shortcut → orders */}
+        <Link
+          href="/admin/orders"
+          className="hidden items-center gap-2 rounded-lg border border-[#E7E5E4] bg-[#F5F6F7] px-3 py-1.5 text-xs text-brand-text-muted transition hover:border-brand-primary hover:text-brand-primary sm:flex"
+        >
+          <Search className="h-3.5 w-3.5" />
+          <span>Search orders…</span>
+        </Link>
+
+        {/* Bell — links to proofs queue */}
+        <Link
+          href="/admin/proofs"
+          className="relative flex h-8 w-8 items-center justify-center rounded-full text-brand-text-muted transition hover:bg-[#F5F6F7] hover:text-brand-text"
+          title="Pending proofs"
+        >
+          <Bell className="h-4 w-4" />
+        </Link>
+
+        {/* User badge */}
+        <div className="hidden items-center gap-2 rounded-lg border border-[#E7E5E4] py-1 pl-2 pr-3 sm:flex">
+          <div
+            className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white"
+            style={{ background: '#E30613' }}
+          >
+            {initials}
+          </div>
+          <div className="min-w-0">
+            <p className="truncate text-xs font-semibold text-brand-text leading-tight max-w-[120px]">
+              {user?.full_name ?? 'Admin'}
+            </p>
+            <p className="text-[10px] font-medium text-brand-text-muted">
+              {user?.role === 'production_staff' ? 'Production Staff' : 'Admin'}
+            </p>
+          </div>
+        </div>
+      </div>
+    </header>
+  )
+}
 
 export default function AdminLayout({
   children,
@@ -13,7 +104,7 @@ export default function AdminLayout({
   children: React.ReactNode
 }) {
   const router = useRouter()
-  const { user, isAuthenticated } = useAuth()
+  const { user, isAuthenticated, isLoading } = useAuth()
   // Wait for Zustand persist to rehydrate from localStorage before checking auth
   const [hydrated, setHydrated] = useState(false)
 
@@ -23,15 +114,19 @@ export default function AdminLayout({
 
   useEffect(() => {
     if (!hydrated) return
+    // Wait for async refreshProfile() to finish before deciding to redirect.
+    // Without this check, the layout redirects to /login immediately after hydration
+    // because isAuthenticated is still false while the profile fetch is in flight.
+    if (isLoading) return
     // Not logged in at all — send to login with redirect param
     if (!isAuthenticated) {
       router.replace(`/login?redirect=${encodeURIComponent(window.location.pathname)}`)
     }
     // Note: wrong-role case is handled inline below (no silent redirect to /)
-  }, [hydrated, isAuthenticated, router])
+  }, [hydrated, isAuthenticated, isLoading, router])
 
-  // ── Loading state during Zustand rehydration ──────────────────────────────
-  if (!hydrated) {
+  // ── Loading state during Zustand rehydration or profile fetch ─────────────
+  if (!hydrated || isLoading) {
     return (
       <div className="flex h-screen items-center justify-center bg-gray-50">
         <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
@@ -89,9 +184,12 @@ export default function AdminLayout({
 
   // ── Authorised: render admin shell ────────────────────────────────────────
   return (
-    <div className="flex h-screen overflow-hidden bg-brand-bg">
+    <div className="flex h-screen overflow-hidden bg-[#F5F6F7]">
       <AdminSidebar />
-      <main className="flex-1 overflow-y-auto p-6 lg:p-8">{children}</main>
+      <div className="flex flex-1 flex-col overflow-hidden">
+        <AdminTopBar />
+        <main className="flex-1 overflow-y-auto p-6 lg:p-8">{children}</main>
+      </div>
     </div>
   )
 }

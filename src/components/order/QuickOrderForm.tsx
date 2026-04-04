@@ -23,6 +23,7 @@ import {
   CURRENCY_SYMBOL,
   ACCEPTED_IMAGE_TYPES,
   MAX_FILE_SIZE,
+  DIVISIONS,
 } from '@/lib/utils/constants'
 import {
   calculateQuickPrice,
@@ -30,6 +31,7 @@ import {
 } from '@/lib/pricing/quick-calculator'
 
 interface QuickOrderFormProps {
+  division?: string
   initialWidth?: number
   initialHeight?: number
   initialQuantity?: number
@@ -38,6 +40,7 @@ interface QuickOrderFormProps {
 }
 
 export function QuickOrderForm({
+  division = 'labels',
   initialWidth = 100,
   initialHeight = 100,
   initialQuantity = 100,
@@ -46,6 +49,11 @@ export function QuickOrderForm({
 }: QuickOrderFormProps) {
   const router = useRouter()
   const addItem = useCart((s) => s.addItem)
+
+  const activeDivision = useMemo(() => 
+    DIVISIONS.find(d => d.key === division) || DIVISIONS[0],
+    [division]
+  )
 
   const [width, setWidth] = useState(initialWidth)
   const [height, setHeight] = useState(initialHeight)
@@ -108,14 +116,17 @@ export function QuickOrderForm({
     const materialLabel =
       MATERIALS.find((m) => m.value === material)?.label ?? material
 
+    const productName = activeDivision.name
+
     addItem({
-      product_group_id: 'quick-order',
+      product_group_id: `quick-order-${division}`,
       product_template_id: 'quick-order',
-      product_name: `Custom Sticker (${width}x${height}mm)`,
+      product_name: `${productName} (${width}x${height}mm)`,
       template_name: `${materialLabel} - Qty ${quantity}`,
       quantity,
       unit_price: price.unitPrice,
       selected_params: {
+        division,
         width,
         height,
         material,
@@ -130,20 +141,24 @@ export function QuickOrderForm({
     router.push('/cart')
   }
 
+  const isStickerLabel = division === 'labels' || division === 'mtb-boards'
+  const showDoming = division === 'labels'
+  const showAdhesion = division === 'labels'
+
   return (
     <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
       {/* Form */}
       <div className="lg:col-span-2">
         <div className="rounded-xl border bg-white p-6 shadow-sm">
           <h2 className="font-heading text-xl font-bold text-brand-text">
-            Configure Your Order
+            Configure Your {activeDivision.name}
           </h2>
 
           <div className="mt-6 space-y-6">
             {/* Size */}
             <div>
               <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-brand-text-muted">
-                Size
+                Dimensions
               </h3>
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -185,17 +200,21 @@ export function QuickOrderForm({
                 onChange={(e) => setQuantity(Number(e.target.value) || 1)}
                 className="mt-1"
               />
-              {quantity >= 50 && (
-                <p className="mt-1 text-xs text-brand-primary">
-                  Volume discount applied!
-                </p>
-              )}
+              {(() => {
+                const discountItem = price.breakdown.find(item => item.label.includes('Volume discount'))
+                const discountPercent = discountItem ? Math.round((1 - (discountItem.value)) * 100) : 0
+                return discountPercent > 0 ? (
+                  <p className="mt-1 text-xs font-semibold text-brand-primary animate-in fade-in slide-in-from-top-1 duration-300">
+                    {discountPercent}% Bulk Discount Applied!
+                  </p>
+                ) : null
+              })()}
             </div>
 
             {/* Material & Finish */}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
-                <Label>Material / Vinyl</Label>
+                <Label>{division === 'labels' ? 'Material / Vinyl' : 'Material'}</Label>
                 <Select value={material} onValueChange={setMaterial}>
                   <SelectTrigger className="mt-1">
                     <SelectValue />
@@ -232,24 +251,26 @@ export function QuickOrderForm({
             </div>
 
             {/* Adhesion & Shape */}
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className={`grid grid-cols-1 gap-4 ${showAdhesion ? 'sm:grid-cols-2' : 'sm:grid-cols-1'}`}>
+              {showAdhesion && (
+                <div>
+                  <Label>Adhesion</Label>
+                  <Select value={adhesion} onValueChange={setAdhesion}>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ADHESION_TYPES.map((a) => (
+                        <SelectItem key={a.value} value={a.value}>
+                          {a.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
               <div>
-                <Label>Adhesion</Label>
-                <Select value={adhesion} onValueChange={setAdhesion}>
-                  <SelectTrigger className="mt-1">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {ADHESION_TYPES.map((a) => (
-                      <SelectItem key={a.value} value={a.value}>
-                        {a.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label>Shape</Label>
+                <Label>Shape / Cut</Label>
                 <Select value={shape} onValueChange={setShape}>
                   <SelectTrigger className="mt-1">
                     <SelectValue />
@@ -266,24 +287,26 @@ export function QuickOrderForm({
             </div>
 
             {/* 3D Doming */}
-            <div className="rounded-lg border bg-brand-bg p-4">
-              <label className="flex cursor-pointer items-center gap-3">
-                <input
-                  type="checkbox"
-                  checked={doming3d}
-                  onChange={(e) => setDoming3d(e.target.checked)}
-                  className="h-5 w-5 rounded border-gray-300 text-brand-primary focus:ring-brand-primary"
-                />
-                <div>
-                  <span className="font-medium text-brand-text">
-                    Add 3D Doming
-                  </span>
-                  <p className="text-sm text-brand-text-muted">
-                    Premium raised resin finish (+{CURRENCY_SYMBOL}3.50/unit)
-                  </p>
-                </div>
-              </label>
-            </div>
+            {showDoming && (
+              <div className="rounded-lg border bg-brand-bg p-4">
+                <label className="flex cursor-pointer items-center gap-3">
+                  <input
+                    type="checkbox"
+                    checked={doming3d}
+                    onChange={(e) => setDoming3d(e.target.checked)}
+                    className="h-5 w-5 rounded border-gray-300 text-brand-primary focus:ring-brand-primary"
+                  />
+                  <div>
+                    <span className="font-medium text-brand-text">
+                      Add 3D Doming
+                    </span>
+                    <p className="text-sm text-brand-text-muted">
+                      Premium raised resin finish (+{CURRENCY_SYMBOL}3.50/unit)
+                    </p>
+                  </div>
+                </label>
+              </div>
+            )}
 
             {/* Artwork Upload */}
             <div>
@@ -337,23 +360,46 @@ export function QuickOrderForm({
       <div className="lg:col-span-1">
         <div className="sticky top-24 rounded-xl border bg-white p-6 shadow-sm">
           <h3 className="font-heading text-lg font-bold text-brand-text">
-            Order Summary
+            {activeDivision.name.replace('Speedy ', '')} Summary
           </h3>
 
           <div className="mt-4 space-y-3">
             <div className="flex justify-between text-sm">
-              <span className="text-brand-text-muted">Size</span>
+              <span className="text-brand-text-muted">Dimensions</span>
               <span>{width} x {height}mm</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-brand-text-muted">Quantity</span>
               <span>{quantity.toLocaleString()}</span>
             </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-brand-text-muted">Unit Price</span>
-              <span>
-                {CURRENCY_SYMBOL}{price.unitPrice.toFixed(2)}
-              </span>
+
+            {/* Price Breakdown Details */}
+            <div className="border-t border-dashed pt-3 space-y-1.5">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-brand-text-muted mb-2">Price Breakdown</p>
+              {price.breakdown.filter(item => ['multiplier', 'surcharge', 'subtotal'].includes(item.type) && !['Subtotal', 'Total'].includes(item.label)).map((item, idx) => {
+                const isBase = item.label.startsWith('Base price')
+                return (
+                  <div key={idx} className="flex justify-between text-xs">
+                    <span className={isBase ? "text-brand-text font-medium" : "text-brand-text-muted"}>
+                      {item.label}
+                    </span>
+                    <span className="font-mono">
+                      {item.type === 'multiplier' 
+                        ? (item.value < 1 ? `-${Math.round((1-item.value)*100)}%` : `x${item.value.toFixed(2)}`)
+                        : `${CURRENCY_SYMBOL}${item.value.toFixed(2)}`}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+
+            <div className="border-t pt-3">
+              <div className="flex justify-between text-sm font-semibold">
+                <span className="text-brand-text">Unit Price</span>
+                <span className="text-brand-primary">
+                  {CURRENCY_SYMBOL}{price.unitPrice.toFixed(2)}
+                </span>
+              </div>
             </div>
 
             <div className="border-t pt-3">

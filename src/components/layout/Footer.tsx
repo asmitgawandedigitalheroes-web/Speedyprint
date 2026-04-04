@@ -17,11 +17,12 @@ const QUICK_LINKS = [
 ]
 
 const PRODUCT_LINKS = [
-  { href: '/products?division=labels', label: 'Custom Stickers' },
-  { href: '/products?division=labels', label: 'Product Labels' },
-  { href: '/products?division=vehicle-decals', label: 'Vehicle Decals' },
-  { href: '/products?division=window-wall', label: 'Window Graphics' },
-  { href: '/products?division=specialty-3d', label: 'Specialty & 3D Domed' },
+  { href: '/products?division=labels', label: 'Labels & Stickers' },
+  { href: '/products?division=race-numbers', label: 'Race Numbers' },
+  { href: '/products?division=mtb-boards', label: 'MTB Boards' },
+  { href: '/products?division=print', label: 'Custom Stamps' },
+  { href: '/products?division=trophies', label: 'Trophies & Awards' },
+  { href: '/products?division=laser', label: 'Laser Cutting' },
 ]
 
 export function Footer() {
@@ -63,7 +64,7 @@ export function Footer() {
               />
             </Link>
             <p className="mt-4 text-sm text-white/70">
-              Premium custom stickers, labels, and decals. Quality prints
+              Premium custom print and fabrication solutions. Quality products
               delivered fast across South Africa.
             </p>
             <div className="mt-4 flex gap-3">
@@ -172,6 +173,9 @@ export function Footer() {
           <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
             <p className="text-sm text-white/50">
               &copy; {currentYear} {siteName}. All rights reserved.
+              <span className="ml-2 block sm:inline">
+                Speedy is a division of The Direct Solutions Company (TDSC)
+              </span>
             </p>
             <div className="flex gap-6">
               <Link

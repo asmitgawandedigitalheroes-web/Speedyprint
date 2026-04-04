@@ -4,7 +4,7 @@ import { useState, type FormEvent, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { toast } from 'sonner'
-import { Loader2, ArrowRight } from 'lucide-react'
+import { Loader2, ArrowRight, MailWarning } from 'lucide-react'
 
 import { useAuth } from '@/hooks/useAuth'
 import { SITE_NAME } from '@/lib/utils/constants'
@@ -20,17 +20,48 @@ function LoginForm() {
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [unconfirmedEmail, setUnconfirmedEmail] = useState<string | null>(null)
+  const [resending, setResending] = useState(false)
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    const { error } = await login(email, password)
-    if (error) { toast.error(error); return }
+    setUnconfirmedEmail(null)
+    const { error, emailNotConfirmed } = await login(email, password)
+    if (error) {
+      if (emailNotConfirmed) {
+        setUnconfirmedEmail(email)
+      } else {
+        toast.error(error)
+      }
+      return
+    }
     toast.success('Signed in successfully')
     // BUG-012 FIX: Validate that redirect is a relative path to prevent open redirect attacks.
     // An attacker could craft /login?redirect=https://phishing.com — after login the user
     // would be silently redirected to an external site. Only allow paths starting with '/'.
     const safeRedirect = redirect && redirect.startsWith('/') ? redirect : '/account'
     router.push(safeRedirect)
+  }
+
+  async function handleResendConfirmation() {
+    if (!unconfirmedEmail) return
+    setResending(true)
+    try {
+      const res = await fetch('/api/auth/resend-confirmation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: unconfirmedEmail }),
+      })
+      if (res.ok) {
+        toast.success('Confirmation email sent — check your inbox')
+      } else {
+        toast.error('Could not resend confirmation email. Please try again.')
+      }
+    } catch {
+      toast.error('Could not resend confirmation email. Please try again.')
+    } finally {
+      setResending(false)
+    }
   }
 
   return (
@@ -41,6 +72,29 @@ function LoginForm() {
         <h1 className="font-heading text-2xl font-bold text-brand-text">Welcome back</h1>
         <p className="mt-1 text-sm text-brand-text-muted">Sign in to your {SITE_NAME} account</p>
       </div>
+
+      {/* Email not confirmed banner */}
+      {unconfirmedEmail && (
+        <div className="flex items-start gap-3 rounded-lg border border-yellow-200 bg-yellow-50 p-4">
+          <MailWarning className="mt-0.5 h-4 w-4 shrink-0 text-yellow-700" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-yellow-900">Email not confirmed</p>
+            <p className="mt-0.5 text-xs text-yellow-800">
+              Please check your inbox and click the confirmation link, then sign in again.
+            </p>
+          </div>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="shrink-0 border-yellow-300 text-yellow-800 hover:bg-yellow-100"
+            onClick={handleResendConfirmation}
+            disabled={resending}
+          >
+            {resending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Resend email'}
+          </Button>
+        </div>
+      )}
 
       {/* Form */}
       <form onSubmit={handleSubmit} className="space-y-5">

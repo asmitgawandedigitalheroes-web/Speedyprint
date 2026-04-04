@@ -17,13 +17,19 @@ const nextConfig: NextConfig = {
     },
   },
   webpack: (config, { isServer }) => {
-    if (!isServer) {
+    if (isServer) {
       config.externals = [
         ...(Array.isArray(config.externals) ? config.externals : []),
         'canvas',
-        'bufferutil',
-        'utf-8-validate',
       ]
+    } else {
+      config.resolve = config.resolve || {}
+      config.resolve.fallback = {
+        ...(config.resolve.fallback || {}),
+        canvas: false,
+        bufferutil: false,
+        'utf-8-validate': false,
+      }
     }
     return config
   },
