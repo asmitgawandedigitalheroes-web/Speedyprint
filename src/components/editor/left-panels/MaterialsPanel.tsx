@@ -1026,7 +1026,7 @@ export default function MaterialsPanel() {
             placeholder="Search elements..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-8 pr-3 py-1.5 editor-input"
+            className="w-full !pl-8 pr-3 py-1.5 editor-input"
           />
         </div>
       </div>

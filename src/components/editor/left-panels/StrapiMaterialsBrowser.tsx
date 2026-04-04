@@ -233,7 +233,7 @@ export default function StrapiMaterialsBrowser({ onClose }: { onClose: () => voi
               placeholder="Search categories..."
               value={catSearch}
               onChange={(e) => setCatSearch(e.target.value)}
-              className="w-full pl-8 pr-3 py-1.5 editor-input"
+              className="w-full !pl-8 pr-3 py-1.5 editor-input"
             />
           </div>
         </div>
