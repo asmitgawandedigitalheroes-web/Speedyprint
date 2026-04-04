@@ -291,20 +291,23 @@ export function QuickOrderForm({
                 Artwork (Optional)
               </h3>
               {artworkPreview ? (
-                <div className="relative inline-block">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={artworkPreview}
-                    alt="Artwork preview"
-                    className="h-32 rounded-lg border object-contain"
-                  />
-                  <button
-                    onClick={removeArtwork}
-                    className="absolute -right-2 -top-2 rounded-full bg-red-500 p-1 text-white hover:bg-red-600"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                  <p className="mt-1 text-xs text-brand-text-muted">
+                <div className="space-y-1 mt-1">
+                  <div className="relative inline-block group">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={artworkPreview}
+                      alt="Artwork preview"
+                      className="h-32 rounded-lg border object-contain bg-white shadow-sm"
+                    />
+                    <button
+                      onClick={removeArtwork}
+                      className="absolute -right-2 -top-2 h-6 w-6 flex items-center justify-center rounded-full bg-red-500 text-white shadow-md hover:bg-red-600 transition-colors z-10"
+                      title="Remove artwork"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                  <p className="text-xs text-brand-text-muted truncate max-w-[200px]" title={artworkFile?.name}>
                     {artworkFile?.name}
                   </p>
                 </div>

@@ -100,13 +100,17 @@ export const metadata: Metadata = {
   },
 }
 
-export default function RootLayout({
+import { headers } from 'next/headers'
+
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const nonce = (await headers()).get('x-nonce') ?? ''
+
   return (
-    <html lang="en">
+    <html lang="en" data-nonce={nonce}>
       <body className={`${inter.variable} ${poppins.variable} font-sans`}>
         <AuthProvider>
           {children}

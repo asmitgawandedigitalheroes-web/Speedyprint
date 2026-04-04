@@ -200,7 +200,7 @@ export default function TemplatesPanel() {
             placeholder="Search products..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 border border-ed-border rounded-lg text-sm focus:outline-none editor-input"
+            className="w-full !pl-9 pr-3 py-2 border border-ed-border rounded-lg text-sm focus:outline-none editor-input"
           />
         </div>
       </div>

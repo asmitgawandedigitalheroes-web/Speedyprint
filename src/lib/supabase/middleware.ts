@@ -114,12 +114,39 @@ export async function updateSession(request: NextRequest) {
     }
   }
 
+  // BUG-026 FIX: Generate nonce for Content-Security-Policy
+  // Generate a random 16-byte nonce and convert to base64
+  const nonce = Buffer.from(crypto.randomUUID()).toString('base64')
+
+  // pathname is already defined at the top
+
   // Redirect logged-in users away from auth pages
   if (user && (pathname === '/login' || pathname === '/register')) {
     const url = request.nextUrl.clone()
     url.pathname = '/account'
     return NextResponse.redirect(url)
   }
+
+  // BUG-026 FIX: Apply dynamic Content-Security-Policy
+  // We use the nonce to allow specific inline scripts and styles while blocking others.
+  // Note: we still keep 'unsafe-eval' for Fabric.js for now, but remove 'unsafe-inline' where possible.
+  const cspHeader = `
+    default-src 'self';
+    script-src 'self' 'nonce-${nonce}' 'strict-dynamic' 'unsafe-eval' https: http:;
+    style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+    font-src 'self' https://fonts.gstatic.com;
+    img-src 'self' data: blob: https://atqjywawohnhvlnggozu.supabase.co;
+    connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.stripe.com;
+    frame-src 'self' https://js.stripe.com https://hooks.stripe.com;
+    frame-ancestors 'none';
+    object-src 'none';
+    base-uri 'self';
+    form-action 'self';
+  `.replace(/\s{2,}/g, ' ').trim()
+
+  // Set headers on the response
+  supabaseResponse.headers.set('Content-Security-Policy', cspHeader)
+  supabaseResponse.headers.set('x-nonce', nonce)
 
   return supabaseResponse
 }

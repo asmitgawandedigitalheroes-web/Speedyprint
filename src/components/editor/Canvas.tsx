@@ -325,6 +325,7 @@ export default function EditorCanvas() {
         const { width, height } = entry.contentRect
         if (width > 50 && height > 50) {
           canvas.setDimensions({ width, height })
+          canvas.calcOffset()
 
           // Re-center artboard after resize
           const artboard = canvas.getObjects().find(
