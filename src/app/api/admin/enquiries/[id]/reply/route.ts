@@ -35,20 +35,7 @@ export async function POST(
       return NextResponse.json({ error: 'This enquiry has already been replied to.' }, { status: 409 })
     }
 
-    // Send reply email to the customer
-    const emailResult = await sendEnquiryReply(
-      submission.name,
-      submission.email,
-      submission.subject,
-      replyMessage.trim()
-    )
-
-    if (emailResult.error) {
-      console.error('[EnquiryReply] Resend error:', emailResult.error)
-      return NextResponse.json({ error: 'Failed to send reply email.' }, { status: 502 })
-    }
-
-    // Mark as replied in the database
+    // Save reply to DB first so it's never lost
     const { error: updateError } = await supabase
       .from('contact_submissions')
       .update({
@@ -61,7 +48,32 @@ export async function POST(
 
     if (updateError) {
       console.error('[EnquiryReply] DB update error:', updateError)
-      // Email already sent — log but don't fail the response
+      return NextResponse.json({ error: 'Failed to save reply.' }, { status: 500 })
+    }
+
+    // Send reply email to the customer
+    const emailResult = await sendEnquiryReply(
+      submission.name,
+      submission.email,
+      submission.subject,
+      replyMessage.trim()
+    )
+
+    if (emailResult.error) {
+      console.error('[EnquiryReply] Resend error:', emailResult.error)
+      // BUG-060 FIX: Provide more descriptive feedback if email fails due to sandbox/domain limits.
+      const isSandboxError = emailResult.error.message?.toLowerCase().includes('onboarding') || 
+                            emailResult.error.message?.toLowerCase().includes('unverified')
+      
+      const errorMsg = isSandboxError 
+        ? 'Reply saved, but email failed. (Resend Error: Domain not verified or unverified recipient in sandbox mode).'
+        : `Reply saved, but email could not be sent: ${emailResult.error.message}`
+
+      return NextResponse.json({ 
+        success: true, 
+        emailWarning: errorMsg,
+        resendError: emailResult.error 
+      })
     }
 
     return NextResponse.json({ success: true })

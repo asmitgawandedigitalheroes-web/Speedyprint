@@ -34,29 +34,38 @@ export default function ResetPasswordPage() {
     const queryParams = new URLSearchParams(window.location.search)
     const hashParams = new URLSearchParams(window.location.hash.substring(1))
 
-    if (queryParams.get('type') === 'recovery' || hashParams.get('type') === 'recovery') {
-      setMode('update')
-    }
+    const isRecoveryUrl = queryParams.get('type') === 'recovery' || hashParams.get('type') === 'recovery'
     const error = queryParams.get('error')
+    
     if (error) {
       setErrorParam(error)
       if (error === 'otp_expired') {
         toast.error('The reset link has expired or has already been used. Please request a new one.')
       }
     }
+
     const supabase = createClient()
     
-    // Check for session immediately if we have a recovery token
-    if (queryParams.get('type') === 'recovery' || hashParams.get('type') === 'recovery') {
-      supabase.auth.getSession().then(({ data: { session } }: any) => {
-        if (session) setMode('update')
-      })
-    }
+    // BUG-051 FIX: Only set 'update' mode if we have a valid session.
+    // If the user lands here via a redirect, the session should be in the cookie/storage.
+    // We wait for getSession() to confirm we ARE authenticated before showing the form.
+    supabase.auth.getSession().then(({ data: { session } }: any) => {
+      if (session && isRecoveryUrl) {
+        setMode('update')
+      } else if (!session && isRecoveryUrl) {
+        // If we have recovery params but no session, it means the tokens were invalid or the callback failed
+        toast.error('Authentication session missing. Please try the link from your email again.')
+      }
+    })
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((event: AuthChangeEvent) => {
-      if (event === 'PASSWORD_RECOVERY') setMode('update')
+    } = supabase.auth.onAuthStateChange((event: AuthChangeEvent, session: any) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setMode('update')
+      } else if (event === 'SIGNED_IN' && isRecoveryUrl) {
+        setMode('update')
+      }
     })
     return () => subscription.unsubscribe()
   }, [])
@@ -104,9 +113,7 @@ export default function ResetPasswordPage() {
     }
     setSaving(true)
     
-    // BUG-051 FIX: Ensure session exists before updating.
-    // If the user lands here via a redirect that stripped the hash, 
-    // or if the session expired, this will catch it before sending the update request.
+    // Ensure session exists before updating.
     const supabase = createClient()
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) {

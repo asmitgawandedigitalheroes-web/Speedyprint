@@ -4,7 +4,15 @@ import { useEffect, useRef, useCallback, useState } from 'react'
 import { Canvas as FabricCanvas, Rect, Shadow, Point, Line as FabricLine, PencilBrush } from 'fabric'
 import { useEditorStore } from '@/lib/editor/useEditorStore'
 import { HistoryManager } from '@/lib/editor/history'
-import { applyRotationCursor } from '@/lib/editor/fabricUtils'
+import { 
+  applyRotationCursor,
+  bringForward,
+  sendBackward,
+  bringToFront,
+  sendToBack,
+  groupSelected,
+  ungroupSelected
+} from '@/lib/editor/fabricUtils'
 import FloatingToolbar from './FloatingToolbar'
 import ContextMenu from './ContextMenu'
 
@@ -292,6 +300,35 @@ export default function EditorCanvas() {
           canvas.setActiveObject(sel)
           canvas.renderAll()
         }
+      }
+
+      // Layering shortcuts
+      if (ctrl && (e.key === ']' || e.key === '[')) {
+        e.preventDefault()
+        const isForward = e.key === ']'
+        const isToEdge = e.altKey
+
+        if (isForward) {
+          if (isToEdge) bringToFront(canvas)
+          else bringForward(canvas)
+        } else {
+          if (isToEdge) sendToBack(canvas)
+          else sendBackward(canvas)
+        }
+        refreshObjects()
+        canvas.renderAll()
+      }
+
+      // Grouping shortcuts
+      if (ctrl && e.key.toLowerCase() === 'g') {
+        e.preventDefault()
+        if (e.shiftKey) {
+          ungroupSelected(canvas)
+        } else {
+          groupSelected(canvas)
+        }
+        refreshObjects()
+        canvas.renderAll()
       }
     }
     keydownRef.current = handleKeyDown

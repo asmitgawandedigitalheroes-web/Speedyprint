@@ -141,6 +141,14 @@ export default function AdminEnquiriesPage() {
         )
       )
       setReplyTarget(null)
+      if (data.emailWarning) {
+        // BUG-061 FIX: Ensure the email warning is visible and doesn't disappear too quickly.
+        // If the reply is saved but the email fails (e.g. unverified sender), the admin must know.
+        setReplyError(data.emailWarning)
+        // Note: we don't clear the error automatically here because we want the user to see it.
+        // We set the target to the submission so the dialog stays open with the error.
+        setReplyTarget(replyTarget) 
+      }
     } catch {
       setReplyError('An unexpected error occurred.')
     } finally {
