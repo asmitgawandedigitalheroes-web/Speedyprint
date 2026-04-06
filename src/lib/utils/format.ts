@@ -1,14 +1,14 @@
 import { CURRENCY_SYMBOL } from './constants'
 
 export function formatCurrency(amount: number): string {
-  return `${CURRENCY_SYMBOL} ${amount.toLocaleString('en-ZA', {
+  return `${CURRENCY_SYMBOL} ${amount.toLocaleString('en-IN', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}`
 }
 
 export function formatDate(date: string | Date): string {
-  return new Date(date).toLocaleDateString('en-ZA', {
+  return new Date(date).toLocaleDateString('en-IN', {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
@@ -16,7 +16,7 @@ export function formatDate(date: string | Date): string {
 }
 
 export function formatDateTime(date: string | Date): string {
-  return new Date(date).toLocaleDateString('en-ZA', {
+  return new Date(date).toLocaleDateString('en-IN', {
     year: 'numeric',
     month: 'short',
     day: 'numeric',

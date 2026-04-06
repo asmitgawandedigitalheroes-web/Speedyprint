@@ -23,6 +23,7 @@ interface ProductDetailClientProps {
   pricingRules: PricingRule[]
   divisionName: string | null
   division: Division
+  designId?: string
 }
 
 export function ProductDetailClient({
@@ -31,6 +32,7 @@ export function ProductDetailClient({
   pricingRules,
   divisionName,
   division,
+  designId,
 }: ProductDetailClientProps) {
   const [activeImageUrl, setActiveImageUrl] = useState<string | null>(
     templates[0]?.image_url || product.image_url
@@ -128,6 +130,7 @@ export function ProductDetailClient({
           templates={templates}
           pricingRules={pricingRules}
           onTemplateChange={handleTemplateChange}
+          designId={designId}
         />
       </div>
     </div>

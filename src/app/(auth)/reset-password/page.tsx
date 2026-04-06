@@ -51,19 +51,37 @@ export default function ResetPasswordPage() {
     // We wait for getSession() to confirm we ARE authenticated before showing the form.
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession()
+      
+      const accessToken = hashParams.get('access_token')
+      const refreshToken = hashParams.get('refresh_token')
+      
+      console.log('[ResetPassword] Detection:', { 
+        hasSession: !!session, 
+        isRecoveryUrl, 
+        hasHashToken: !!accessToken 
+      })
+
       if (session && isRecoveryUrl) {
         setMode('update')
+      } else if (!session && accessToken && isRecoveryUrl) {
+        // Fallback: If hash exists but getSession() is slow, manually set it
+        console.log('[ResetPassword] Attempting manual session recovery from hash...')
+        const { data: { session: manualSession }, error } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken || '',
+        })
+        if (manualSession) setMode('update')
+        if (error) console.error('[ResetPassword] Manual session recovery failed:', error.message)
       } else if (!session && isRecoveryUrl) {
-        // Give it one more try after a short delay to account for fragment processing time
+        // Give it one more try after a short delay
         setTimeout(async () => {
-          const { data: { secondSession } } = await supabase.auth.getSession() as any
-          if (secondSession) {
+          const { data: { session: retrySession } } = await supabase.auth.getSession()
+          if (retrySession) {
             setMode('update')
           } else {
-            console.warn('[ResetPassword] Recovery URL without session detected.')
-            // Don't toast here yet, let onAuthStateChange handle it if it's slow
+            console.warn('[ResetPassword] Recovery URL without session detected after retry.')
           }
-        }, 500)
+        }, 800)
       }
     }
 

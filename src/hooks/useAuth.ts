@@ -37,17 +37,19 @@ export const useAuth = create<AuthState>()(
         set({ isLoading: true })
         const supabase = createClient()
 
+        const trimmedEmail = email.trim()
         const { data, error } = await supabase.auth.signInWithPassword({
-          email,
+          email: trimmedEmail,
           password,
         })
 
         if (error) {
           set({ isLoading: false })
+          console.error('[useAuth] Login error:', error.message)
           if (error.message.toLowerCase().includes('email not confirmed')) {
             return { error: 'Please confirm your email address before signing in.', emailNotConfirmed: true }
           }
-          return { error: 'Sign in failed. Please check your email and password.' }
+          return { error: error.message }
         }
 
         if (data.user) {
@@ -71,8 +73,9 @@ export const useAuth = create<AuthState>()(
         set({ isLoading: true })
         const supabase = createClient()
 
+        const trimmedEmail = email.trim()
         const { data, error } = await supabase.auth.signUp({
-          email,
+          email: trimmedEmail,
           password,
           options: {
             data: { full_name: fullName },
@@ -136,21 +139,17 @@ export const useAuth = create<AuthState>()(
       },
 
       resetPassword: async (email) => {
-        try {
-          const res = await fetch('/api/auth/reset-password', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email }),
-          })
-          if (!res.ok) {
-            const data = await res.json().catch(() => ({}))
-            return { error: data.error || 'Failed to send reset email' }
-          }
-          return { error: null }
-        } catch (err) {
-          console.error('[useAuth] resetPassword error:', err)
-          return { error: 'Network error. Please check your connection or try again.' }
+        const supabase = createClient()
+        const trimmedEmail = email.trim()
+        const { error } = await supabase.auth.resetPasswordForEmail(trimmedEmail, {
+          redirectTo: `${window.location.origin}/reset-password`,
+        })
+
+        if (error) {
+          console.error('[useAuth] Reset password error:', error.message)
+          return { error: error.message }
         }
+        return { error: null }
       },
 
       updatePassword: async (newPassword) => {

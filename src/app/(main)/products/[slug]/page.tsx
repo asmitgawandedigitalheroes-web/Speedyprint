@@ -9,6 +9,7 @@ import type { ProductGroup, ProductTemplate, TemplateParameter, PricingRule } fr
 
 interface ProductPageProps {
   params: Promise<{ slug: string }>
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }
 
 export async function generateMetadata({ params }: ProductPageProps) {
@@ -52,8 +53,9 @@ export async function generateMetadata({ params }: ProductPageProps) {
   }
 }
 
-export default async function ProductPage({ params }: ProductPageProps) {
+export default async function ProductPage({ params, searchParams: searchParamsPromise }: ProductPageProps) {
   const { slug } = await params
+  const searchParams = await searchParamsPromise
   const supabase = await createClient()
 
   const { data: product, error } = await supabase
@@ -152,6 +154,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
         pricingRules={pricingRules}
         divisionName={division?.name ?? null}
         division={typedProduct.division}
+        designId={typeof searchParams.design === 'string' ? searchParams.design : undefined}
       />
     </div>
   )

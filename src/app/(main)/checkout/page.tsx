@@ -30,21 +30,60 @@ export default function CheckoutPage() {
     country: 'ZA',
     phone: '',
   })
+  const [savedAddresses, setSavedAddresses] = useState<any[]>([])
+  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null)
+  const [showManualForm, setShowManualForm] = useState(true)
+
 
   useEffect(() => {
     if (user) {
       setShipping((prev) => ({
         ...prev,
         full_name: user.full_name || '',
-        address_line1: user.address_line1 || '',
-        address_line2: user.address_line2 || '',
-        city: user.city || '',
-        province: user.province || '',
-        postal_code: user.postal_code || '',
         phone: user.phone || '',
       }))
+
+      // Fetch saved addresses
+      const fetchSavedAddresses = async () => {
+        const supabase = createClient()
+        const { data } = await supabase
+          .from('user_addresses')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('is_default', { ascending: false })
+        
+        if (data && data.length > 0) {
+          setSavedAddresses(data)
+          const defaultAddr = data.find((addr: any) => addr.is_default) || data[0]
+          setSelectedAddressId(defaultAddr.id)
+          setShowManualForm(false)
+          setShipping(prev => ({
+            ...prev,
+            address_line1: defaultAddr.address_line1,
+            address_line2: defaultAddr.address_line2 || '',
+            city: defaultAddr.city,
+            province: defaultAddr.province,
+            postal_code: defaultAddr.postal_code,
+          }))
+        }
+      }
+      fetchSavedAddresses()
     }
   }, [user])
+
+  const handleSelectSavedAddress = (addr: any) => {
+    setSelectedAddressId(addr.id)
+    setShowManualForm(false)
+    setShipping(prev => ({
+      ...prev,
+      address_line1: addr.address_line1,
+      address_line2: addr.address_line2 || '',
+      city: addr.city,
+      province: addr.province,
+      postal_code: addr.postal_code,
+    }))
+  }
+
 
   const handleShippingChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setShipping((prev) => ({ ...prev, [e.target.name]: e.target.value }))
@@ -216,8 +255,57 @@ export default function CheckoutPage() {
             {step === 1 && (
               <div className="rounded-md border border-gray-100 bg-white p-6">
                 <h2 className="font-heading text-base font-semibold text-brand-text mb-1">Shipping address</h2>
+                
+                {savedAddresses.length > 0 && (
+                  <div className="mt-4 mb-6">
+                    <p className={LABEL_CLASS}>Choose from saved addresses</p>
+                    <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      {savedAddresses.map((addr) => (
+                        <button
+                          key={addr.id}
+                          onClick={() => handleSelectSavedAddress(addr)}
+                          className={`relative flex flex-col items-start rounded-lg border p-3 text-left transition-all ${
+                            selectedAddressId === addr.id && !showManualForm
+                              ? 'border-brand-primary bg-brand-primary/5 ring-1 ring-brand-primary'
+                              : 'border-gray-200 bg-white hover:border-brand-primary/50'
+                          }`}
+                        >
+                          <div className="flex w-full items-center justify-between">
+                            <span className="text-xs font-bold uppercase tracking-tight text-brand-text">{addr.label}</span>
+                            {selectedAddressId === addr.id && !showManualForm && (
+                              <Check className="h-3 w-3 text-brand-primary" />
+                            )}
+                          </div>
+                          <p className="mt-1 text-[13px] leading-tight text-brand-text line-clamp-1">{addr.address_line1}</p>
+                          <p className="text-[11px] text-brand-text-muted">{addr.city}, {addr.province}</p>
+                        </button>
+                      ))}
+                      <button
+                        onClick={() => {
+                          setShowManualForm(true)
+                          setSelectedAddressId(null)
+                          setShipping(prev => ({
+                            ...prev,
+                            address_line1: '',
+                            address_line2: '',
+                            city: '',
+                            province: '',
+                            postal_code: '',
+                          }))
+                        }}
+                        className={`flex flex-col items-center justify-center rounded-lg border border-dashed p-3 transition-all ${
+                          showManualForm ? 'border-brand-primary bg-brand-primary/5' : 'border-gray-300 bg-gray-50 hover:border-brand-primary'
+                        }`}
+                      >
+                        <span className="text-xs font-bold text-brand-text-muted">+ NEW ADDRESS</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 <div className="h-px bg-gray-100 my-4" />
-                <div className="space-y-4">
+                
+                <div className={`space-y-4 transition-opacity ${!showManualForm ? 'opacity-50 pointer-events-none' : ''}`}>
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div>
                       <label className={LABEL_CLASS}>Full name *</label>
@@ -253,6 +341,8 @@ export default function CheckoutPage() {
                       <input name="postal_code" value={shipping.postal_code} onChange={handleShippingChange} required className={INPUT_CLASS} />
                     </div>
                   </div>
+                </div>
+
                   <button
                     onClick={() => { if (validateShipping()) setStep(2) }}
                     className="inline-flex items-center gap-2 rounded-md bg-brand-primary px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-primary-dark"
@@ -260,8 +350,7 @@ export default function CheckoutPage() {
                     Continue to review <ArrowRight className="h-4 w-4" />
                   </button>
                 </div>
-              </div>
-            )}
+              )}
 
             {step === 2 && (
               <div className="space-y-4">
@@ -326,7 +415,7 @@ export default function CheckoutPage() {
                   <span className="text-brand-text">{formatCurrency(getSubtotal())}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-brand-text-muted">VAT (15%)</span>
+                  <span className="text-brand-text-muted">GST (18%)</span>
                   <span className="text-brand-text">{formatCurrency(getTax())}</span>
                 </div>
                 <div className="flex justify-between">

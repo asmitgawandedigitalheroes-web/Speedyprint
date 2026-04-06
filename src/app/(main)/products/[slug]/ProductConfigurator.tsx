@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -26,6 +26,7 @@ interface ProductConfiguratorProps {
   templates: (ProductTemplate & { template_parameters: TemplateParameter[] })[]
   pricingRules: PricingRule[]
   onTemplateChange?: (templateId: string) => void
+  designId?: string
 }
 
 export function ProductConfigurator({
@@ -33,10 +34,17 @@ export function ProductConfigurator({
   division,
   templates,
   onTemplateChange: onTemplateChangeCallback,
+  designId: propDesignId,
 }: ProductConfiguratorProps) {
-  const [selectedTemplateId, setSelectedTemplateId] = useState<string>(
-    templates[0]?.id ?? ''
-  )
+  const searchParams = useSearchParams()
+  const designId = propDesignId || searchParams.get('design')
+  
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>(() => {
+    // If a template is specified in URL, use it
+    const urlTemplate = searchParams.get('template')
+    if (urlTemplate && templates.some(t => t.id === urlTemplate)) return urlTemplate
+    return templates[0]?.id ?? ''
+  })
   const [paramValues, setParamValues] = useState<Record<string, string>>(() => {
     const defaults: Record<string, string> = {}
     const firstTemplate = templates[0]
@@ -383,7 +391,10 @@ export function ProductConfigurator({
             <Button
               onClick={() => {
                 setNavigatingState('design')
-                router.push(`/designer/${selectedTemplateId}`)
+                const url = designId 
+                  ? `/designer/${selectedTemplateId}?design=${designId}`
+                  : `/designer/${selectedTemplateId}`
+                router.push(url)
               }}
               disabled={navigatingState !== null}
               className="flex-1 bg-brand-primary text-white hover:bg-brand-primary-dark h-16 sm:h-12 text-sm font-bold"

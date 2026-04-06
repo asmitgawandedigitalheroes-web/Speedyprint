@@ -5,15 +5,16 @@ import Link from 'next/link'
 import { useAuth } from '@/hooks/useAuth'
 import { createClient } from '@/lib/supabase/client'
 import { formatDate } from '@/lib/utils/format'
-import { PenLine, Trash2, Copy, ArrowRight, Palette, ShoppingBag } from 'lucide-react'
+import { PenLine, Trash2, Copy, ArrowRight, Palette, ShoppingBag, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import type { Design } from '@/types'
 
 export default function SavedDesignsPage() {
   const { user } = useAuth()
-  const [designs,  setDesigns]  = useState<Design[]>([])
-  const [loading,  setLoading]  = useState(true)
+  const [designs, setDesigns] = useState<Design[]>([])
+  const [loading, setLoading] = useState(true)
   const [deleting, setDeleting] = useState<string | null>(null)
+  const [duplicating, setDuplicating] = useState<string | null>(null)
 
   useEffect(() => {
     if (!user) return
@@ -22,12 +23,19 @@ export default function SavedDesignsPage() {
       const supabase = createClient()
       const { data, error } = await supabase
         .from('designs')
-        .select('*, product_template:product_templates(name)')
+        .select(`
+          *,
+          product_template:product_templates(
+            id,
+            name,
+            product_group:product_groups(slug)
+          )
+        `)
         .eq('user_id', user.id)
         .order('updated_at', { ascending: false })
       
       if (!error) {
-        setDesigns((data as unknown as Design[]) || [])
+        setDesigns((data as any) || [])
       }
       setLoading(false)
     }
@@ -37,39 +45,78 @@ export default function SavedDesignsPage() {
 
   const handleDelete = async (designId: string) => {
     if (!confirm('Delete this design? This cannot be undone.')) return
+    
     setDeleting(designId)
     const supabase = createClient()
-    const { error } = await supabase.from('designs').delete().eq('id', designId)
-    if (error) {
+
+    try {
+      // 1. Check if design is linked to any order item
+      const { count, error: countError } = await supabase
+        .from('order_items')
+        .select('*', { count: 'exact', head: true })
+        .eq('design_id', designId)
+
+      if (count && count > 0) {
+        toast.error('This design cannot be deleted because it is part of an existing order.')
+        setDeleting(null)
+        return
+      }
+
+      // 2. Proceed with deletion
+      const { error } = await supabase.from('designs').delete().eq('id', designId)
+      
+      if (error) {
+        throw error
+      } else {
+        setDesigns((prev) => prev.filter((d) => d.id !== designId))
+        toast.success('Design deleted.')
+      }
+    } catch (err) {
+      console.error('Delete error:', err)
       toast.error('Failed to delete design.')
-    } else {
-      setDesigns((prev) => prev.filter((d) => d.id !== designId))
-      toast.success('Design deleted.')
+    } finally {
+      setDeleting(null)
     }
-    setDeleting(null)
   }
 
   const handleDuplicate = async (design: Design) => {
     if (!user) return
+    
+    setDuplicating(design.id)
     const supabase = createClient()
-    const { data, error } = await supabase
-      .from('designs')
-      .insert({
-        user_id:             user.id,
-        product_template_id: design.product_template_id,
-        name:                `${design.name} (copy)`,
-        canvas_json:         design.canvas_json,
-        thumbnail_url:       design.thumbnail_url,
-        is_saved_template:   false,
-      })
-      .select()
-      .single()
+    
+    try {
+      const { data, error } = await supabase
+        .from('designs')
+        .insert({
+          user_id: user.id,
+          product_template_id: design.product_template_id,
+          name: `${design.name} (copy)`,
+          canvas_json: design.canvas_json,
+          thumbnail_url: design.thumbnail_url,
+          is_saved_template: false,
+        })
+        .select(`
+          *,
+          product_template:product_templates(
+            id,
+            name,
+            product_group:product_groups(slug)
+          )
+        `)
+        .single()
 
-    if (error) {
+      if (error) throw error
+
+      if (data) {
+        setDesigns((prev) => [data as any, ...prev])
+        toast.success('Design duplicated.')
+      }
+    } catch (err) {
+      console.error('Duplicate error:', err)
       toast.error('Failed to duplicate design.')
-    } else {
-      setDesigns((prev) => [data as Design, ...prev])
-      toast.success('Design duplicated.')
+    } finally {
+      setDuplicating(null)
     }
   }
 
@@ -125,6 +172,11 @@ export default function SavedDesignsPage() {
                 ? `/designer/${design.product_template_id}?design=${design.id}`
                 : '#'
 
+              const prodGroup = (design as any).product_template?.product_group
+              const useHref = prodGroup?.slug 
+                ? `/products/${prodGroup.slug}?template=${design.product_template_id}&design=${design.id}`
+                : editHref
+
               return (
                 <div
                   key={design.id}
@@ -147,7 +199,7 @@ export default function SavedDesignsPage() {
                     {/* Hover overlay */}
                     <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-brand-secondary/75 opacity-0 backdrop-blur-sm transition-opacity duration-200 group-hover:opacity-100">
                       <Link
-                        href={editHref}
+                        href={useHref}
                         className="inline-flex items-center gap-1.5 rounded-lg bg-brand-primary px-4 py-2 text-xs font-semibold text-white transition hover:bg-brand-primary-dark"
                       >
                         <ShoppingBag className="h-3.5 w-3.5" /> Use Design
@@ -175,10 +227,15 @@ export default function SavedDesignsPage() {
                       {/* Duplicate */}
                       <button
                         onClick={() => handleDuplicate(design)}
+                        disabled={duplicating === design.id}
                         title="Duplicate"
-                        className="flex h-7 w-7 items-center justify-center rounded-lg text-brand-text-muted transition hover:bg-[#F5F6F7] hover:text-brand-text"
+                        className="flex h-7 w-7 items-center justify-center rounded-lg text-brand-text-muted transition hover:bg-[#F5F6F7] hover:text-brand-text disabled:opacity-50"
                       >
-                        <Copy className="h-3.5 w-3.5" />
+                        {duplicating === design.id ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Copy className="h-3.5 w-3.5" />
+                        )}
                       </button>
                       {/* Delete */}
                       <button

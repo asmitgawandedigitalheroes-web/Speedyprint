@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Prepare line items for Stripe
-    const currency = (process.env.STRIPE_CURRENCY || 'zar').toLowerCase()
+    const currency = (process.env.STRIPE_CURRENCY || 'inr').toLowerCase()
     const lineItems = order.items.map((item: any) => ({
       price_data: {
         currency: currency,

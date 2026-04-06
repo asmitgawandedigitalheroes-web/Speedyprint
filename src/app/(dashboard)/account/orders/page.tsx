@@ -5,7 +5,8 @@ import Link from 'next/link'
 import { useAuth } from '@/hooks/useAuth'
 import { createClient } from '@/lib/supabase/client'
 import { formatCurrency, formatDate } from '@/lib/utils/format'
-import { ArrowRight, Search, ShoppingBag, ChevronRight, ShieldCheck } from 'lucide-react'
+import { toast } from 'sonner'
+import { ArrowRight, Search, ShoppingBag, ChevronRight, ShieldCheck, CreditCard, Loader2 } from 'lucide-react'
 import type { Order, OrderStatus } from '@/types'
 
 /* Map orderId → first proof_sent itemId */
@@ -47,7 +48,8 @@ export default function OrdersPage() {
   const [proofMap, setProofMap] = useState<ProofMap>({})
   const [loading,  setLoading]  = useState(true)
   const [tab,      setTab]      = useState('all')
-  const [search,   setSearch]   = useState('')
+  const [search, setSearch] = useState('')
+  const [payingOrderId, setPayingOrderId] = useState<string | null>(null)
 
   useEffect(() => {
     if (!user) return
@@ -84,6 +86,29 @@ export default function OrdersPage() {
 
     fetchOrders()
   }, [user])
+
+  const handleCompletePayment = async (orderId: string) => {
+    setPayingOrderId(orderId)
+    try {
+      const res = await fetch('/api/checkout/stripe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId }),
+      })
+
+      const data = await res.json()
+      if (data.url) {
+        window.location.href = data.url
+      } else {
+        throw new Error(data.error || 'Failed to create checkout session')
+      }
+    } catch (err: any) {
+      console.error('Payment Error:', err)
+      toast.error(err.message || 'Payment failed. Please try again.')
+    } finally {
+      setPayingOrderId(null)
+    }
+  }
 
   const filtered = useMemo(() => {
     let list = orders
@@ -227,6 +252,27 @@ export default function OrdersPage() {
                     </p>
                     {/* Status badge */}
                     <StatusBadge status={order.status} />
+                    {/* Complete Payment CTA — only for pending_payment */}
+                    {order.status === 'pending_payment' && (
+                      <span
+                        onClick={(e) => e.stopPropagation()}
+                        className="hidden sm:block"
+                      >
+                        <button
+                          onClick={() => handleCompletePayment(order.id)}
+                          disabled={payingOrderId === order.id}
+                          className="inline-flex items-center gap-1.5 rounded-lg bg-brand-primary px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-brand-primary-dark disabled:opacity-50"
+                        >
+                          {payingOrderId === order.id ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <CreditCard className="h-3.5 w-3.5" />
+                          )}
+                          Complete Payment
+                        </button>
+                      </span>
+                    )}
+
                     {/* Proof CTA — only when a proof_sent item exists */}
                     {proofItemId && (
                       <span
@@ -257,6 +303,24 @@ export default function OrdersPage() {
                         <ShieldCheck className="h-3.5 w-3.5" />
                         Approve Proof
                       </Link>
+                    </div>
+                  )}
+
+                  {/* Mobile Payment CTA */}
+                  {order.status === 'pending_payment' && (
+                    <div className="px-6 pb-3 sm:hidden">
+                      <button
+                        onClick={() => handleCompletePayment(order.id)}
+                        disabled={payingOrderId === order.id}
+                        className="inline-flex items-center gap-1.5 rounded-lg bg-brand-primary px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-brand-primary-dark disabled:opacity-50"
+                      >
+                        {payingOrderId === order.id ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <CreditCard className="h-3.5 w-3.5" />
+                        )}
+                        Complete Payment
+                      </button>
                     </div>
                   )}
                 </div>

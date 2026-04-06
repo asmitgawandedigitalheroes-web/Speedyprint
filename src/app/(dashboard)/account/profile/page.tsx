@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, type FormEvent } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { createClient } from '@/lib/supabase/client'
 import { SA_PROVINCES } from '@/lib/utils/constants'
@@ -45,21 +45,42 @@ export default function ProfilePage() {
     full_name:    user?.full_name    || '',
     company_name: user?.company_name || '',
     phone:        user?.phone        || '',
-    address_line1: user?.address_line1 || '',
-    address_line2: user?.address_line2 || '',
-    city:          user?.city          || '',
-    province:      user?.province      || '',
-    postal_code:   user?.postal_code   || '',
   })
 
-  const [newPassword,      setNewPassword]      = useState('')
-  const [confirmPassword,  setConfirmPassword]  = useState('')
-  const [passwordError,    setPasswordError]    = useState('')
+  // Address management state
+  const [addresses, setAddresses] = useState<any[]>([])
+  const [loadingAddresses, setLoadingAddresses] = useState(true)
+  const [editingAddress, setEditingAddress] = useState<any>(null)
+  const [showAddressForm, setShowAddressForm] = useState(false)
+
+  // Password state
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [passwordError, setPasswordError] = useState('')
   const [changingPassword, setChangingPassword] = useState(false)
+
+
+  const fetchAddresses = async () => {
+    if (!user) return
+    const supabase = createClient()
+    const { data } = await supabase
+      .from('user_addresses')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('is_default', { ascending: false })
+      .order('created_at', { ascending: true })
+    setAddresses(data || [])
+    setLoadingAddresses(false)
+  }
+
+  useEffect(() => {
+    fetchAddresses()
+  }, [user])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }))
   }
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -73,6 +94,68 @@ export default function ProfilePage() {
       await refreshProfile()
     }
     setSaving(false)
+  }
+
+  const handleDeleteAddress = async (id: string) => {
+    const supabase = createClient()
+    const { error } = await supabase.from('user_addresses').delete().eq('id', id)
+    if (error) toast.error('Failed to delete address.')
+    else {
+      toast.success('Address deleted.')
+      fetchAddresses()
+    }
+  }
+
+  const handleSetDefaultAddress = async (id: string) => {
+    const supabase = createClient()
+    // First, clear all defaults for this user
+    await supabase
+      .from('user_addresses')
+      .update({ is_default: false })
+      .eq('user_id', user?.id)
+    
+    // Then set the new default
+    const { error } = await supabase
+      .from('user_addresses')
+      .update({ is_default: true })
+      .eq('id', id)
+    
+    if (error) toast.error('Failed to set default address.')
+    else {
+      fetchAddresses()
+    }
+  }
+
+  const handleAddressFormSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    if (!user) return
+    const formData = new FormData(e.currentTarget)
+    const addressData = {
+      user_id: user.id,
+      label: formData.get('label') as string,
+      address_line1: formData.get('address_line1') as string,
+      address_line2: formData.get('address_line2') as string,
+      city: formData.get('city') as string,
+      province: formData.get('province') as string,
+      postal_code: formData.get('postal_code') as string,
+      is_default: editingAddress ? editingAddress.is_default : (addresses.length === 0)
+    }
+
+    const supabase = createClient()
+    let error;
+    if (editingAddress) {
+      ({ error } = await supabase.from('user_addresses').update(addressData).eq('id', editingAddress.id))
+    } else {
+      ({ error } = await supabase.from('user_addresses').insert(addressData))
+    }
+
+    if (error) toast.error('Failed to save address.')
+    else {
+      toast.success(editingAddress ? 'Address updated.' : 'Address added.')
+      setShowAddressForm(false)
+      setEditingAddress(null)
+      fetchAddresses()
+    }
   }
 
   const handlePasswordChange = async (e: React.FormEvent) => {
@@ -212,43 +295,88 @@ export default function ProfilePage() {
             />
           </div>
 
-          {/* Delivery address */}
-          <div className="mt-6 border-t border-[#E7E5E4] pt-5">
+          <div className="mt-6 flex justify-end">
+            <button
+              type="submit"
+              disabled={saving}
+              className="rounded-lg bg-brand-primary px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-primary-dark disabled:opacity-60"
+            >
+              {saving ? 'Saving…' : 'Save Profile'}
+            </button>
+          </div>
+        </form>
+
+        {/* ── Saved Addresses ── */}
+        <div className="rounded-xl border border-[#E7E5E4] bg-white p-6 shadow-sm">
+          <div className="flex items-center justify-between mb-5">
             <SectionHeader
               icon={MapPin}
-              title="Delivery Address"
-              subtitle="Default shipping address for your orders."
+              title="Delivery Addresses"
+              subtitle="Save up to 3 addresses for faster checkout."
             />
+            {addresses.length < 3 && !showAddressForm && (
+              <button
+                onClick={() => {
+                  setEditingAddress(null)
+                  setShowAddressForm(true)
+                }}
+                className="text-xs font-bold uppercase tracking-wider text-brand-primary hover:text-brand-primary-dark transition-colors"
+              >
+                + Add New
+              </button>
+            )}
+          </div>
 
-            <div className="space-y-4">
+          {showAddressForm ? (
+            <form onSubmit={handleAddressFormSubmit} className="space-y-4 border-t border-[#E7E5E4] pt-5">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <label className={LABEL}>Label (e.g. Home, Office)</label>
+                  <input
+                    name="label"
+                    required
+                    defaultValue={editingAddress?.label || ''}
+                    className={INPUT}
+                    placeholder="Home"
+                  />
+                </div>
+                <div>
+                  <label className={LABEL}>Postal Code</label>
+                  <input
+                    name="postal_code"
+                    required
+                    defaultValue={editingAddress?.postal_code || ''}
+                    className={INPUT}
+                    placeholder="0000"
+                  />
+                </div>
+              </div>
               <div>
                 <label className={LABEL}>Address Line 1</label>
                 <input
                   name="address_line1"
-                  value={form.address_line1}
-                  onChange={handleChange}
+                  required
+                  defaultValue={editingAddress?.address_line1 || ''}
                   className={INPUT}
                   placeholder="Street address"
                 />
               </div>
               <div>
-                <label className={LABEL}>Address Line 2</label>
+                <label className={LABEL}>Address Line 2 (Optional)</label>
                 <input
                   name="address_line2"
-                  value={form.address_line2}
-                  onChange={handleChange}
+                  defaultValue={editingAddress?.address_line2 || ''}
                   className={INPUT}
-                  placeholder="Unit, suite, complex (optional)"
+                  placeholder="Unit, suite, etc."
                 />
               </div>
-
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                   <label className={LABEL}>City</label>
                   <input
                     name="city"
-                    value={form.city}
-                    onChange={handleChange}
+                    required
+                    defaultValue={editingAddress?.city || ''}
                     className={INPUT}
                     placeholder="City"
                   />
@@ -257,8 +385,8 @@ export default function ProfilePage() {
                   <label className={LABEL}>Province</label>
                   <select
                     name="province"
-                    value={form.province}
-                    onChange={handleChange}
+                    required
+                    defaultValue={editingAddress?.province || ''}
                     className={INPUT}
                   >
                     <option value="">Select…</option>
@@ -267,30 +395,87 @@ export default function ProfilePage() {
                     ))}
                   </select>
                 </div>
-                <div>
-                  <label className={LABEL}>Postal Code</label>
-                  <input
-                    name="postal_code"
-                    value={form.postal_code}
-                    onChange={handleChange}
-                    className={INPUT}
-                    placeholder="0000"
-                  />
-                </div>
               </div>
+              <div className="flex justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowAddressForm(false)
+                    setEditingAddress(null)
+                  }}
+                  className="px-4 py-2 text-sm font-medium text-brand-text-muted hover:text-brand-text transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="rounded-lg bg-brand-primary px-5 py-2 text-sm font-semibold text-white hover:bg-brand-primary-dark transition-colors"
+                >
+                  {editingAddress ? 'Update Address' : 'Save Address'}
+                </button>
+              </div>
+            </form>
+          ) : (
+            <div className="space-y-3">
+              {loadingAddresses ? (
+                <div className="animate-pulse space-y-3">
+                  {[1, 2].map((i) => (
+                    <div key={i} className="h-20 rounded-lg bg-[#F5F6F7]" />
+                  ))}
+                </div>
+              ) : addresses.length === 0 ? (
+                <p className="text-center py-6 text-sm text-brand-text-muted italic">
+                  No addresses saved yet.
+                </p>
+              ) : (
+                addresses.map((addr) => (
+                  <div
+                    key={addr.id}
+                    className={`relative rounded-lg border p-4 transition-all ${
+                      addr.is_default ? 'border-brand-primary/30 bg-brand-primary/[0.02]' : 'border-[#E7E5E4] bg-[#F9FAFB]'
+                    }`}
+                  >
+                    <div className="flex justify-between items-start mb-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-sm text-brand-text uppercase tracking-tight">{addr.label}</span>
+                        {addr.is_default && (
+                          <span className="bg-brand-primary/10 text-brand-primary text-[10px] font-bold px-1.5 py-0.5 rounded uppercase">Default</span>
+                        )}
+                      </div>
+                      <div className="flex gap-3">
+                        <button
+                          onClick={() => {
+                            setEditingAddress(addr)
+                            setShowAddressForm(true)
+                          }}
+                          className="text-xs text-brand-primary hover:underline"
+                        >
+                          Edit
+                        </button>
+                        {!addr.is_default && (
+                          <button
+                            onClick={() => handleSetDefaultAddress(addr.id)}
+                            className="text-xs text-brand-text-muted hover:text-brand-primary transition-colors"
+                          >
+                            Set Default
+                          </button>
+                        )}
+                        <button
+                          onClick={() => handleDeleteAddress(addr.id)}
+                          className="text-xs text-red-500 hover:underline"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                    <p className="text-sm text-brand-text line-clamp-1">{addr.address_line1}{addr.address_line2 ? `, ${addr.address_line2}` : ''}</p>
+                    <p className="text-sm text-brand-text-muted">{addr.city}, {addr.province}, {addr.postal_code}</p>
+                  </div>
+                ))
+              )}
             </div>
-          </div>
-
-          <div className="mt-6 flex justify-end">
-            <button
-              type="submit"
-              disabled={saving}
-              className="rounded-lg bg-brand-primary px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-primary-dark disabled:opacity-60"
-            >
-              {saving ? 'Saving…' : 'Save Changes'}
-            </button>
-          </div>
-        </form>
+          )}
+        </div>
 
         {/* ── Change password ── */}
         <form
