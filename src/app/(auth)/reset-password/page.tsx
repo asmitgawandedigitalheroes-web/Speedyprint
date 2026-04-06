@@ -49,21 +49,30 @@ export default function ResetPasswordPage() {
     // BUG-051 FIX: Only set 'update' mode if we have a valid session.
     // If the user lands here via a redirect, the session should be in the cookie/storage.
     // We wait for getSession() to confirm we ARE authenticated before showing the form.
-    supabase.auth.getSession().then(({ data: { session } }: any) => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
       if (session && isRecoveryUrl) {
         setMode('update')
       } else if (!session && isRecoveryUrl) {
-        // If we have recovery params but no session, it means the tokens were invalid or the callback failed
-        toast.error('Authentication session missing. Please try the link from your email again.')
+        // Give it one more try after a short delay to account for fragment processing time
+        setTimeout(async () => {
+          const { data: { secondSession } } = await supabase.auth.getSession() as any
+          if (secondSession) {
+            setMode('update')
+          } else {
+            console.warn('[ResetPassword] Recovery URL without session detected.')
+            // Don't toast here yet, let onAuthStateChange handle it if it's slow
+          }
+        }, 500)
       }
-    })
+    }
+
+    checkSession()
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event: AuthChangeEvent, session: any) => {
-      if (event === 'PASSWORD_RECOVERY') {
-        setMode('update')
-      } else if (event === 'SIGNED_IN' && isRecoveryUrl) {
+      if (event === 'PASSWORD_RECOVERY' || (event === 'SIGNED_IN' && isRecoveryUrl)) {
         setMode('update')
       }
     })
@@ -113,22 +122,22 @@ export default function ResetPasswordPage() {
     }
     setSaving(true)
     
-    // Ensure session exists before updating.
-    const supabase = createClient()
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) {
-      setSaving(false)
-      toast.error('Your session has expired or the reset link is invalid. Please request a new one.')
-      setMode('request')
+    // Instead of failing early if getSession() is slow, we just attempt the update.
+    // Supabase will return an error if the user is truly not authenticated.
+    const { error } = await updatePassword(password)
+    setSaving(false)
+    
+    if (error) {
+      // Handle the specific case where the session really is gone/invalid
+      if (error.toLowerCase().includes('session') || error.toLowerCase().includes('invalid')) {
+        toast.error('Your session has expired or the reset link is already used.')
+        setMode('request')
+      } else {
+        toast.error(error)
+      }
       return
     }
 
-    const { error } = await updatePassword(password)
-    setSaving(false)
-    if (error) {
-      toast.error(error)
-      return
-    }
     setMode('done')
     toast.success('Password updated successfully!')
     setTimeout(() => router.push('/account'), 2000)

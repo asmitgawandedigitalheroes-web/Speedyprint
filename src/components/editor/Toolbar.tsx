@@ -143,26 +143,37 @@ export default function Toolbar() {
         product_template_id: template?.id ?? null,
       }
 
+      let res: Response
       if (designId) {
-        await fetch(`/api/designs/${designId}`, {
+        res = await fetch(`/api/designs/${designId}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body),
         })
       } else {
-        const res = await fetch('/api/designs', {
+        res = await fetch('/api/designs', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body),
         })
-        const data = await res.json()
-        if (data?.id) setDesignId(data.id)
+        if (res.ok) {
+          const data = await res.json()
+          if (data?.id) setDesignId(data.id)
+        }
       }
+
+      if (!res.ok) {
+        const errorText = await res.text()
+        throw new Error(`Failed to save: ${res.status} ${res.statusText} - ${errorText}`)
+      }
+
+      setSaveStatus('saved')
     } catch (err) {
       console.error('Save failed:', err)
+      setSaveStatus('unsaved')
+      alert(err instanceof Error ? err.message : 'Save failed. Please check your connection.')
     } finally {
       setSaving(false)
-      setSaveStatus('saved')
     }
   }, [canvas, template, designId, setDesignId, designName, isAuthenticated])
 
@@ -190,13 +201,14 @@ export default function Toolbar() {
       
       // Update local state
       setTemplate({ ...template, template_json: newTj })
+      setSaveStatus('saved')
       alert('Default design saved successfully!')
     } catch (err) {
       console.error('Save as default failed:', err)
+      setSaveStatus('unsaved')
       alert('Failed to save default design. Check console for details.')
     } finally {
       setSaving(false)
-      setSaveStatus('saved')
     }
   }, [canvas, template, setTemplate])
 
@@ -220,23 +232,31 @@ export default function Toolbar() {
           product_template_id: template?.id ?? null,
         }
         const currentDesignId = useEditorStore.getState().designId
+        let res: Response
         if (currentDesignId) {
-          await fetch(`/api/designs/${currentDesignId}`, {
+          res = await fetch(`/api/designs/${currentDesignId}`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(body),
           })
         } else {
-          const res = await fetch('/api/designs', {
+          res = await fetch('/api/designs', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(body),
           })
-          const data = await res.json()
-          if (data?.id) useEditorStore.getState().setDesignId(data.id)
+          if (res.ok) {
+            const data = await res.json()
+            if (data?.id) useEditorStore.getState().setDesignId(data.id)
+          }
+        }
+
+        if (!res.ok) {
+          throw new Error(`Auto-save failed: ${res.status}`)
         }
         setSaveStatus('saved')
-      } catch {
+      } catch (err) {
+        console.warn('Auto-save background failure:', err)
         setSaveStatus('unsaved')
       }
     }
@@ -365,23 +385,30 @@ export default function Toolbar() {
         product_template_id: template?.id ?? null,
       }
 
+      let res: Response
       if (designId) {
-        await fetch(`/api/designs/${designId}`, {
+        res = await fetch(`/api/designs/${designId}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body),
         })
       } else {
-        const res = await fetch('/api/designs', {
+        res = await fetch('/api/designs', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body),
         })
-        const data = await res.json()
-        if (data?.id) {
-          savedDesignId = data.id
-          setDesignId(data.id)
+        if (res.ok) {
+          const data = await res.json()
+          if (data?.id) {
+            savedDesignId = data.id
+            setDesignId(data.id)
+          }
         }
+      }
+
+      if (!res.ok) {
+        throw new Error(`Failed to save design before adding to cart: ${res.status}`)
       }
 
       const unitPrice = getUnitPrice(cartQuantity)
