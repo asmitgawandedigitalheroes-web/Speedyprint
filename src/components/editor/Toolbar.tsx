@@ -19,7 +19,15 @@ import {
   Plus,
   Check,
   LayoutTemplate,
+  MoreVertical,
 } from 'lucide-react'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { useAuth } from '@/hooks/useAuth'
 import { useEditorStore } from '@/lib/editor/useEditorStore'
 import { exportJSON, exportPNG, exportSVG, loadJSON } from '@/lib/editor/fabricUtils'
@@ -30,8 +38,6 @@ import type { ProductTemplate } from '@/types'
 
 export default function Toolbar() {
   const [saving, setSaving] = useState(false)
-  const [saveStatus, setSaveStatus] = useState<'unsaved' | 'saving' | 'saved'>('unsaved')
-  const [designName, setDesignName] = useState('Untitled Design')
   const autoSaveTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const lastSavedJsonRef = useRef<string | null>(null)
   const [siblingTemplates, setSiblingTemplates] = useState<ProductTemplate[]>([])
@@ -54,7 +60,12 @@ export default function Toolbar() {
   const setTemplate = useEditorStore((s) => s.setTemplate)
   const designId = useEditorStore((s) => s.designId)
   const setDesignId = useEditorStore((s) => s.setDesignId)
+  const designName = useEditorStore((s) => s.designName)
+  const setDesignName = useEditorStore((s) => s.setDesignName)
+  const saveStatus = useEditorStore((s) => s.saveStatus)
+  const setSaveStatus = useEditorStore((s) => s.setSaveStatus)
   const addItem = useCart((s) => s.addItem)
+  const { isAuthenticated } = useAuth()
 
   const noCanvas = !canvas
   const groupName = template?.product_group?.name ?? template?.name ?? null
@@ -65,20 +76,23 @@ export default function Toolbar() {
       return
     }
 
-    const supabase = createClient()
-    supabase
-      .from('product_templates')
-      .select('*, product_group:product_groups(*)')
-      .eq('product_group_id', template.product_group_id)
-      .eq('is_active', true)
-      .order('name')
-      .then(({ data }) => {
-        if (data && data.length > 1) {
-          setSiblingTemplates(data as unknown as ProductTemplate[])
-        } else {
-          setSiblingTemplates([])
-        }
-      })
+    const fetchSiblings = async () => {
+      const supabase = createClient()
+      const { data, error } = await supabase
+        .from('product_templates')
+        .select('*, product_group:product_groups(*)')
+        .eq('product_group_id', template.product_group_id)
+        .eq('is_active', true)
+        .order('name')
+      
+      if (!error && data && data.length > 1) {
+        setSiblingTemplates(data as unknown as ProductTemplate[])
+      } else {
+        setSiblingTemplates([])
+      }
+    }
+
+    fetchSiblings()
   }, [template?.product_group_id])
 
   useEffect(() => {
@@ -102,6 +116,21 @@ export default function Toolbar() {
 
   const handleSave = useCallback(async () => {
     if (!canvas) return
+
+    // If not authenticated, save to local storage and redirect to login
+    if (!isAuthenticated) {
+      const canvasJson = exportJSON(canvas)
+      const pendingData = {
+        name: designName || 'Untitled Design',
+        canvas_json: JSON.parse(canvasJson),
+        product_template_id: template?.id ?? null,
+        timestamp: Date.now()
+      }
+      localStorage.setItem('sp_pending_design', JSON.stringify(pendingData))
+      window.location.href = `/login?redirect=${encodeURIComponent(window.location.pathname)}`
+      return
+    }
+
     setSaving(true)
     try {
       const canvasJson = JSON.parse(exportJSON(canvas))
@@ -135,7 +164,7 @@ export default function Toolbar() {
       setSaving(false)
       setSaveStatus('saved')
     }
-  }, [canvas, template, designId, setDesignId, designName])
+  }, [canvas, template, designId, setDesignId, designName, isAuthenticated])
 
   const handleSaveAsDefault = useCallback(async () => {
     if (!canvas || !template) return
@@ -221,7 +250,12 @@ export default function Toolbar() {
   // Mark as unsaved when canvas changes
   useEffect(() => {
     if (!canvas) return
-    const markUnsaved = () => setSaveStatus('unsaved')
+    const markUnsaved = () => {
+      // Don't mark as unsaved if we are currently saving or just finished
+      if (useEditorStore.getState().saveStatus !== 'unsaved') {
+        setSaveStatus('unsaved')
+      }
+    }
     canvas.on('object:modified', markUnsaved)
     canvas.on('object:added', markUnsaved)
     canvas.on('object:removed', markUnsaved)
@@ -379,28 +413,28 @@ export default function Toolbar() {
   const ghostBtn = 'flex items-center gap-1.5 px-3 py-1.5 border border-ed-border text-ed-text-muted text-xs font-medium rounded-md hover:text-ed-text hover:border-ed-border-light hover:bg-ed-surface-hover disabled:opacity-30 disabled:cursor-not-allowed transition-colors'
 
   return (
-    <div className="h-11 bg-ed-surface border-b border-ed-border flex items-center px-3 gap-1 flex-shrink-0">
+    <div className="h-11 bg-ed-surface border-b border-ed-border flex items-center px-3 gap-2 flex-shrink-0 z-[60]">
       {/* LEFT: Back + Breadcrumb + Name + Status */}
-      <div className="flex items-center gap-2 min-w-0">
+      <div className="flex items-center gap-2 flex-1 min-w-0">
         <button onClick={() => window.history.back()} title="Back" className={iconBtn}>
           <ArrowLeft size={16} />
         </button>
 
         {groupName && (
-          <>
+          <div className="hidden sm:flex items-center gap-2">
             <span className="text-xs text-ed-text-dim whitespace-nowrap">{groupName}</span>
             <span className="text-xs text-ed-border-light">/</span>
-          </>
+          </div>
         )}
 
         {siblingTemplates.length > 1 && template ? (
-          <div ref={templatePickerRef} className="relative">
+          <div ref={templatePickerRef} className="relative flex-shrink-0">
             <button
               onClick={() => setShowTemplatePicker((v) => !v)}
-              className="flex items-center gap-1 text-sm font-semibold text-ed-text hover:bg-ed-surface-hover rounded-md px-2 py-1 transition-colors"
+              className="flex items-center gap-1 text-sm font-semibold text-ed-text hover:bg-ed-surface-hover rounded-md px-2 py-0.5 transition-colors max-w-[120px] sm:max-w-none"
             >
-              {template.name}
-              <ChevronDown size={14} className="text-ed-text-dim" />
+              <span className="truncate">{template.name}</span>
+              <ChevronDown size={14} className="text-ed-text-dim flex-shrink-0" />
             </button>
             {showTemplatePicker && (
               <div className="absolute top-full left-0 mt-1 bg-ed-surface border border-ed-border rounded-lg shadow-xl shadow-black/10 z-50 min-w-[200px] py-1">
@@ -426,8 +460,8 @@ export default function Toolbar() {
             type="text"
             value={designName}
             onChange={(e) => setDesignName(e.target.value)}
-            className="text-sm font-semibold text-ed-text bg-transparent border-none outline-none min-w-[100px] max-w-[180px] hover:bg-ed-surface-hover focus:bg-ed-surface-hover px-2 py-0.5 rounded-md transition-all"
-            placeholder="Untitled Design"
+            className="text-sm font-semibold text-ed-text bg-transparent border-none outline-none flex-1 min-w-[60px] max-w-[180px] hover:bg-ed-surface-hover focus:bg-ed-surface-hover px-2 py-0.5 rounded-md transition-all truncate"
+            placeholder="Untitled"
           />
         )}
 
@@ -436,25 +470,25 @@ export default function Toolbar() {
             type="text"
             value={designName}
             onChange={(e) => setDesignName(e.target.value)}
-            className="text-sm font-semibold text-ed-text bg-transparent border-none outline-none min-w-[100px] max-w-[140px] hover:bg-ed-surface-hover focus:bg-ed-surface-hover px-2 py-0.5 rounded-md transition-all"
-            placeholder="Untitled Design"
+            className="hidden sm:block text-sm font-semibold text-ed-text bg-transparent border-none outline-none min-w-[60px] max-w-[140px] hover:bg-ed-surface-hover focus:bg-ed-surface-hover px-2 py-0.5 rounded-md transition-all truncate"
+            placeholder="Untitled"
           />
         )}
 
-        {/* Save status */}
+        {/* Save status - hide text on mobile */}
         <span className="flex items-center gap-1.5 text-[11px] whitespace-nowrap">
-          <span className={`w-1.5 h-1.5 rounded-full ${
+          <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
             saveStatus === 'saving' || saving ? 'bg-blue-400 animate-pulse' :
             saveStatus === 'saved' ? 'bg-emerald-400' : 'bg-amber-400'
           }`} />
-          <span className="text-ed-text-dim">
+          <span className="hidden md:inline text-ed-text-dim">
             {saving || saveStatus === 'saving' ? 'Saving...' : saveStatus === 'saved' ? 'Saved' : 'Unsaved'}
           </span>
         </span>
       </div>
 
-      {/* CENTER: Undo/Redo + Zoom */}
-      <div className="flex-1 flex items-center justify-center gap-0.5">
+      {/* CENTER: Undo/Redo + Zoom - Hidden on mobile to prevent overlap, tail-end of scroll on tablet */}
+      <div className="hidden lg:flex flex-1 items-center justify-center gap-0.5 flex-shrink-0">
         <button onClick={undo} disabled={noCanvas} title="Undo (Ctrl+Z)" className={iconBtn}>
           <Undo2 size={15} />
         </button>
@@ -481,69 +515,112 @@ export default function Toolbar() {
       </div>
 
       {/* RIGHT: Actions */}
-      <div className="flex items-center gap-1.5">
-        <button onClick={handlePreview} disabled={noCanvas} title="Preview" className={iconBtn}>
-          <Eye size={16} />
-        </button>
-        <button
-          onClick={() => useEditorStore.getState().togglePrintBoundaries()}
-          disabled={noCanvas}
-          title="Toggle Print Boundaries"
-          className={iconBtn}
-          style={{ opacity: useEditorStore.getState().showPrintBoundaries ? 1 : 0.4 }}
-        >
-          <Maximize2 size={15} />
-        </button>
-
-        <div className="w-px h-4 bg-ed-border mx-0.5" />
-
-        {template && (
+      <div className="flex items-center gap-1.5 flex-shrink-0">
+        <div className="hidden lg:flex items-center gap-1.5">
+          <button onClick={handlePreview} disabled={noCanvas} title="Preview" className={iconBtn}>
+            <Eye size={16} />
+          </button>
           <button
-            onClick={() => window.open(`/designer/${template.id}/csv${designId ? `?design=${designId}` : ''}`, '_blank')}
+            onClick={() => useEditorStore.getState().togglePrintBoundaries()}
             disabled={noCanvas}
-            title="Batch CSV Upload"
-            className={ghostBtn}
+            title="Toggle Print Boundaries"
+            className={iconBtn}
+            style={{ opacity: useEditorStore.getState().showPrintBoundaries ? 1 : 0.4 }}
           >
-            <Table2 size={14} />
-            CSV
+            <Maximize2 size={15} />
           </button>
-        )}
-        <button onClick={handleSave} disabled={noCanvas || saving} title="Save Design" className={ghostBtn}>
-          <Save size={14} />
-          {saving ? 'Saving...' : 'Save'}
-        </button>
-        <button onClick={handleExport} disabled={noCanvas} title="Export PNG" className={ghostBtn}>
-          <Download size={14} />
-          Export
-        </button>
-        <button onClick={handleExportPDF} disabled={noCanvas} title="Export PDF" className={ghostBtn}>
-          <Download size={14} />
-          PDF
-        </button>
 
-        {useAuth.getState().user?.role === 'admin' && (
-          <button 
-            onClick={handleSaveAsDefault} 
-            disabled={noCanvas || saving} 
-            title="Save as Default Template Design (Admin Only)" 
-            className={`${ghostBtn} bg-blue-50/50 border-blue-200 text-blue-600 hover:bg-blue-100/50`}
-          >
-            <LayoutTemplate size={14} />
-            Set Default
+          <div className="w-px h-4 bg-ed-border mx-0.5" />
+
+          {template && (
+            <button
+              onClick={() => window.open(`/designer/${template.id}/csv${designId ? `?design=${designId}` : ''}`, '_blank')}
+              disabled={noCanvas}
+              title="Batch CSV Upload"
+              className={ghostBtn}
+            >
+              <Table2 size={14} />
+              CSV
+            </button>
+          )}
+          <button onClick={handleSave} disabled={noCanvas || saving} title="Save Design" className={ghostBtn}>
+            <Save size={14} />
+            {saving ? 'Saving...' : 'Save'}
           </button>
-        )}
+          <button onClick={handleExport} disabled={noCanvas} title="Export PNG" className={ghostBtn}>
+            <Download size={14} />
+            Export
+          </button>
+          <button onClick={handleExportPDF} disabled={noCanvas} title="Export PDF" className={ghostBtn}>
+            <Download size={14} />
+            PDF
+          </button>
 
-        <div className="w-px h-4 bg-ed-border mx-0.5" />
+          {useAuth.getState().user?.role === 'admin' && (
+            <button 
+              onClick={handleSaveAsDefault} 
+              disabled={noCanvas || saving} 
+              title="Save as Default Template Design (Admin Only)" 
+              className={`${ghostBtn} bg-blue-50/50 border-blue-200 text-blue-600 hover:bg-blue-100/50`}
+            >
+              <LayoutTemplate size={14} />
+              Set Default
+            </button>
+          )}
 
-        {/* Primary CTA — gold gradient */}
+          <div className="w-px h-4 bg-ed-border mx-0.5" />
+        </div>
+
+        {/* Mobile More Actions Dropdown — shown when < lg */}
+        <div className="flex lg:hidden items-center mr-1">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button title="More Actions" className={iconBtn}>
+                <MoreVertical size={18} />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem onClick={handlePreview} disabled={noCanvas}>
+                <Eye className="mr-2 h-4 w-4" />
+                <span>Preview</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => useEditorStore.getState().togglePrintBoundaries()} disabled={noCanvas}>
+                <Maximize2 className="mr-2 h-4 w-4" />
+                <span>Toggle Boundaries</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleSave} disabled={noCanvas || saving}>
+                <Save className="mr-2 h-4 w-4" />
+                <span>{saving ? 'Saving...' : 'Save Design'}</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleExport} disabled={noCanvas}>
+                <Download className="mr-2 h-4 w-4" />
+                <span>Export PNG</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleExportPDF} disabled={noCanvas}>
+                <Download className="mr-2 h-4 w-4" />
+                <span>Export PDF</span>
+              </DropdownMenuItem>
+              {template && (
+                <DropdownMenuItem onClick={() => window.open(`/designer/${template.id}/csv${designId ? `?design=${designId}` : ''}`, '_blank')} disabled={noCanvas}>
+                  <Table2 className="mr-2 h-4 w-4" />
+                  <span>Batch CSV</span>
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
+        {/* Primary CTA — compact text on mobile */}
         <button
           onClick={handleOpenCartModal}
           disabled={noCanvas}
           title="Add to Cart"
-          className="flex items-center gap-1.5 px-4 py-1.5 bg-gradient-to-r from-ed-accent to-ed-accent-hover text-white text-xs font-bold rounded-md hover:from-ed-accent-hover hover:to-ed-accent disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-lg shadow-ed-accent/20 hover:shadow-ed-accent/30 active:scale-95"
+          className="flex items-center gap-1.5 px-3 sm:px-4 py-1.5 bg-gradient-to-r from-ed-accent to-ed-accent-hover text-white text-xs font-bold rounded-md hover:from-ed-accent-hover hover:to-ed-accent disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-lg shadow-ed-accent/20 hover:shadow-ed-accent/30 active:scale-95"
         >
-          <ShoppingCart size={14} />
-          Add to Cart
+          <ShoppingCart size={14} className="flex-shrink-0" />
+          <span className="sm:inline">Add to Cart</span>
+          <span className="hidden sm:hidden">Add</span>
         </button>
       </div>
 

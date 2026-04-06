@@ -17,16 +17,22 @@ export default function SavedDesignsPage() {
 
   useEffect(() => {
     if (!user) return
-    const supabase = createClient()
-    supabase
-      .from('designs')
-      .select('*, product_template:product_templates(name)')
-      .eq('user_id', user.id)
-      .order('updated_at', { ascending: false })
-      .then(({ data }) => {
-        setDesigns((data as Design[]) || [])
-        setLoading(false)
-      })
+    
+    const fetchDesigns = async () => {
+      const supabase = createClient()
+      const { data, error } = await supabase
+        .from('designs')
+        .select('*, product_template:product_templates(name)')
+        .eq('user_id', user.id)
+        .order('updated_at', { ascending: false })
+      
+      if (!error) {
+        setDesigns((data as unknown as Design[]) || [])
+      }
+      setLoading(false)
+    }
+
+    fetchDesigns()
   }, [user])
 
   const handleDelete = async (designId: string) => {
@@ -160,7 +166,7 @@ export default function SavedDesignsPage() {
                     <div className="min-w-0">
                       <p className="truncate text-sm font-semibold text-brand-text">{design.name}</p>
                       <p className="truncate text-xs text-brand-text-muted">
-                        {(design.product_template as any)?.name || 'Template'} &middot;{' '}
+                        {design.product_template?.name || 'Template'} &middot;{' '}
                         {formatDate(design.updated_at)}
                       </p>
                     </div>

@@ -175,7 +175,10 @@ export default function HomePage() {
       <ProofRow />
 
       {/* ── 2. PRODUCT HUB ───────────────────────────────────────────── */}
-      <ProductHub />
+      {/* BUG-011 FIX: id added so the /#bulk-orders nav anchor scrolls here */}
+      <div id="bulk-orders">
+        <ProductHub />
+      </div>
 
       {/* ── 3. WHY SPEEDY ────────────────────────────────────────────── */}
       <section className="bg-brand-secondary py-20 lg:py-28">

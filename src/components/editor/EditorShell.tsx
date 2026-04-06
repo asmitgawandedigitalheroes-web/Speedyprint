@@ -4,7 +4,10 @@ import { useEffect, useState } from 'react'
 import dynamic from 'next/dynamic'
 import { createClient } from '@/lib/supabase/client'
 import { useEditorStore } from '@/lib/editor/useEditorStore'
+import { useIsMobile } from '@/hooks/useIsMobile'
+import { useAuth } from '@/hooks/useAuth'
 import { loadJSON } from '@/lib/editor/fabricUtils'
+import { toast } from 'sonner'
 import type { ProductTemplate, Design } from '@/types'
 
 const EditorCanvas = dynamic(() => import('./Canvas'), {
@@ -23,13 +26,22 @@ const Toolbar = dynamic(() => import('./Toolbar'), { ssr: false })
 const Sidebar = dynamic(() => import('./Sidebar'), { ssr: false })
 const LeftSidebar = dynamic(() => import('./LeftSidebar'), { ssr: false })
 const StatusBar = dynamic(() => import('./StatusBar'), { ssr: false })
+import { MobileBottomBar } from './MobileBottomBar'
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from '@/components/ui/sheet'
 
 interface EditorShellProps {
   templateId?: string
   designId?: string
+  mode?: 'upload'
 }
 
-export default function EditorShell({ templateId, designId }: EditorShellProps) {
+export default function EditorShell({ templateId, designId, mode }: EditorShellProps) {
   const [error, setError] = useState<{ type: 'template' | 'design'; message: string } | null>(null)
   const [loading, setLoading] = useState(!!templateId || !!designId)
 
@@ -38,6 +50,60 @@ export default function EditorShell({ templateId, designId }: EditorShellProps) 
   const setDesignId = useEditorStore((s) => s.setDesignId)
   const canvas = useEditorStore((s) => s.canvas)
   const template = useEditorStore((s) => s.template)
+  const isMobile = useIsMobile()
+  const activeObject = useEditorStore((s) => s.activeObject)
+  const leftPanel = useEditorStore((s) => s.leftPanel)
+  const setLeftPanel = useEditorStore((s) => s.setLeftPanel)
+  const setDesignName = useEditorStore((s) => s.setDesignName)
+  const { isAuthenticated } = useAuth()
+
+  const [leftSheetOpen, setLeftSheetOpen] = useState(false)
+  const [rightSheetOpen, setRightSheetOpen] = useState(false)
+
+  const saveStatus = useEditorStore((s) => s.saveStatus)
+
+  // Sync left panel state with mobile sheet
+  useEffect(() => {
+    if (isMobile) {
+      setLeftSheetOpen(!!leftPanel)
+    }
+  }, [leftPanel, isMobile])
+
+  // Handle 'upload' mode intent
+  useEffect(() => {
+    if (mode === 'upload') {
+      // Auto-open 'My Uploads' panel
+      setLeftPanel('my')
+    }
+  }, [mode, setLeftPanel])
+
+  // Browser navigation guard: warn if unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (saveStatus === 'unsaved') {
+        e.preventDefault()
+        e.returnValue = '' // Standard browser prompt
+      }
+    }
+
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [saveStatus])
+
+  const handleOpenPanel = (panel: 'left' | 'right' | 'layers' | 'template' | 'text' | 'material' | 'my') => {
+    if (panel === 'left') {
+      if (!leftPanel || leftPanel === 'layers') setLeftPanel('template')
+      setLeftSheetOpen(true)
+    } else if (panel === 'template' || panel === 'text' || panel === 'material' || panel === 'my') {
+      setLeftPanel(panel)
+      setLeftSheetOpen(true)
+    } else if (panel === 'layers') {
+      setLeftPanel('layers')
+      setLeftSheetOpen(true)
+    } else if (panel === 'right') {
+      setRightSheetOpen(true)
+    }
+  }
 
   useEffect(() => {
     if (!templateId) return
@@ -129,12 +195,54 @@ export default function EditorShell({ templateId, designId }: EditorShellProps) 
     })
   }, [canvas, design])
 
+  // Handle restoration of pending design after login
+  useEffect(() => {
+    if (!canvas || !isAuthenticated) return
+
+    const pending = localStorage.getItem('sp_pending_design')
+    if (pending) {
+      try {
+        const { canvas_json, name, product_template_id } = JSON.parse(pending)
+        
+        // Safety check: ensure template matches if it was a template-specific design
+        if (product_template_id && templateId && product_template_id !== templateId) {
+          // If template mismatched, we might want to warn, but for now we'll load it 
+          // as most designs are cross-compatible in our fabric setup
+        }
+
+        useEditorStore.setState({ isRestoring: true })
+        loadJSON(canvas, JSON.stringify(canvas_json)).then(() => {
+          const objs = canvas.getObjects()
+          if (objs.length > 0) {
+            ;(objs[0] as unknown as Record<string, unknown>).isArtboard = true
+            objs[0].set({ selectable: false, evented: false, hoverCursor: 'default' })
+          }
+          canvas.renderAll()
+          setDesignName(name)
+          useEditorStore.setState({ isRestoring: false })
+          useEditorStore.getState().refreshObjects()
+          
+          toast.success("Welcome back! Your unsaved design has been restored.")
+          localStorage.removeItem('sp_pending_design')
+        })
+      } catch (e) {
+        console.error('Failed to restore pending design:', e)
+        localStorage.removeItem('sp_pending_design')
+      }
+    }
+  }, [canvas, isAuthenticated, templateId, setDesignName])
+
   // Load default design from template if no saved design exists
   useEffect(() => {
+    // Only load default if:
+    // 1. Canvas is ready
+    // 2. We aren't already loading a saved design (designId)
+    // 3. We aren't currently restoring a pending design
+    // 4. There is no pending design in localStorage
     if (!canvas || designId || !template?.template_json) return
+    if (localStorage.getItem('sp_pending_design')) return
 
     const tj = template.template_json as Record<string, any>
-    // Support both direct Fabric JSON or a nested default_canvas_json key
     const defaultJson = tj.default_canvas_json || (tj.objects ? tj : null)
     if (!defaultJson) return
 
@@ -192,14 +300,55 @@ export default function EditorShell({ templateId, designId }: EditorShellProps) 
   }
 
   return (
-    <div className="h-screen flex flex-col bg-ed-bg">
+    <div className="h-screen flex flex-col bg-ed-bg overflow-hidden relative">
       <Toolbar />
-      <div className="flex-1 flex overflow-hidden">
-        <LeftSidebar />
+      <div className="flex-1 flex overflow-hidden relative">
+        {!isMobile && <LeftSidebar />}
+        
         <EditorCanvas />
-        <Sidebar />
+        
+        {!isMobile && <Sidebar />}
+
+        {/* Mobile Sidebars inside Sheets */}
+        {isMobile && (
+          <>
+            <Sheet open={leftSheetOpen} onOpenChange={(open) => {
+              setLeftSheetOpen(open)
+              if (!open) setLeftPanel(null)
+            }}>
+              <SheetContent side="left" className="p-0 w-[90%] max-w-[360px] border-r-0">
+                <SheetHeader className="sr-only">
+                  <SheetTitle>Editor Tools</SheetTitle>
+                  <SheetDescription>Access templates, elements, and other design tools.</SheetDescription>
+                </SheetHeader>
+                <div className="h-full pt-10">
+                   <LeftSidebar />
+                </div>
+              </SheetContent>
+            </Sheet>
+
+            <Sheet open={rightSheetOpen} onOpenChange={setRightSheetOpen}>
+              <SheetContent side="bottom" className="p-0 h-[80vh] rounded-t-2xl">
+                <SheetHeader className="sr-only">
+                  <SheetTitle>Object Properties</SheetTitle>
+                  <SheetDescription>Modify the properties of the selected object.</SheetDescription>
+                </SheetHeader>
+                <div className="h-full pt-10">
+                   <Sidebar />
+                </div>
+              </SheetContent>
+            </Sheet>
+          </>
+        )}
       </div>
-      <StatusBar />
+      
+      {!isMobile && <StatusBar />}
+      {isMobile && (
+        <MobileBottomBar 
+          onOpenPanel={handleOpenPanel} 
+          isObjectSelected={!!activeObject} 
+        />
+      )}
     </div>
   )
 }

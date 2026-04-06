@@ -28,6 +28,7 @@ interface ObjectProperties {
   minFontSize: number
   maxFontSize: number
   multiline: boolean
+  strokeWidth: number
 }
 
 const FONT_OPTIONS = [
@@ -100,6 +101,7 @@ export default function PropertiesPanel() {
       minFontSize: (obj.minFontSize as number) ?? 8,
       maxFontSize: (obj.maxFontSize as number) ?? ((obj.fontSize as number) ?? 24),
       multiline: (obj.multiline as boolean) ?? (activeObject?.type === 'textbox'),
+      strokeWidth: (obj.strokeWidth as number) ?? 0,
     })
   }, [activeObject, tick])
 
@@ -265,6 +267,31 @@ export default function PropertiesPanel() {
                   />
                 </div>
               </PropertyRow>
+              <PropertyRow label="Stroke">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="range"
+                    min={0}
+                    max={10}
+                    step={0.1}
+                    value={props.strokeWidth ?? 0}
+                    onChange={(e) => updateProp('strokeWidth', Number(e.target.value))}
+                    className="flex-1"
+                  />
+                  <input
+                    type="number"
+                    value={props.strokeWidth ?? 0}
+                    onChange={(e) => updateProp('strokeWidth', Number(e.target.value))}
+                    className="w-12 text-xs border border-gray-200 rounded px-1 py-0.5"
+                    step={0.1}
+                  />
+                </div>
+              </PropertyRow>
+              {(props.strokeWidth ?? 0) > 0 && (props.strokeWidth ?? 0) < 0.25 && (
+                <p className="text-[10px] text-red-500 font-medium px-2 py-1 bg-red-50 rounded border border-red-100 mt-1">
+                  ⚠ Stroke &lt; 0.25pt may not print clearly.
+                </p>
+              )}
               <PropertyRow label="Opacity">
                 <input
                   type="range"
@@ -301,10 +328,15 @@ export default function PropertiesPanel() {
                     value={props.fontSize ?? 24}
                     onChange={(e) => updateProp('fontSize', Number(e.target.value))}
                     className="w-full text-xs border border-gray-200 rounded px-2 py-1"
-                    min={8}
+                    min={4}
                     max={200}
                   />
                 </PropertyRow>
+                {(props.fontSize ?? 0) < 6 && (
+                  <p className="text-[10px] text-red-500 font-medium px-2 py-0.5 bg-red-50 rounded mt-1">
+                    ⚠ Text &lt; 6pt may be difficult to read.
+                  </p>
+                )}
                 <PropertyRow label="Font">
                   <select
                     value={props.fontFamily ?? 'Inter, sans-serif'}

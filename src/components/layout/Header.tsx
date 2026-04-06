@@ -416,14 +416,16 @@ export function Header() {
                 <div className="my-6 h-px bg-gray-100" />
 
                 {!isAuthenticated && (
-                  <div className="px-3 space-y-3">
+                  <div className="px-3 space-y-4 pt-2">
                     <Link href="/order-now" onClick={() => setMobileOpen(false)}>
-                      <Button className="w-full h-12 bg-brand-primary text-white font-bold rounded-xl shadow-lg shadow-brand-primary/20">
+                      <Button className="w-full h-12 bg-brand-primary text-white font-bold rounded-xl shadow-lg shadow-brand-primary/20 hover:bg-brand-primary-dark transition-all duration-200">
                         Get Instant Quote
+                        <ArrowRight className="ml-2 h-4 w-4" />
                       </Button>
                     </Link>
                     <Link href="/templates" onClick={() => setMobileOpen(false)}>
-                      <Button variant="outline" className="w-full h-12 font-bold rounded-xl border-gray-200">
+                      <Button variant="outline" className="w-full h-12 font-bold rounded-xl border-2 border-gray-100 hover:border-brand-primary hover:text-brand-primary transition-all duration-200">
+                        <Sparkles className="mr-2 h-4 w-4" />
                         Try Designer Tool
                       </Button>
                     </Link>
@@ -432,68 +434,71 @@ export function Header() {
 
                 <div className="my-6 h-px bg-gray-100" />
 
+                {/* Auth section if not logged in */}
                 {isLoading ? (
-                  <div className="mx-3 h-20 animate-pulse rounded-md bg-gray-50" />
+                  <div className="mx-3 h-20 animate-pulse rounded-xl bg-gray-50" />
                 ) : isAuthenticated && user ? (
                   <>
-                    <div className="px-3 py-2">
-                      <p className="text-sm font-medium">{user.full_name || 'User'}</p>
-                      <p className="text-xs text-muted-foreground">{user.email}</p>
+                    <div className="px-3 py-3 mb-2 bg-gray-50/50 rounded-xl mx-3">
+                      <p className="text-sm font-bold text-brand-text">{user.full_name || 'User'}</p>
+                      <p className="text-xs text-brand-text-muted truncate">{user.email}</p>
                     </div>
-                    {(user.role === 'admin' || user.role === 'production_staff') ? (
-                      <Link
-                        href="/admin"
-                        onClick={() => setMobileOpen(false)}
-                        className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-brand-text hover:bg-gray-100"
-                      >
-                        <LayoutDashboard className="h-4 w-4" />
-                        Admin Dashboard
-                      </Link>
-                    ) : (
-                      <>
+                    <div className="space-y-1">
+                      {(user.role === 'admin' || user.role === 'production_staff') ? (
                         <Link
-                          href="/account"
+                          href="/admin"
                           onClick={() => setMobileOpen(false)}
-                          className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-brand-text hover:bg-gray-100"
+                          className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold text-brand-text hover:bg-brand-primary/5 hover:text-brand-primary transition-colors"
                         >
                           <LayoutDashboard className="h-4 w-4" />
-                          Dashboard
+                          Admin Dashboard
                         </Link>
-                        <Link
-                          href="/account/orders"
-                          onClick={() => setMobileOpen(false)}
-                          className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-brand-text hover:bg-gray-100"
-                        >
-                          <Package className="h-4 w-4" />
-                          My Orders
-                        </Link>
-                        <Link
-                          href="/account/designs"
-                          onClick={() => setMobileOpen(false)}
-                          className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-brand-text hover:bg-gray-100"
-                        >
-                          <Palette className="h-4 w-4" />
-                          My Designs
-                        </Link>
-                      </>
-                    )}
-                    <button
-                      onClick={() => { logout(); setMobileOpen(false) }}
-                      className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50"
-                    >
-                      <LogOut className="h-4 w-4" />
-                      Logout
-                    </button>
+                      ) : (
+                        <>
+                          <Link
+                            href="/account"
+                            onClick={() => setMobileOpen(false)}
+                            className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold text-brand-text hover:bg-brand-primary/5 hover:text-brand-primary transition-colors"
+                          >
+                            <LayoutDashboard className="h-4 w-4" />
+                            Dashboard
+                          </Link>
+                          <Link
+                            href="/account/orders"
+                            onClick={() => setMobileOpen(false)}
+                            className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold text-brand-text hover:bg-brand-primary/5 hover:text-brand-primary transition-colors"
+                          >
+                            <Package className="h-4 w-4" />
+                            My Orders
+                          </Link>
+                          <Link
+                            href="/account/designs"
+                            onClick={() => setMobileOpen(false)}
+                            className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold text-brand-text hover:bg-brand-primary/5 hover:text-brand-primary transition-colors"
+                          >
+                            <Palette className="h-4 w-4" />
+                            My Designs
+                          </Link>
+                        </>
+                      )}
+                      <button
+                        onClick={() => { logout(); setMobileOpen(false) }}
+                        className="w-full flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold text-red-600 hover:bg-red-50 transition-colors"
+                      >
+                        <LogOut className="h-4 w-4" />
+                        Logout
+                      </button>
+                    </div>
                   </>
                 ) : (
-                  <div className="flex flex-col gap-2 px-3">
+                  <div className="flex flex-col gap-3 px-3">
                     <Link href="/login" onClick={() => setMobileOpen(false)}>
-                      <Button variant="outline" className="w-full">
+                      <Button variant="outline" className="w-full h-11 font-bold rounded-xl border-gray-100">
                         Login
                       </Button>
                     </Link>
                     <Link href="/register" onClick={() => setMobileOpen(false)}>
-                      <Button className="w-full bg-brand-primary text-white hover:bg-brand-primary-dark">
+                      <Button className="w-full h-11 bg-brand-primary text-white font-bold rounded-xl shadow-md shadow-brand-primary/10">
                         Register
                       </Button>
                     </Link>
@@ -501,16 +506,18 @@ export function Header() {
                 )}
 
                 {/* WhatsApp in mobile */}
-                <div className="my-4 h-px bg-gray-200" />
-                <a
-                  href={WHATSAPP_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-[#25D366] hover:bg-green-50"
-                >
-                  <MessageCircle className="h-4 w-4" />
-                  Chat on WhatsApp
-                </a>
+                <div className="my-6 h-px bg-gray-100" />
+                <div className="px-3">
+                  <a
+                    href={WHATSAPP_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-2 rounded-xl border-2 border-[#25D366]/20 bg-[#25D366]/5 px-4 py-3 text-sm font-bold text-[#25D366] hover:bg-[#25D366]/10 transition-all duration-200"
+                  >
+                    <MessageCircle className="h-5 w-5" />
+                    Chat on WhatsApp
+                  </a>
+                </div>
               </nav>
             </SheetContent>
           </Sheet>

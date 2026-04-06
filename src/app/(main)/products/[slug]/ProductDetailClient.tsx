@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Image from 'next/image'
 import { cn } from '@/lib/utils'
 import { ProductConfigurator } from './ProductConfigurator'
+import { SITE_NAME } from '@/lib/utils/constants'
 import type {
   ProductGroup,
   ProductTemplate,
@@ -79,8 +80,10 @@ export function ProductDetailClient({
           <div className="absolute bottom-0 left-0 right-0 z-10 bg-brand-secondary/90 px-4 py-2 backdrop-blur-sm">
             <div className="flex items-center justify-between">
               <div>
+                {/* BUG-013/014 FIX: Was hardcoded "SPEEDY LABELS" causing SSR/client
+                    hydration mismatch when the brand was renamed to Speedy Print Suite. */}
                 <p className="text-xs font-bold uppercase tracking-wider text-white">
-                  SPEEDY <span className="text-brand-primary">LABELS</span>
+                  {SITE_NAME}
                 </p>
                 {divisionName && (
                   <p className="text-[10px] text-white/70">{divisionName}</p>

@@ -10,6 +10,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { SITE_NAME } from '@/lib/utils/constants'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { PasswordInput } from '@/components/ui/password-input'
 import { Label } from '@/components/ui/label'
 
 export default function RegisterPage() {
@@ -22,6 +23,8 @@ export default function RegisterPage() {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [errors, setErrors] = useState<Record<string, string>>({})
+
+  const [isSuccess, setIsSuccess] = useState(false)
 
   function validate(): boolean {
     const e: Record<string, string> = {}
@@ -50,16 +53,43 @@ export default function RegisterPage() {
     const { error, emailConfirmationRequired } = await register(email, password, fullName.trim(), companyName.trim() || undefined)
     if (error) { toast.error(error); return }
     if (emailConfirmationRequired) {
-      toast.success('Check your email to activate your account.')
-      router.push('/login')
+      setIsSuccess(true)
       return
     }
     toast.success('Account created successfully!')
     router.push('/account')
   }
 
+  if (isSuccess) {
+    return (
+      <div className="space-y-8 text-center animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-lg bg-green-50">
+          <svg className="h-8 w-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+          </svg>
+        </div>
+        <div>
+          <h1 className="font-heading text-2xl font-bold text-brand-text">Check your email</h1>
+          <p className="mt-2 text-sm text-brand-text-muted leading-relaxed">
+            Account created! <br />
+            <strong>We need to verify your account first.</strong> <br />
+            Please check your inbox at <span className="font-medium text-brand-text">{email}</span> and click the activation link.
+          </p>
+        </div>
+        <div className="pt-4 space-y-4">
+          <Button asChild className="w-full bg-brand-primary hover:bg-brand-primary-dark text-white">
+            <Link href="/login">Go to sign in</Link>
+          </Button>
+          <p className="text-xs text-brand-text-muted">
+            Didn&apos;t get the email? Check your spam folder or try signing in to resend.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 animate-in fade-in duration-500">
       <div>
         <div className="h-1 w-8 bg-brand-primary mb-4" />
         <h1 className="font-heading text-2xl font-bold text-brand-text">Create an account</h1>
@@ -86,13 +116,13 @@ export default function RegisterPage() {
 
         <div className="space-y-1.5">
           <Label htmlFor="password">Password</Label>
-          <Input id="password" type="password" placeholder="Min 8 chars, uppercase, number & symbol" value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="new-password" disabled={isLoading} />
+          <PasswordInput id="password" placeholder="Min 8 chars, uppercase, number & symbol" value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="new-password" disabled={isLoading} />
           {errors.password && <p className="text-xs text-red-500">{errors.password}</p>}
         </div>
 
         <div className="space-y-1.5">
           <Label htmlFor="confirmPassword">Confirm password</Label>
-          <Input id="confirmPassword" type="password" placeholder="Re-enter your password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required autoComplete="new-password" disabled={isLoading} />
+          <PasswordInput id="confirmPassword" placeholder="Re-enter your password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required autoComplete="new-password" disabled={isLoading} />
           {errors.confirmPassword && <p className="text-xs text-red-500">{errors.confirmPassword}</p>}
         </div>
 

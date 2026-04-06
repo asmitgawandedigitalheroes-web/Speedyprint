@@ -42,7 +42,7 @@ export function UserSidebar() {
       const { count } = await supabase
         .from('order_items')
         .select('id', { count: 'exact', head: true })
-        .in('order_id', orders.map((o) => o.id))
+        .in('order_id', orders.map((o: { id: string }) => o.id))
         .eq('status', 'proof_sent')
       setProofCount(count ?? 0)
     }
@@ -61,8 +61,24 @@ export function UserSidebar() {
       .toUpperCase() ?? '?'
 
   const handleLogout = async () => {
-    await logout()
-    router.replace('/login')
+    // BUG-015 FIX: Always redirect the user within 3 seconds even if signOut hangs.
+    // The Supabase auth lock can deadlock if a non-singleton client is used (BUG-001).
+    // Belt-and-suspenders: force-navigate after 3s so the user is never permanently trapped.
+    const forceRedirect = setTimeout(() => {
+      router.replace('/')
+      router.refresh()
+    }, 3000)
+
+    try {
+      await logout()
+      clearTimeout(forceRedirect)
+      router.replace('/')
+      router.refresh()
+    } catch {
+      clearTimeout(forceRedirect)
+      router.replace('/')
+      router.refresh()
+    }
   }
 
   /* ─── Reusable nav link ─── */

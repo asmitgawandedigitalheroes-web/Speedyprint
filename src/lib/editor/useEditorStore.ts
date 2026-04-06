@@ -5,7 +5,7 @@ import { Point } from 'fabric'
 import type { Canvas as FabricCanvas, FabricObject } from 'fabric'
 import type { ProductTemplate, Design } from '@/types'
 
-export type LeftPanelTab = 'material' | 'template' | 'text' | 'add' | 'my' | 'ai' | 'layers' | 'bulk' | 'complete' | null
+export type LeftPanelTab = 'material' | 'template' | 'text' | 'draw' | 'add' | 'my' | 'ai' | 'layers' | 'bulk' | 'complete' | null
 
 export interface HistoryEntry {
   json: string
@@ -51,6 +51,8 @@ export interface EditorState {
   setDesign: (design: Design | null) => void
   designId: string | null
   setDesignId: (id: string | null) => void
+  designName: string
+  setDesignName: (name: string) => void
   canvasDimensions: CanvasDimensions | null
 
   // Canvas
@@ -107,6 +109,18 @@ export interface EditorState {
   // Loading
   isLoading: boolean
   setIsLoading: (loading: boolean) => void
+
+  // Drawing
+  isDrawingMode: boolean
+  setDrawingMode: (enabled: boolean) => void
+  brushColor: string
+  setBrushColor: (color: string) => void
+  brushWidth: number
+  setBrushWidth: (width: number) => void
+
+  // Save Status
+  saveStatus: 'unsaved' | 'saving' | 'saved'
+  setSaveStatus: (status: 'unsaved' | 'saving' | 'saved') => void
 }
 
 const MAX_HISTORY = 50
@@ -126,6 +140,8 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   setDesign: (design) => set({ design }),
   designId: null,
   setDesignId: (id) => set({ designId: id }),
+  designName: 'Untitled Design',
+  setDesignName: (name) => set({ designName: name }),
   canvasDimensions: null,
 
   // Canvas
@@ -267,7 +283,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   },
 
   // UI
-  leftPanel: 'template',
+  leftPanel: null,
   setLeftPanel: (tab) => set({ leftPanel: tab }),
   showGrid: false,
   toggleGrid: () => set((s) => ({ showGrid: !s.showGrid })),
@@ -284,4 +300,39 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   // Loading
   isLoading: false,
   setIsLoading: (loading) => set({ isLoading: loading }),
+
+  // Drawing
+  isDrawingMode: false,
+  setDrawingMode: (enabled) => {
+    const { canvas } = get()
+    if (canvas) {
+      canvas.isDrawingMode = enabled
+      // If we enable drawing mode, we should discard active selection
+      if (enabled) {
+        canvas.discardActiveObject()
+        canvas.requestRenderAll()
+      }
+    }
+    set({ isDrawingMode: enabled })
+  },
+  brushColor: '#000000',
+  setBrushColor: (color) => {
+    const { canvas } = get()
+    if (canvas && canvas.freeDrawingBrush) {
+      canvas.freeDrawingBrush.color = color
+    }
+    set({ brushColor: color })
+  },
+  brushWidth: 5,
+  setBrushWidth: (width) => {
+    const { canvas } = get()
+    if (canvas && canvas.freeDrawingBrush) {
+      canvas.freeDrawingBrush.width = width
+    }
+    set({ brushWidth: width })
+  },
+
+  // Save Status
+  saveStatus: 'saved',
+  setSaveStatus: (status) => set({ saveStatus: status }),
 }))

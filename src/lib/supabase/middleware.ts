@@ -115,8 +115,8 @@ export async function updateSession(request: NextRequest) {
   }
 
   // BUG-026 FIX: Generate nonce for Content-Security-Policy
-  // Generate a random 16-byte nonce and convert to base64
-  const nonce = Buffer.from(crypto.randomUUID()).toString('base64')
+  // Generate a random 16-byte nonce and convert to base64 (Edge-compatible)
+  const nonce = btoa(crypto.randomUUID())
 
   // pathname is already defined at the top
 

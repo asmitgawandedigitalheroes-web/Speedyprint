@@ -101,11 +101,25 @@ export async function GET(request: NextRequest) {
     if (divisionOrderIds) query = query.in('id', divisionOrderIds)
     if (readyOrderIds) query = query.in('id', readyOrderIds)
 
-    // Full-text search: order number, customer name, email
+    // BUG-005 FIX: Full-text search across order_number, customer name, and email.
+    // Previously used .or() with joined-table columns (profile.full_name, profile.email)
+    // which PostgREST does not support in a flat filter string — causing 400/500 errors.
+    // Solution: pre-resolve matching profile IDs, then build a valid .or() on direct columns.
     if (search) {
-      query = query.or(
-        `order_number.ilike.%${search}%,profile.full_name.ilike.%${search}%,profile.email.ilike.%${search}%`
-      )
+      const { data: profileMatches } = await supabase
+        .from('profiles')
+        .select('id')
+        .or(`full_name.ilike.%${search}%,email.ilike.%${search}%`)
+
+      const matchedUserIds = (profileMatches ?? []).map((p) => p.id)
+
+      if (matchedUserIds.length > 0) {
+        query = query.or(
+          `order_number.ilike.%${search}%,user_id.in.(${matchedUserIds.join(',')})`
+        )
+      } else {
+        query = query.ilike('order_number', `%${search}%`)
+      }
     }
 
     const { data: orders, count, error } = await query

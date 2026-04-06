@@ -29,7 +29,7 @@ const STEPS = [
 
 export function HowItWorks() {
   return (
-    <section className="bg-white py-16">
+    <section id="how-it-works" className="bg-white py-16">{/* BUG-010/012 FIX: id added so /#how-it-works anchor scrolls here */}
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* Section header with ruled border */}
         <div className="mb-12 border-b border-gray-200 pb-6">

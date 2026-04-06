@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useCallback, useState } from 'react'
-import { Canvas as FabricCanvas, Rect, Shadow, Point, Line as FabricLine } from 'fabric'
+import { Canvas as FabricCanvas, Rect, Shadow, Point, Line as FabricLine, PencilBrush } from 'fabric'
 import { useEditorStore } from '@/lib/editor/useEditorStore'
 import { HistoryManager } from '@/lib/editor/history'
 import { applyRotationCursor } from '@/lib/editor/fabricUtils'
@@ -138,6 +138,12 @@ export default function EditorCanvas() {
     // Customize rotation control cursor (~45 degree arrow) for all objects
     applyRotationCursor(canvas)
 
+    // Initialize Drawing Brush
+    const pencil = new PencilBrush(canvas)
+    pencil.color = useEditorStore.getState().brushColor
+    pencil.width = useEditorStore.getState().brushWidth
+    canvas.freeDrawingBrush = pencil
+
     // Use store's setZoom which handles centering via setCenterFromObject
     setZoom(initialZoom)
 
@@ -228,7 +234,14 @@ export default function EditorCanvas() {
       refreshObjects()
     })
     canvas.on('object:added', () => {
-      if (!useEditorStore.getState().isRestoring) history.capture(canvas)
+      const state = useEditorStore.getState()
+      if (!state.isRestoring) {
+        history.capture(canvas)
+        // Mobile UX: Auto-close sidebar when element is added
+        if (window.innerWidth < 768) {
+          state.setLeftPanel(null)
+        }
+      }
       refreshObjects()
     })
     canvas.on('object:removed', () => {
@@ -539,8 +552,30 @@ export default function EditorCanvas() {
         {templateInfo}
       </div>
       <canvas ref={canvasElRef} />
+      <DrawingModeSync />
       <FloatingToolbar />
       <ContextMenu />
     </div>
   )
+}
+
+/** 
+ * Separate component to sync store drawing state with canvas object without re-rendering the whole Canvas component 
+ */
+function DrawingModeSync() {
+  const canvas = useEditorStore((s) => s.canvas)
+  const isDrawingMode = useEditorStore((s) => s.isDrawingMode)
+  const brushColor = useEditorStore((s) => s.brushColor)
+  const brushWidth = useEditorStore((s) => s.brushWidth)
+
+  useEffect(() => {
+    if (!canvas) return
+    canvas.isDrawingMode = isDrawingMode
+    if (isDrawingMode && canvas.freeDrawingBrush) {
+      canvas.freeDrawingBrush.color = brushColor
+      canvas.freeDrawingBrush.width = brushWidth
+    }
+  }, [canvas, isDrawingMode, brushColor, brushWidth])
+
+  return null
 }

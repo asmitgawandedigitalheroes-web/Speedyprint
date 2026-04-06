@@ -1,4 +1,4 @@
-import { PDFDocument, rgb, degrees, StandardFonts } from 'pdf-lib'
+import { PDFDocument, rgb, cmyk, degrees, StandardFonts } from 'pdf-lib'
 
 const MM_TO_POINTS = 2.8346
 
@@ -44,6 +44,8 @@ interface CanvasObject {
   rawText?: string
   originX?: string
   originY?: string
+  /** Tag for spot-gloss objects */
+  specialLayer?: 'white' | 'gloss'
 }
 
 // ─── Text fitting helpers ─────────────────────────────────────────────────────
@@ -177,6 +179,13 @@ export interface GenerateOptions {
   isProof?: boolean
   /** Whether to include bleed area in the output dimensions (default true) */
   includeBleed?: boolean
+  /** Force CMYK color space output */
+  useCMYK?: boolean
+  /** Configure special printing layers */
+  specialLayers?: {
+    whiteBase?: boolean   // Generates a separate "White" page for clear vinyl
+    spotGloss?: boolean   // Generates a separate "Gloss" page for spot effects
+  }
 }
 
 // ─── Color helpers ───────────────────────────────────────────────────────────
@@ -205,6 +214,27 @@ function parseColor(color: string | undefined | null): [number, number, number] 
   return named[color.toLowerCase()] ?? [0, 0, 0]
 }
 
+/**
+ * Simple RGB to CMYK conversion.
+ * Range: 0-1 for all inputs and outputs.
+ */
+function rgbToCmyk(r: number, g: number, b: number): [number, number, number, number] {
+  if (r === 0 && g === 0 && b === 0) return [0, 0, 0, 1]
+  const k = 1 - Math.max(r, g, b)
+  const c = (1 - r - k) / (1 - k) || 0
+  const m = (1 - g - k) / (1 - k) || 0
+  const y = (1 - b - k) / (1 - k) || 0
+  return [c, m, y, k]
+}
+
+function getColor(r: number, g: number, b: number, useCMYK?: boolean) {
+  return useCMYK ? cmyk(...rgbToCmyk(r, g, b)) : rgb(r, g, b)
+}
+
+function getSolidBlack(useCMYK?: boolean) {
+  return useCMYK ? cmyk(0, 0, 0, 1) : rgb(0, 0, 0)
+}
+
 function parseOpacity(color: string | undefined | null, objOpacity: number): number {
   if (!color) return objOpacity
   const m = color.match(/rgba\(\d+,\s*\d+,\s*\d+,\s*(\d+(?:\.\d+)?)\)/)
@@ -224,7 +254,7 @@ export async function generatePDF(
   options: GenerateOptions = {}
 ): Promise<Uint8Array> {
   const { print_width_mm, print_height_mm, bleed_mm } = printSpecs
-  const { isProof = false, includeBleed = true } = options
+  const { isProof = false, includeBleed = true, useCMYK = true, specialLayers = {} } = options
 
   const bleedMM = includeBleed ? bleed_mm : 0
   const pageW_pt = (print_width_mm + bleedMM * 2) * MM_TO_POINTS
@@ -318,7 +348,7 @@ export async function generatePDF(
     const bg = artboard?.fill || canvasJSON.background
     if (bg && bg !== 'transparent') {
       const [r, g, b] = parseColor(bg as string)
-      page.drawRectangle({ x: 0, y: 0, width: pageW_pt, height: pageH_pt, color: rgb(r, g, b) })
+      page.drawRectangle({ x: 0, y: 0, width: pageW_pt, height: pageH_pt, color: getColor(r, g, b, useCMYK) })
     }
 
     for (const obj of canvasJSON.objects ?? []) {
@@ -331,7 +361,38 @@ export async function generatePDF(
         top: (obj.top ?? 0) - artT
       }
       
-      await renderObject(relativeObj, pdfDoc, page, scaleX, scaleY, bleedOffset_pt, pageH_pt, fonts)
+      await renderObject(relativeObj, pdfDoc, page, scaleX, scaleY, bleedOffset_pt, pageH_pt, fonts, { useCMYK })
+    }
+
+    // ─── Special Layers (White / Gloss) ──────────────────────────────────────
+    // If enabled, we add extra pages where shapes are rendered as solid black
+    // representing the "mask" for special ink/finish.
+
+    if (specialLayers.whiteBase) {
+      const whitePage = pdfDoc.addPage([pageW_pt, pageH_pt])
+      for (const obj of canvasJSON.objects ?? []) {
+        if (obj.visible === false || obj.isGuide || obj.isArtboard) continue
+        const relativeObj = { ...obj, left: (obj.left ?? 0) - artL, top: (obj.top ?? 0) - artT }
+        await renderObject(relativeObj, pdfDoc, whitePage, scaleX, scaleY, bleedOffset_pt, pageH_pt, fonts, { 
+          useCMYK, 
+          forceSolidColor: getSolidBlack(useCMYK)
+        })
+      }
+      // Label the page for the prepress team
+      whitePage.drawText('WHITE BASE LAYER', { x: 10, y: 10, size: 8, font: fonts.regular, color: getSolidBlack(useCMYK) })
+    }
+
+    if (specialLayers.spotGloss) {
+      const glossPage = pdfDoc.addPage([pageW_pt, pageH_pt])
+      for (const obj of canvasJSON.objects ?? []) {
+        if (obj.visible === false || obj.isGuide || obj.isArtboard || obj.specialLayer !== 'gloss') continue
+        const relativeObj = { ...obj, left: (obj.left ?? 0) - artL, top: (obj.top ?? 0) - artT }
+        await renderObject(relativeObj, pdfDoc, glossPage, scaleX, scaleY, bleedOffset_pt, pageH_pt, fonts, { 
+          useCMYK, 
+          forceSolidColor: getSolidBlack(useCMYK)
+        })
+      }
+      glossPage.drawText('SPOT GLOSS LAYER', { x: 10, y: 10, size: 8, font: fonts.regular, color: getSolidBlack(useCMYK) })
     }
 
     // Proof watermark
@@ -365,8 +426,10 @@ async function renderObject(
   scaleY: number,
   bleedOffset: number,
   pageH: number,
-  fonts: Record<string, Awaited<ReturnType<PDFDocument['embedFont']>>>
+  fonts: Record<string, Awaited<ReturnType<PDFDocument['embedFont']>>>,
+  options: { useCMYK?: boolean; forceSolidColor?: any } = {}
 ) {
+  const { useCMYK, forceSolidColor } = options
   const sx = (obj.scaleX ?? 1) * scaleX
   const sy = (obj.scaleY ?? 1) * scaleY
   
@@ -430,6 +493,7 @@ async function renderObject(
     const fillColor = obj.fill as string | undefined
     const [r, g, b] = parseColor(fillColor)
     const colorOpacity = parseOpacity(fillColor, opacity)
+    const textFill = forceSolidColor || getColor(r, g, b, useCMYK)
     const lineHeightMult = obj.lineHeight ?? 1.16
 
     // ── Prepare raw lines (respect multiline flag) ─────────────────────────
@@ -490,14 +554,14 @@ async function renderObject(
 
       if (overflowBehavior === 'stretch' && objW > 0 && lineText.length > 1) {
         drawStretchedText(page, lineText, font, finalFontSize, lineX, lineY,
-          objW, rgb(r, g, b), colorOpacity, rot)
+          objW, textFill, colorOpacity, rot)
       } else {
         page.drawText(lineText, {
           x: lineX,
           y: lineY,
           size: finalFontSize,
           font,
-          color: rgb(r, g, b),
+          color: textFill,
           opacity: colorOpacity,
           ...(rot ? { rotate: rot } : {}),
         })
@@ -511,11 +575,14 @@ async function renderObject(
     const [sr, sg, sb] = parseColor(obj.stroke as string)
     const hasFill = !!obj.fill && obj.fill !== 'transparent'
     const hasStroke = !!obj.stroke && obj.stroke !== 'transparent'
+    const rectFill = forceSolidColor || (hasFill ? getColor(fr, fg, fb, useCMYK) : undefined)
+    const rectStroke = forceSolidColor || (hasStroke ? getColor(sr, sg, sb, useCMYK) : undefined)
+
     page.drawRectangle({
       x: pdfX, y: pdfY, width: objW, height: objH,
-      color: hasFill ? rgb(fr, fg, fb) : undefined,
+      color: rectFill,
       borderWidth: hasStroke ? (obj.strokeWidth ?? 1) * Math.min(scaleX, scaleY) : 0,
-      borderColor: hasStroke ? rgb(sr, sg, sb) : undefined,
+      borderColor: rectStroke,
       opacity,
       ...(rot ? { rotate: rot } : {}),
     })
@@ -528,12 +595,15 @@ async function renderObject(
     const [sr, sg, sb] = parseColor(obj.stroke as string)
     const hasFill = !!obj.fill && obj.fill !== 'transparent'
     const hasStroke = !!obj.stroke && obj.stroke !== 'transparent'
+    const circFill = forceSolidColor || (hasFill ? getColor(fr, fg, fb, useCMYK) : undefined)
+    const circStroke = forceSolidColor || (hasStroke ? getColor(sr, sg, sb, useCMYK) : undefined)
+
     page.drawEllipse({
       x: pdfX + radius, y: pdfY + radius,
       xScale: radius, yScale: radius,
-      color: hasFill ? rgb(fr, fg, fb) : undefined,
+      color: circFill,
       borderWidth: hasStroke ? (obj.strokeWidth ?? 1) * Math.min(scaleX, scaleY) : 0,
-      borderColor: hasStroke ? rgb(sr, sg, sb) : undefined,
+      borderColor: circStroke,
       opacity,
     })
     return
@@ -542,11 +612,12 @@ async function renderObject(
   if (type === 'line') {
     const [sr, sg, sb] = parseColor(obj.stroke as string)
     if (obj.stroke && obj.stroke !== 'transparent') {
+      const lineStroke = forceSolidColor || getColor(sr, sg, sb, useCMYK)
       page.drawLine({
         start: { x: pdfX, y: pdfY + objH },
         end: { x: pdfX + objW, y: pdfY },
         thickness: (obj.strokeWidth ?? 1) * Math.min(scaleX, scaleY),
-        color: rgb(sr, sg, sb),
+        color: lineStroke,
         opacity,
       })
     }

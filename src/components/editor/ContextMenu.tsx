@@ -70,7 +70,10 @@ export default function ContextMenu() {
   useEffect(() => {
     if (!canvas) return
 
-    const container = canvas.getElement().parentElement?.parentElement
+    const canvasEl = canvas.getElement?.()
+    if (!canvasEl) return
+
+    const container = canvasEl.parentElement?.parentElement
     if (!container) return
 
     const handleContextMenu = (e: MouseEvent) => {

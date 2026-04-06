@@ -23,7 +23,12 @@ export const useAuth = create<AuthState>()(
   persist(
     (set, get) => ({
       user: null,
-      isLoading: false,
+      // BUG-001/002 FIX: Start as true so admin/account layouts wait for AuthProvider's
+      // refreshProfile() call before deciding to redirect. Without this, child component
+      // effects (setHydrated) fire before the parent AuthProvider effect, so the layout
+      // sees isLoading=false+isAuthenticated=false and immediately redirects to /login
+      // even when the user IS authenticated — causing session-drop loops.
+      isLoading: true,
       isAuthenticated: false,
 
       setUser: (user) => set({ user, isAuthenticated: !!user }),
@@ -131,16 +136,21 @@ export const useAuth = create<AuthState>()(
       },
 
       resetPassword: async (email) => {
-        const res = await fetch('/api/auth/reset-password', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email }),
-        })
-        if (!res.ok) {
-          const data = await res.json().catch(() => ({}))
-          return { error: data.error || 'Failed to send reset email' }
+        try {
+          const res = await fetch('/api/auth/reset-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email }),
+          })
+          if (!res.ok) {
+            const data = await res.json().catch(() => ({}))
+            return { error: data.error || 'Failed to send reset email' }
+          }
+          return { error: null }
+        } catch (err) {
+          console.error('[useAuth] resetPassword error:', err)
+          return { error: 'Network error. Please check your connection or try again.' }
         }
-        return { error: null }
       },
 
       updatePassword: async (newPassword) => {

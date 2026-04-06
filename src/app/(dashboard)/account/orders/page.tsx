@@ -65,7 +65,7 @@ export default function OrdersPage() {
 
       /* Fetch which orders have a proof_sent item so we can show inline CTA */
       if (orderList.length > 0) {
-        const ids = orderList.map((o) => o.id)
+        const ids = orderList.map((o: Order) => o.id)
         const { data: items } = await supabase
           .from('order_items')
           .select('id, order_id')

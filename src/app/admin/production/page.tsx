@@ -15,12 +15,27 @@ import {
   Printer,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
+  Search,
+  MoreVertical,
+  LayoutGrid,
+  List,
+  AlertCircle,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Checkbox } from '../../../components/ui/checkbox'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import {
   Select,
   SelectContent,
@@ -28,6 +43,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import {
+  Tabs,
+  TabsList,
+  TabsTrigger,
+} from '@/components/ui/tabs'
 import { cn } from '@/lib/utils'
 import { formatCurrency, formatDateTime } from '@/lib/utils/format'
 import { toast } from 'sonner'
@@ -61,10 +81,15 @@ export default function AdminProductionPage() {
   const [pages, setPages] = useState(1)
 
   // Filters
-  const [filterStatus, setFilterStatus] = useState('')
+  const [filterStatus, setFilterStatus] = useState<string>('')
   const [filterDateFrom, setFilterDateFrom] = useState('')
   const [filterDateTo, setFilterDateTo] = useState('')
   const [filterProduct, setFilterProduct] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
+
+  // Multi-select
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
 
   // Per-order generate + download state
   const [generatingId, setGeneratingId] = useState<string | null>(null)
@@ -73,6 +98,12 @@ export default function AdminProductionPage() {
   // Batch download state
   const [batchDownloading, setBatchDownloading] = useState(false)
 
+  // Debounce search
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchQuery), 500)
+    return () => clearTimeout(timer)
+  }, [searchQuery])
+
   const fetchOrders = useCallback(async () => {
     setLoading(true)
     try {
@@ -80,6 +111,7 @@ export default function AdminProductionPage() {
       if (filterStatus) params.set('status', filterStatus)
       if (filterDateFrom) params.set('dateFrom', filterDateFrom)
       if (filterDateTo) params.set('dateTo', filterDateTo)
+      if (debouncedSearch) params.set('q', debouncedSearch)
 
       const res = await fetch(`/api/admin/production?${params}`)
       if (!res.ok) throw new Error('Failed to fetch production orders')
@@ -193,325 +225,430 @@ export default function AdminProductionPage() {
     }
   }
 
+  const handleBulkStatusUpdate = async (newStatus: string) => {
+    if (selectedIds.length === 0) return
+    const loadingToast = toast.loading(`Updating ${selectedIds.length} orders...`)
+    try {
+      const res = await fetch('/api/admin/orders/bulk-status', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ order_ids: selectedIds, status: newStatus }),
+      })
+      if (!res.ok) throw new Error('Bulk update failed')
+      toast.success(`Successfully updated ${selectedIds.length} orders`, { id: loadingToast })
+      setSelectedIds([])
+      await fetchOrders()
+    } catch {
+      toast.error('Failed to update orders', { id: loadingToast })
+    }
+  }
+
+  const toggleSelectAll = () => {
+    if (selectedIds.length === orders.length) {
+      setSelectedIds([])
+    } else {
+      setSelectedIds(orders.map((o: ProductionOrder) => o.id))
+    }
+  }
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+    )
+  }
+
   const readyCount = orders.filter((o) => o.has_production_files).length
   const pendingCount = orders.filter((o) => !o.has_production_files).length
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-brand-text">Production</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Generate and download print-ready files for production
-          </p>
-        </div>
-        <Button
-          className="gap-2"
-          onClick={handleBatchDownload}
-          disabled={batchDownloading}
-        >
-          {batchDownloading ? (
-            <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-          ) : (
-            <Archive className="h-4 w-4" />
-          )}
-          Batch Download ZIP
-        </Button>
+    <div className="space-y-6 text-brand-text">
+      {/* Page Title */}
+      <div>
+        <h1 className="text-2xl font-bold">Production Pipeline</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Track orders, variable data, and print-ready files
+        </p>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        {[
-          { label: 'Total Orders', value: total, icon: Package, color: 'text-blue-600' },
-          { label: 'Files Ready', value: readyCount, icon: CheckCircle, color: 'text-green-600' },
-          { label: 'Awaiting Files', value: pendingCount, icon: Clock, color: 'text-orange-600' },
-          {
-            label: 'Total Files',
-            value: orders.reduce((s, o) => s + o.production_file_count, 0),
-            icon: FileText,
-            color: 'text-purple-600',
-          },
-        ].map(({ label, value, icon: Icon, color }) => (
-          <Card key={label}>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <Icon className={cn('h-5 w-5', color)} />
-                <div>
-                  <p className="text-2xl font-bold">{value}</p>
-                  <p className="text-xs text-muted-foreground">{label}</p>
+      <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
+        {/* Main Content Area */}
+        <div className="flex-1 space-y-6">
+          {/* Pipeline Stages & Search */}
+          <Tabs
+            value={filterStatus || 'all'}
+            onValueChange={(v) => {
+              setFilterStatus(v === 'all' ? '' : v)
+              setPage(1)
+            }}
+            className="w-full"
+          >
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <TabsList className="bg-muted/50 p-1">
+                <TabsTrigger value="all" className="gap-2">
+                  <LayoutGrid className="h-4 w-4" />
+                  All Stages
+                </TabsTrigger>
+                <TabsTrigger value="paid" className="gap-2">
+                  Paid
+                  <Badge variant="secondary" className="h-4 px-1 text-[10px]">
+                    {orders.filter(o => o.status === 'paid').length || ''}
+                  </Badge>
+                </TabsTrigger>
+                <TabsTrigger value="in_production" className="gap-2">
+                  In Production
+                </TabsTrigger>
+                <TabsTrigger value="completed" className="gap-2">
+                  Completed
+                </TabsTrigger>
+              </TabsList>
+
+              <div className="relative w-full max-w-sm">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder="Order #, Customer, Email..."
+                  className="pl-9"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+            </div>
+          </Tabs>
+
+          {/* Orders Table */}
+          <Card className="border-brand-primary/10 shadow-sm overflow-hidden">
+            <CardHeader className="pb-3 bg-muted/20 border-b">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <CardTitle className="text-base font-semibold">
+                    Orders
+                    <span className="ml-2 font-mono text-sm font-normal text-muted-foreground opacity-60">
+                      ({total})
+                    </span>
+                  </CardTitle>
+
+                  {selectedIds.length > 0 && (
+                    <div className="flex items-center gap-2 border-l pl-4">
+                      <span className="text-[11px] font-bold text-brand-primary">
+                        {selectedIds.length} SELECTED
+                      </span>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button size="sm" variant="default" className="h-7 px-3 text-[10px] uppercase font-bold">
+                            Bulk Action
+                            <ChevronDown className="ml-1 h-3 w-3" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start" className="w-[180px]">
+                          <DropdownMenuLabel className="text-[10px] uppercase opacity-50">Move Status</DropdownMenuLabel>
+                          <DropdownMenuItem onClick={() => handleBulkStatusUpdate('in_production')} className="text-xs">
+                            <Clock className="h-3.5 w-3.5 mr-2" />
+                            Move to Production
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleBulkStatusUpdate('completed')} className="text-xs">
+                            <CheckCircle className="h-3.5 w-3.5 mr-2 text-green-600" />
+                            Mark as Completed
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem className="text-xs text-red-600" onClick={() => setSelectedIds([])}>
+                            Clear Selection
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  )}
                 </div>
+                <Button size="sm" variant="ghost" onClick={fetchOrders} className="h-8 gap-2 text-xs">
+                  <RefreshCw className="h-3.5 w-3.5" />
+                  Refresh
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="p-0">
+              {loading ? (
+                <div className="p-12 text-center">
+                  <RefreshCw className="mx-auto h-8 w-8 animate-spin text-brand-primary opacity-20" />
+                  <p className="mt-3 text-xs text-muted-foreground uppercase tracking-widest font-bold">Processing Pipeline...</p>
+                </div>
+              ) : orders.length === 0 ? (
+                <div className="py-24 text-center">
+                  <Package className="mx-auto mb-3 h-12 w-12 text-muted-foreground opacity-10" />
+                  <p className="text-sm font-medium text-muted-foreground">Dashboard Clear</p>
+                  <p className="mt-1 text-[10px] text-muted-foreground opacity-60 uppercase">No active orders in this segment</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-[13px]">
+                    <thead>
+                      <tr className="border-b bg-muted/30">
+                        <th className="w-[48px] px-4 py-3">
+                          <Checkbox
+                            checked={selectedIds.length === orders.length && orders.length > 0}
+                            onCheckedChange={toggleSelectAll}
+                          />
+                        </th>
+                        <th className="px-4 py-3 text-left font-bold uppercase text-[10px] tracking-wider text-muted-foreground">Order Ref</th>
+                        <th className="px-4 py-3 text-left font-bold uppercase text-[10px] tracking-wider text-muted-foreground">Customer</th>
+                        <th className="px-4 py-3 text-center font-bold uppercase text-[10px] tracking-wider text-muted-foreground">Status</th>
+                        <th className="px-4 py-3 text-center font-bold uppercase text-[10px] tracking-wider text-muted-foreground">Items</th>
+                        <th className="px-4 py-3 text-center font-bold uppercase text-[10px] tracking-wider text-muted-foreground">Production</th>
+                        <th className="px-4 py-3 text-right font-bold uppercase text-[10px] tracking-wider text-muted-foreground">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y">
+                      {orders.map((order) => (
+                        <tr
+                          key={order.id}
+                          className={cn(
+                            'transition-colors hover:bg-muted/50',
+                            selectedIds.includes(order.id) && 'bg-brand-primary/5'
+                          )}
+                        >
+                          <td className="px-4 py-3">
+                            <Checkbox
+                              checked={selectedIds.includes(order.id)}
+                              onCheckedChange={() => toggleSelect(order.id)}
+                            />
+                          </td>
+                          <td className="px-4 py-3">
+                            <Link
+                              href={`/admin/orders/${order.id}`}
+                              className="font-mono font-bold text-brand-primary hover:underline hover:text-brand-dark"
+                            >
+                              {order.order_number}
+                            </Link>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              <Clock className="h-2.5 w-2.5 text-muted-foreground" />
+                              <span className="text-[9px] text-muted-foreground font-mono">
+                                {formatDateTime(order.created_at)}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3">
+                            <p className="font-bold truncate max-w-[150px]">{order.customer.name ?? 'Guest User'}</p>
+                            <p className="text-[11px] text-muted-foreground truncate max-w-[150px]">{order.customer.email}</p>
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <Badge
+                              variant="outline"
+                              className={cn('text-[9px] uppercase font-black px-2 py-0 border-none rounded-sm', STATUS_COLORS[order.status] ?? 'bg-gray-100')}
+                            >
+                              {order.status.replace(/_/g, ' ')}
+                            </Badge>
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <div className="inline-flex items-center gap-1 rounded-sm bg-gray-100 px-2 py-0.5 text-[11px]">
+                              <span className="font-black">{order.ready_item_count}</span>
+                              <span className="opacity-30">/</span>
+                              <span className="opacity-60">{order.item_count}</span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            {order.has_production_files ? (
+                              <div className="flex flex-col items-center">
+                                <div className="flex items-center gap-1.5 text-green-600 font-black">
+                                  <CheckCircle className="h-3 w-3" />
+                                  <span>{order.production_file_count}</span>
+                                </div>
+                                {order.latest_generated_at && (
+                                  <p className="mt-0.5 text-[8px] text-muted-foreground uppercase font-medium">
+                                    {formatDateTime(order.latest_generated_at)}
+                                  </p>
+                                )}
+                              </div>
+                            ) : (
+                              <div className="flex items-center justify-center gap-1.5 text-amber-600 animate-pulse">
+                                <Clock className="h-3 w-3" />
+                                <span className="text-[10px] font-bold uppercase">Ready</span>
+                              </div>
+                            )}
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center justify-end gap-1">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 w-7 p-0 border-none hover:bg-muted"
+                                onClick={() => handleGenerate(order.id, order.order_number)}
+                                disabled={generatingId === order.id}
+                                title="Regenerate Files"
+                              >
+                                {generatingId === order.id ? (
+                                  <RefreshCw className="h-3.5 w-3.5 animate-spin text-brand-primary" />
+                                ) : (
+                                  <Printer className="h-3.5 w-3.5 opacity-60" />
+                                )}
+                              </Button>
+
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 w-7 p-0 border-none hover:bg-muted"
+                                onClick={() => handleDownload(order.id, order.order_number)}
+                                disabled={downloadingId === order.id || !order.has_production_files}
+                                title="Download Files"
+                              >
+                                {downloadingId === order.id ? (
+                                  <RefreshCw className="h-3.5 w-3.5 animate-spin text-brand-primary" />
+                                ) : (
+                                  <Download className="h-3.5 w-3.5 opacity-60" />
+                                )}
+                              </Button>
+
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button size="sm" variant="ghost" className="h-7 w-7 p-0">
+                                    <MoreVertical className="h-3.5 w-3.5 text-muted-foreground" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-[160px]">
+                                  <DropdownMenuLabel className="text-[10px] uppercase opacity-50">Quick Actions</DropdownMenuLabel>
+                                  <DropdownMenuItem asChild className="text-xs">
+                                    <Link href={`/admin/orders/${order.id}`}>View Details</Link>
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => handleBulkStatusUpdate('completed')} className="text-xs">
+                                    Mark Completed
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem className="text-xs text-red-600">
+                                    Cancel Pipeline
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {/* Pagination */}
+              {pages > 1 && (
+                <div className="flex items-center justify-between border-t px-4 py-4 bg-muted/10">
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase opacity-60">
+                    Page {page} of {pages} · Total orders {total}
+                  </p>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 px-3 text-[10px] uppercase font-bold"
+                      disabled={page <= 1}
+                      onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    >
+                      <ChevronLeft className="h-3 w-3 mr-1" />
+                      Prev
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 px-3 text-[10px] uppercase font-bold"
+                      disabled={page >= pages}
+                      onClick={() => setPage((p) => Math.min(pages, p + 1))}
+                    >
+                      Next
+                      <ChevronRight className="h-3 w-3 ml-1" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Sidebar Controls */}
+        <div className="w-full space-y-6 lg:w-80">
+          <Button
+            className="w-full h-auto flex-col items-start gap-1 p-6 bg-brand-primary hover:bg-brand-dark shadow-xl active:scale-[0.98] transition-all"
+            onClick={handleBatchDownload}
+            disabled={batchDownloading}
+          >
+            {batchDownloading ? (
+              <RefreshCw className="h-6 w-6 animate-spin mb-2" />
+            ) : (
+              <Archive className="h-6 w-6 mb-2" />
+            )}
+            <p className="text-sm font-black uppercase tracking-tight">Export Batch ZIP</p>
+            <p className="text-[9px] opacity-70 font-medium">Download current list (Up to 50)</p>
+          </Button>
+
+          <Card className="border-brand-primary/10">
+            <CardHeader className="pb-3 bg-muted/30">
+              <div className="flex items-center gap-2">
+                <Filter className="h-4 w-4 text-brand-primary" />
+                <CardTitle className="text-[11px] font-black uppercase tracking-widest">Global Filters</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-5 pt-5">
+              <div className="space-y-2">
+                <Label className="text-[9px] font-black uppercase text-muted-foreground opacity-60">Production Period</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  <Input
+                    type="date"
+                    className="h-8 text-[10px] border-muted bg-muted/20"
+                    value={filterDateFrom}
+                    onChange={(e) => { setFilterDateFrom(e.target.value); setPage(1) }}
+                  />
+                  <Input
+                    type="date"
+                    className="h-8 text-[10px] border-muted bg-muted/20"
+                    value={filterDateTo}
+                    onChange={(e) => { setFilterDateTo(e.target.value); setPage(1) }}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-[9px] font-black uppercase text-muted-foreground opacity-60">Search Category</Label>
+                <div className="relative">
+                  <Input
+                    placeholder="Search Products..."
+                    className="h-8 pl-8 text-xs border-muted bg-muted/20"
+                    value={filterProduct}
+                    onChange={(e) => { setFilterProduct(e.target.value); setPage(1) }}
+                  />
+                  <Package className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                </div>
+              </div>
+
+              <div className="pt-3 flex flex-col gap-2">
+                <Button size="sm" onClick={fetchOrders} className="w-full h-8 text-[10px] uppercase font-black tracking-widest">
+                  Update Pipeline
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="w-full h-8 text-[9px] font-bold uppercase tracking-widest text-muted-foreground"
+                  onClick={() => {
+                    setFilterStatus('')
+                    setFilterDateFrom('')
+                    setFilterDateTo('')
+                    setFilterProduct('')
+                    setSearchQuery('')
+                    setPage(1)
+                  }}
+                >
+                  Clear All Filters
+                </Button>
               </div>
             </CardContent>
           </Card>
-        ))}
-      </div>
 
-      {/* Filters */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-sm font-medium">
-            <Filter className="h-4 w-4" />
-            Filters
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="space-y-1.5">
-              <Label className="text-xs">Status</Label>
-              <Select
-                value={filterStatus || '_all'}
-                onValueChange={(v) => {
-                  setFilterStatus(v === '_all' ? '' : v)
-                  setPage(1)
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="All statuses" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="_all">All statuses</SelectItem>
-                  <SelectItem value="paid">Paid</SelectItem>
-                  <SelectItem value="in_production">In Production</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs">From Date</Label>
-              <Input
-                type="date"
-                value={filterDateFrom}
-                onChange={(e) => { setFilterDateFrom(e.target.value); setPage(1) }}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs">To Date</Label>
-              <Input
-                type="date"
-                value={filterDateTo}
-                onChange={(e) => { setFilterDateTo(e.target.value); setPage(1) }}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs">Product Type</Label>
-              <Input
-                placeholder="e.g. Race Bib"
-                value={filterProduct}
-                onChange={(e) => { setFilterProduct(e.target.value); setPage(1) }}
-              />
-            </div>
-          </div>
-          <div className="mt-3 flex gap-2">
-            <Button size="sm" onClick={fetchOrders} className="gap-2">
-              <Filter className="h-3.5 w-3.5" />
-              Apply
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => {
-                setFilterStatus('')
-                setFilterDateFrom('')
-                setFilterDateTo('')
-                setFilterProduct('')
-                setPage(1)
-              }}
-            >
-              Clear
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Orders table */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Printer className="h-4 w-4" />
-              Production Orders
-              <span className="ml-2 rounded-full bg-gray-100 px-2 py-0.5 text-xs font-normal text-muted-foreground">
-                {total}
-              </span>
-            </CardTitle>
-            <Button size="sm" variant="ghost" onClick={fetchOrders} className="gap-2">
-              <RefreshCw className="h-3.5 w-3.5" />
-              Refresh
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent className="p-0">
-          {loading ? (
-            <div className="space-y-2 p-6">
-              {[...Array(5)].map((_, i) => (
-                <div key={i} className="h-14 animate-pulse rounded bg-gray-100" />
-              ))}
-            </div>
-          ) : orders.length === 0 ? (
-            <div className="py-16 text-center text-muted-foreground">
-              <Package className="mx-auto mb-3 h-10 w-10 opacity-30" />
-              <p>No production orders found</p>
-              <p className="mt-1 text-xs">Adjust your filters or wait for orders to be paid</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b bg-muted/50">
-                    <th className="px-4 py-3 text-left font-medium">Order</th>
-                    <th className="px-4 py-3 text-left font-medium">Customer</th>
-                    <th className="px-4 py-3 text-center font-medium">Status</th>
-                    <th className="px-4 py-3 text-center font-medium">Items</th>
-                    <th className="px-4 py-3 text-center font-medium">Files</th>
-                    <th className="px-4 py-3 text-right font-medium">Total</th>
-                    <th className="px-4 py-3 text-right font-medium">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {orders.map((order) => (
-                    <tr key={order.id} className="border-b hover:bg-muted/30">
-                      <td className="px-4 py-3">
-                        <Link
-                          href={`/admin/orders/${order.id}`}
-                          className="font-mono font-medium text-brand-primary hover:underline"
-                        >
-                          {order.order_number}
-                        </Link>
-                        <p className="text-xs text-muted-foreground">
-                          {formatDateTime(order.created_at)}
-                        </p>
-                      </td>
-                      <td className="px-4 py-3">
-                        <p className="font-medium">{order.customer.name ?? 'Unknown'}</p>
-                        <p className="text-xs text-muted-foreground">{order.customer.email}</p>
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        <Badge
-                          variant="secondary"
-                          className={cn('text-xs', STATUS_COLORS[order.status] ?? 'bg-gray-100')}
-                        >
-                          {order.status.replace(/_/g, ' ')}
-                        </Badge>
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        <span className="font-medium">{order.ready_item_count}</span>
-                        <span className="text-muted-foreground">/{order.item_count}</span>
-                        <p className="text-xs text-muted-foreground">ready</p>
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        {order.has_production_files ? (
-                          <div className="flex items-center justify-center gap-1.5">
-                            <CheckCircle className="h-3.5 w-3.5 text-green-600" />
-                            <span className="font-medium text-green-700">
-                              {order.production_file_count}
-                            </span>
-                          </div>
-                        ) : (
-                          <div className="flex items-center justify-center gap-1.5 text-orange-600">
-                            <AlertTriangle className="h-3.5 w-3.5" />
-                            <span className="text-xs">None</span>
-                          </div>
-                        )}
-                        {order.latest_generated_at && (
-                          <p className="mt-0.5 text-xs text-muted-foreground">
-                            {formatDateTime(order.latest_generated_at)}
-                          </p>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-right font-medium">
-                        {formatCurrency(order.total)}
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center justify-end gap-2">
-                          {/* Generate */}
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="gap-1.5 text-xs"
-                            disabled={generatingId === order.id}
-                            onClick={() => handleGenerate(order.id, order.order_number)}
-                            title={order.has_production_files ? 'Regenerate production files' : 'Generate production files'}
-                          >
-                            {generatingId === order.id ? (
-                              <div className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                            ) : (
-                              <Printer className="h-3 w-3" />
-                            )}
-                            {order.has_production_files ? 'Regen' : 'Generate'}
-                          </Button>
-
-                          {/* Download ZIP */}
-                          {order.has_production_files && (
-                            <Button
-                              size="sm"
-                              className="gap-1.5 text-xs"
-                              disabled={downloadingId === order.id}
-                              onClick={() => handleDownload(order.id, order.order_number)}
-                            >
-                              {downloadingId === order.id ? (
-                                <div className="h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                              ) : (
-                                <Download className="h-3 w-3" />
-                              )}
-                              ZIP
-                            </Button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          {/* Pagination */}
-          {pages > 1 && (
-            <div className="flex items-center justify-between border-t px-4 py-3">
-              <p className="text-xs text-muted-foreground">
-                Page {page} of {pages} · {total} orders
-              </p>
-              <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={page <= 1}
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                >
-                  <ChevronLeft className="h-3.5 w-3.5" />
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={page >= pages}
-                  onClick={() => setPage((p) => Math.min(pages, p + 1))}
-                >
-                  <ChevronRight className="h-3.5 w-3.5" />
-                </Button>
+          {/* Quick Shortcuts / Insights */}
+          <Card className="border-blue-100 bg-blue-50/10">
+            <CardContent className="p-4 flex gap-3">
+              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-sm bg-blue-100 text-blue-600">
+                <AlertCircle className="h-3.5 w-3.5" />
               </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Help card */}
-      <Card className="border-blue-100 bg-blue-50">
-        <CardContent className="p-4">
-          <div className="flex gap-3">
-            <FileText className="mt-0.5 h-5 w-5 flex-shrink-0 text-blue-600" />
-            <div className="space-y-1 text-sm text-blue-800">
-              <p className="font-semibold">How production file generation works</p>
-              <ul className="list-inside list-disc space-y-1 text-xs">
-                <li><strong>Generate</strong> — creates print-ready PDFs (300 DPI, with bleed) per order item. CSV orders produce one file per row.</li>
-                <li><strong>ZIP Download</strong> — packages all files in the standard folder structure: <code>item_ProductName/filename.pdf</code> + <code>order_manifest.json</code>.</li>
-                <li><strong>Batch Download</strong> — ZIPs all orders matching the current filter (max 50 orders).</li>
-                <li><strong>Regen</strong> — overwrites existing files (use after design changes).</li>
-              </ul>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+              <div className="text-[10px] leading-relaxed text-blue-900/60 font-medium">
+                <span className="font-black text-blue-900 block mb-1 uppercase tracking-tight">Production Status</span>
+                Orders only enter the pipeline after successful payment. Proof approvals trigger production-ready status.
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   )
 }

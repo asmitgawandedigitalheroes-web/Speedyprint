@@ -50,6 +50,13 @@ export async function POST(
       responded_at: respondedAt,
       approved_by: user.id,
       approved_ip: clientIp,
+      approval_log: {
+        timestamp: respondedAt,
+        ip: clientIp,
+        user_id: user.id,
+        role: actorRole,
+        notes: sanitizedNotes,
+      },
     })
     .eq('id', id)
     .select()

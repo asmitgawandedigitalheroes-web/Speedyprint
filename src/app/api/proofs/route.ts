@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
-import { generatePDF } from '@/lib/pdf/generator'
+import { generatePDF, mergeVariables } from '@/lib/pdf/generator'
 import { sendProofReady } from '@/lib/email/resend'
 import { logProofAudit, getClientIp } from '@/lib/proofAudit'
 import { SITE_URL } from '@/lib/utils/constants'
@@ -41,15 +41,13 @@ export async function POST(request: NextRequest) {
   let proof_thumbnail_url: string | null = body.proof_thumbnail_url ?? null
 
   try {
-    let resolvedDesignId = design_id
-    if (!resolvedDesignId) {
-      const { data: item } = await admin
-        .from('order_items')
-        .select('design_id, product_template_id')
-        .eq('id', order_item_id)
-        .single()
-      resolvedDesignId = item?.design_id
-    }
+    const { data: item } = await admin
+      .from('order_items')
+      .select('design_id, product_template_id, csv_job_id, csv_job:csv_jobs(parsed_data, column_mapping)')
+      .eq('id', order_item_id)
+      .single()
+
+    const resolvedDesignId = design_id || item?.design_id
 
     if (resolvedDesignId) {
       const { data: design } = await admin
@@ -60,15 +58,34 @@ export async function POST(request: NextRequest) {
 
       if (design?.canvas_json) {
         const tpl = design.product_template as unknown as ProductTemplate | null
-        const pdfBytes = await generatePDF(
-          design.canvas_json as Parameters<typeof generatePDF>[0],
-          {
-            print_width_mm: tpl?.print_width_mm ?? 100,
-            print_height_mm: tpl?.print_height_mm ?? 70,
-            bleed_mm: tpl?.bleed_mm ?? 3,
-          },
-          { isProof: true, includeBleed: false }
-        )
+        const baseCanvas = design.canvas_json as any
+        const printSpecs = {
+          print_width_mm: tpl?.print_width_mm ?? 100,
+          print_height_mm: tpl?.print_height_mm ?? 70,
+          bleed_mm: tpl?.bleed_mm ?? 3,
+        }
+
+        let pdfBytes: Uint8Array
+
+        // CSV Sample Case: Generate up to 5 sample pages
+        if (item?.csv_job_id && item?.csv_job) {
+          const csvJob = item.csv_job as any
+          const rows = (csvJob.parsed_data ?? []) as any[]
+          const colMap = (csvJob.column_mapping ?? {}) as Record<string, string>
+          const sampleCount = Math.min(rows.length, 5)
+          const sampleRows = rows.slice(0, sampleCount)
+
+          const canvases = sampleRows.map((row) => {
+            const vars: Record<string, string> = {}
+            for (const [p, c] of Object.entries(colMap)) vars[p] = String(row[c] ?? '')
+            return mergeVariables(baseCanvas, vars)
+          })
+
+          pdfBytes = await generatePDF(canvases, printSpecs, { isProof: true, includeBleed: false })
+        } else {
+          // Single Design Case
+          pdfBytes = await generatePDF(baseCanvas, printSpecs, { isProof: true, includeBleed: false })
+        }
 
         const storagePath = `${order_item_id}/v${version}_proof.pdf`
         const { error: uploadError } = await admin.storage

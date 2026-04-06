@@ -40,7 +40,7 @@ export default function AdminProductsPage() {
 
         if (error) throw error
 
-        const productsWithCount = (data ?? []).map((p) => ({
+        const productsWithCount = (data ?? []).map((p: any) => ({
           ...p,
           template_count: p.templates?.length ?? 0,
           templates: undefined,

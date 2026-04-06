@@ -12,9 +12,9 @@ export type Division = 'labels' | 'race-numbers' | 'mtb-boards' | 'laser' | 'tro
 export type ParamType = 'select' | 'range' | 'number' | 'text'
 export type PricingRuleType = 'base_price' | 'quantity_break' | 'size_tier' | 'material_addon' | 'option_addon' | 'finish_addon'
 export type OrderStatus = 'draft' | 'pending_payment' | 'paid' | 'in_production' | 'completed' | 'cancelled'
-export type OrderItemStatus = 'pending_design' | 'pending_proof' | 'proof_sent' | 'approved' | 'in_production' | 'completed'
+export type OrderItemStatus = 'pending_design' | 'pending_proof' | 'proof_sent' | 'approved' | 'in_production' | 'completed' | 'cancelled'
 export type CsvJobStatus = 'uploaded' | 'validated' | 'processing' | 'completed' | 'error'
-export type ProofStatus = 'pending' | 'approved' | 'revision_requested' | 'rejected'
+export type ProofStatus = 'pending' | 'approved' | 'revision_requested' | 'rejected' | 'cancelled'
 export type FileType = 'pdf' | 'png' | 'svg'
 export type FilePurpose = 'artwork' | 'logo' | 'csv' | 'proof' | 'production'
 
@@ -87,14 +87,22 @@ export interface ProductTemplate {
 
 // Helper to extract dimension constraints from template_json
 export function getDimensionConstraints(template: ProductTemplate): TemplateDimensionConstraints | null {
+  if (!template || !template.template_json) return null
   const tj = template.template_json as Record<string, unknown>
-  if (!tj?.min_width_mm && !tj?.max_width_mm && !tj?.min_height_mm && !tj?.max_height_mm) return null
+  
+  if (typeof tj !== 'object') return null
+
+  const hasWidth = tj.min_width_mm !== undefined || tj.max_width_mm !== undefined
+  const hasHeight = tj.min_height_mm !== undefined || tj.max_height_mm !== undefined
+  
+  if (!hasWidth && !hasHeight) return null
+
   return {
-    min_width_mm: tj.min_width_mm as number | undefined,
-    max_width_mm: tj.max_width_mm as number | undefined,
+    min_width_mm: typeof tj.min_width_mm === 'number' ? tj.min_width_mm : undefined,
+    max_width_mm: typeof tj.max_width_mm === 'number' ? tj.max_width_mm : undefined,
     width_step_mm: (tj.width_step_mm as number | undefined) ?? 1,
-    min_height_mm: tj.min_height_mm as number | undefined,
-    max_height_mm: tj.max_height_mm as number | undefined,
+    min_height_mm: typeof tj.min_height_mm === 'number' ? tj.min_height_mm : undefined,
+    max_height_mm: typeof tj.max_height_mm === 'number' ? tj.max_height_mm : undefined,
     height_step_mm: (tj.height_step_mm as number | undefined) ?? 1,
   }
 }
@@ -234,6 +242,7 @@ export type ProofAuditAction =
   | 'proof_approved'
   | 'revision_requested'
   | 'production_generated'
+  | 'proof_cancelled'
 
 export interface ProofAuditLog {
   id: string

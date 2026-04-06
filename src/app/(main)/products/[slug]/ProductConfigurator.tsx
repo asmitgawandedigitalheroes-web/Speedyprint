@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Loader2 } from 'lucide-react'
@@ -59,7 +59,7 @@ export function ProductConfigurator({
   const [sponsorValues, setSponsorValues] = useState<Record<string, string>>({})
 
   const router = useRouter()
-  const [navigatingState, setNavigatingState] = useState<'design' | 'upload' | null>(null)
+  const [navigatingState, setNavigatingState] = useState<'design' | 'upload' | 'bulk' | null>(null)
 
   const selectedTemplate = useMemo(
     () => templates.find((t) => t.id === selectedTemplateId),
@@ -88,14 +88,14 @@ export function ProductConfigurator({
       setCustomWidth(String(constraints.min_width_mm ?? template.print_width_mm))
       setCustomHeight(String(constraints.min_height_mm ?? template.print_height_mm))
     } else {
-      setCustomWidth('')
-      setCustomHeight('')
+      setCustomWidth(String(template.print_width_mm))
+      setCustomHeight(String(template.print_height_mm))
     }
     setSponsorValues({})
   }
 
   // Initialize on first render if first template has constraints
-  useMemo(() => {
+  useEffect(() => {
     const first = templates[0]
     if (first) resetDimensions(first)
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -386,8 +386,7 @@ export function ProductConfigurator({
                 router.push(`/designer/${selectedTemplateId}`)
               }}
               disabled={navigatingState !== null}
-              className="flex-1 bg-brand-primary text-white hover:bg-brand-primary-dark"
-              size="lg"
+              className="flex-1 bg-brand-primary text-white hover:bg-brand-primary-dark h-16 sm:h-12 text-sm font-bold"
             >
               {navigatingState === 'design' ? (
                 <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Preparing Editor...</>
@@ -397,8 +396,7 @@ export function ProductConfigurator({
             </Button>
             <Button
               variant="outline"
-              className="flex-1"
-              size="lg"
+              className="flex-1 h-16 sm:h-12 text-sm font-bold"
               disabled={navigatingState !== null}
               onClick={() => {
                 setNavigatingState('upload')
@@ -411,6 +409,23 @@ export function ProductConfigurator({
                 'Upload Artwork'
               )}
             </Button>
+            {isEventsProduct && (
+              <Button
+                variant="secondary"
+                className="flex-1 h-16 sm:h-12 text-sm font-bold bg-brand-primary/10 text-brand-primary hover:bg-brand-primary/20 border border-brand-primary/30"
+                disabled={navigatingState !== null}
+                onClick={() => {
+                  setNavigatingState('bulk')
+                  router.push(`/designer/${selectedTemplateId}/csv`)
+                }}
+              >
+                {navigatingState === 'bulk' ? (
+                  <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Preparing Bulk Order...</>
+                ) : (
+                  'Bulk Order (CSV)'
+                )}
+              </Button>
+            )}
           </>
         )}
       </div>

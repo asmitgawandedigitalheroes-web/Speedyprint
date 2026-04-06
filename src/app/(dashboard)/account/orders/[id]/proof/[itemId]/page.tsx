@@ -15,6 +15,7 @@ import {
   FileText,
   RefreshCw,
   ShieldCheck,
+  XCircle,
 } from 'lucide-react'
 import type { Proof } from '@/types'
 
@@ -55,6 +56,13 @@ const STATUS_CFG: Record<string, StatusCfg> = {
     text:   '#c00510',
     border: 'rgba(227,6,19,0.25)',
     icon:   AlertCircle,
+  },
+  cancelled: {
+    label:  'Cancelled',
+    bg:     'rgba(100,116,139,0.08)',
+    text:   '#475569',
+    border: 'rgba(100,116,139,0.25)',
+    icon:   XCircle,
   },
 }
 
@@ -131,6 +139,28 @@ export default function ProofReviewPage() {
       setNotes('')
     } catch {
       toast.error('Failed to request revision. Please try again.')
+    }
+    setSubmitting(false)
+  }
+
+  const handleCancel = async () => {
+    if (!selectedProof) return
+    const confirmed = window.confirm('Are you sure you want to cancel this item? This action cannot be undone.')
+    if (!confirmed) return
+
+    setSubmitting(true)
+    try {
+      const res = await fetch(`/api/proofs/${selectedProof.id}/cancel`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ notes }),
+      })
+      if (!res.ok) throw new Error()
+      toast.success('Item cancelled.')
+      setSelectedProof((p) => p ? { ...p, status: 'cancelled' } : p)
+      setProofs((prev) => prev.map((p) => p.id === selectedProof.id ? { ...p, status: 'cancelled' } : p))
+    } catch {
+      toast.error('Failed to cancel. Please contact support.')
     }
     setSubmitting(false)
   }
@@ -324,6 +354,16 @@ export default function ProofReviewPage() {
                     </button>
                   </div>
 
+                  <div className="flex justify-center border-t border-dashed border-[#E7E5E4] pt-4">
+                    <button
+                      onClick={handleCancel}
+                      disabled={submitting}
+                      className="text-xs font-medium text-brand-text-muted hover:text-brand-primary hover:underline transition disabled:opacity-50"
+                    >
+                      I no longer want this item. Cancel it.
+                    </button>
+                  </div>
+
                   <p className="text-center text-xs text-brand-text-muted">
                     Revisions are free and unlimited. Once approved, production begins immediately.
                   </p>
@@ -387,6 +427,27 @@ export default function ProofReviewPage() {
                           {selectedProof.customer_notes}
                         </div>
                       )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Cancelled state footer */}
+              {selectedProof?.status === 'cancelled' && (
+                <div
+                  className="border-t p-5"
+                  style={{
+                    backgroundColor: 'rgba(100,116,139,0.05)',
+                    borderColor:     'rgba(100,116,139,0.15)',
+                  }}
+                >
+                  <div className="flex items-start gap-3">
+                    <XCircle className="mt-0.5 h-5 w-5 shrink-0 text-slate-400" />
+                    <div>
+                      <p className="text-sm font-semibold text-slate-600">This item has been cancelled</p>
+                      <p className="mt-0.5 text-xs text-slate-500">
+                        Production has been stopped. Please contact support if you believe this is an error.
+                      </p>
                     </div>
                   </div>
                 </div>

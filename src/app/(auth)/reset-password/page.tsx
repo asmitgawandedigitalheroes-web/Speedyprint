@@ -8,9 +8,11 @@ import { Loader2, ArrowLeft, MailCheck, KeyRound } from 'lucide-react'
 
 import { useAuth } from '@/hooks/useAuth'
 import { createClient } from '@/lib/supabase/client'
+import type { AuthChangeEvent } from '@supabase/supabase-js'
 import { SITE_NAME } from '@/lib/utils/constants'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { PasswordInput } from '@/components/ui/password-input'
 import { Label } from '@/components/ui/label'
 
 type Mode = 'request' | 'sent' | 'update' | 'done'
@@ -24,15 +26,18 @@ export default function ResetPasswordPage() {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [saving, setSaving] = useState(false)
+  const [isSending, setIsSending] = useState(false)
   const [passwordError, setPasswordError] = useState('')
   const [errorParam, setErrorParam] = useState<string | null>(null)
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search)
-    if (params.get('type') === 'recovery') {
+    const queryParams = new URLSearchParams(window.location.search)
+    const hashParams = new URLSearchParams(window.location.hash.substring(1))
+
+    if (queryParams.get('type') === 'recovery' || hashParams.get('type') === 'recovery') {
       setMode('update')
     }
-    const error = params.get('error')
+    const error = queryParams.get('error')
     if (error) {
       setErrorParam(error)
       if (error === 'otp_expired') {
@@ -42,7 +47,7 @@ export default function ResetPasswordPage() {
     const supabase = createClient()
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((event) => {
+    } = supabase.auth.onAuthStateChange((event: AuthChangeEvent) => {
       if (event === 'PASSWORD_RECOVERY') setMode('update')
     })
     return () => subscription.unsubscribe()
@@ -50,12 +55,20 @@ export default function ResetPasswordPage() {
 
   async function handleRequestReset(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    const { error } = await resetPassword(email)
-    if (error) {
-      toast.error(error)
-      return
+    setIsSending(true)
+    try {
+      const { error } = await resetPassword(email)
+      if (error) {
+        toast.error(error)
+        return
+      }
+      setMode('sent')
+    } catch (err) {
+      console.error('[ResetPage] handleRequestReset error:', err)
+      toast.error('An unexpected error occurred. Please try again.')
+    } finally {
+      setIsSending(false)
     }
-    setMode('sent')
   }
 
   async function handleUpdatePassword(e: FormEvent<HTMLFormElement>) {
@@ -139,10 +152,9 @@ export default function ResetPasswordPage() {
           <form onSubmit={handleUpdatePassword} className="space-y-4">
             <div className="space-y-1.5">
               <Label htmlFor="new-password">New password</Label>
-              <Input
+              <PasswordInput
                 id="new-password"
-                type="password"
-                placeholder="Minimum 8 characters"
+                placeholder="Min 8 chars, uppercase, number & symbol"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -152,9 +164,8 @@ export default function ResetPasswordPage() {
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="confirm-password">Confirm password</Label>
-              <Input
+              <PasswordInput
                 id="confirm-password"
-                type="password"
                 placeholder="Repeat your new password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
@@ -202,11 +213,11 @@ export default function ResetPasswordPage() {
             onChange={(e) => setEmail(e.target.value)}
             required
             autoComplete="email"
-            disabled={isLoading}
+            disabled={isSending}
           />
         </div>
-        <Button type="submit" className="w-full bg-brand-primary hover:bg-brand-primary-dark text-white" disabled={isLoading}>
-          {isLoading ? (
+        <Button type="submit" className="w-full bg-brand-primary hover:bg-brand-primary-dark text-white" disabled={isSending}>
+          {isSending ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Sending…
             </>

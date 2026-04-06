@@ -134,3 +134,12 @@
 .editor-section-title {
   @apply text-[10px] font-semibold uppercase tracking-widest text-ed-text-dim mb-2;
 }
+
+/* Utility to hide scrollbars */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

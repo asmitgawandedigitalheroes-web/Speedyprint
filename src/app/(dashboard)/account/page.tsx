@@ -82,7 +82,7 @@ export default function AccountDashboard() {
 
       /* Items awaiting proof approval */
       if (orderList.length > 0) {
-        const ids = orderList.map((o) => o.id)
+        const ids = orderList.map((o: Order) => o.id)
         const { data: items } = await supabase
           .from('order_items')
           .select('id, order_id, status')
@@ -95,7 +95,7 @@ export default function AccountDashboard() {
           pending.map((i: any) => ({
             itemId:      i.id,
             orderId:     i.order_id,
-            orderNumber: orderList.find((o) => o.id === i.order_id)?.order_number ?? i.order_id,
+            orderNumber: orderList.find((o: Order) => o.id === i.order_id)?.order_number ?? i.order_id,
           }))
         )
       }
