@@ -20,6 +20,7 @@ import {
   ShieldCheck,
   Printer,
   LogOut,
+  Inbox,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { SITE_NAME } from '@/lib/utils/constants'
@@ -47,14 +48,16 @@ const CONTENT_NAV = [
 ]
 
 const ADMIN_NAV = [
-  { href: '/admin/users',    label: 'Users',    icon: Users,    staffAllowed: false, badgeKey: '' },
-  { href: '/admin/settings', label: 'Settings', icon: Settings, staffAllowed: false, badgeKey: '' },
+  { href: '/admin/enquiries', label: 'Enquiries', icon: Inbox,    staffAllowed: false, badgeKey: 'enquiries' },
+  { href: '/admin/users',     label: 'Users',     icon: Users,    staffAllowed: false, badgeKey: '' },
+  { href: '/admin/settings',  label: 'Settings',  icon: Settings, staffAllowed: false, badgeKey: '' },
 ]
 
 interface Badges {
   orders: number
   proofs: number
   csv: number
+  enquiries: number
 }
 
 export function AdminSidebar() {
@@ -63,7 +66,7 @@ export function AdminSidebar() {
   const { user, logout } = useAuth()
   const [collapsed, setCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
-  const [badges, setBadges] = useState<Badges>({ orders: 0, proofs: 0, csv: 0 })
+  const [badges, setBadges] = useState<Badges>({ orders: 0, proofs: 0, csv: 0, enquiries: 0 })
 
   const isProductionStaff = user?.role === 'production_staff'
 
@@ -71,13 +74,17 @@ export function AdminSidebar() {
   useEffect(() => {
     async function fetchBadges() {
       try {
-        const res = await fetch('/api/admin/dashboard')
-        if (!res.ok) return
-        const data = await res.json()
+        const [dashRes, enquiriesRes] = await Promise.all([
+          fetch('/api/admin/dashboard'),
+          fetch('/api/admin/enquiries?status=unread'),
+        ])
+        const dash = dashRes.ok ? await dashRes.json() : {}
+        const enq  = enquiriesRes.ok ? await enquiriesRes.json() : {}
         setBadges({
-          orders: data.stats?.newOrders ?? 0,
-          proofs: data.stats?.pendingProofs ?? 0,
-          csv:    data.stats?.processingCsv ?? 0,
+          orders:    dash.stats?.newOrders ?? 0,
+          proofs:    dash.stats?.pendingProofs ?? 0,
+          csv:       dash.stats?.processingCsv ?? 0,
+          enquiries: enq.unreadCount ?? 0,
         })
       } catch {
         // silently ignore

@@ -56,7 +56,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Note: type=recovery is explicitly set by Supabase for recovery links.
         // If it's missing but there's an access_token on the homepage, it's likely a redirect fallback.
         if (pathname !== '/reset-password') {
-          router.push('/reset-password?type=recovery')
+          // BUG-050 FIX: Preserve the hash fragments (#access_token=...) when redirecting.
+          // Without this, router.push strips the hash and Supabase loses the session recovery link.
+          const url = `/reset-password?type=recovery${window.location.hash}`
+          router.push(url)
         }
       }
     }

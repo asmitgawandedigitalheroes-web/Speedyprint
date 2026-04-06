@@ -45,6 +45,14 @@ export default function ResetPasswordPage() {
       }
     }
     const supabase = createClient()
+    
+    // Check for session immediately if we have a recovery token
+    if (queryParams.get('type') === 'recovery' || hashParams.get('type') === 'recovery') {
+      supabase.auth.getSession().then(({ data: { session } }: any) => {
+        if (session) setMode('update')
+      })
+    }
+
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event: AuthChangeEvent) => {
@@ -95,6 +103,19 @@ export default function ResetPasswordPage() {
       return
     }
     setSaving(true)
+    
+    // BUG-051 FIX: Ensure session exists before updating.
+    // If the user lands here via a redirect that stripped the hash, 
+    // or if the session expired, this will catch it before sending the update request.
+    const supabase = createClient()
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) {
+      setSaving(false)
+      toast.error('Your session has expired or the reset link is invalid. Please request a new one.')
+      setMode('request')
+      return
+    }
+
     const { error } = await updatePassword(password)
     setSaving(false)
     if (error) {

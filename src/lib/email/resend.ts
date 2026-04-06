@@ -8,6 +8,7 @@ import {
   orderShippedTemplate,
   welcomeTemplate,
   contactFormTemplate,
+  enquiryReplyTemplate,
   adminProofApprovedTemplate,
   adminRevisionRequestedTemplate,
   passwordResetTemplate,
@@ -106,6 +107,21 @@ export async function sendContactFormEmail(
     replyTo: email,
     subject: `Contact Form: ${subject}`,
     html: contactFormTemplate(name, email, subject, message),
+  })
+}
+
+export async function sendEnquiryReply(
+  customerName: string,
+  customerEmail: string,
+  originalSubject: string,
+  replyMessage: string
+) {
+  return getResend().emails.send({
+    from: FROM,
+    to: customerEmail,
+    replyTo: ADMIN_EMAIL,
+    subject: `Re: ${originalSubject}`,
+    html: enquiryReplyTemplate(customerName, originalSubject, replyMessage),
   })
 }
 
