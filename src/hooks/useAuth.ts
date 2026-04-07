@@ -139,17 +139,22 @@ export const useAuth = create<AuthState>()(
       },
 
       resetPassword: async (email) => {
-        const supabase = createClient()
         const trimmedEmail = email.trim()
-        const { error } = await supabase.auth.resetPasswordForEmail(trimmedEmail, {
-          redirectTo: `${window.location.origin}/reset-password`,
-        })
-
-        if (error) {
-          console.error('[useAuth] Reset password error:', error.message)
-          return { error: error.message }
+        try {
+          const res = await fetch('/api/auth/reset-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: trimmedEmail }),
+          })
+          const data = await res.json()
+          if (!res.ok) {
+            return { error: data.error || 'Failed to send reset email.' }
+          }
+          return { error: null }
+        } catch (err) {
+          console.error('[useAuth] Reset password error:', err)
+          return { error: 'Failed to send reset email. Please try again.' }
         }
-        return { error: null }
       },
 
       updatePassword: async (newPassword) => {
