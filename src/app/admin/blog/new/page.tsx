@@ -3,11 +3,13 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Loader2, X, Upload } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { RichTextEditor } from '@/components/ui/rich-text-editor'
+import Image from 'next/image'
 import { slugify } from '@/lib/utils/format'
 
 export default function AdminBlogNewPage() {
@@ -22,10 +24,41 @@ export default function AdminBlogNewPage() {
   const [featuredImage, setFeaturedImage] = useState('')
   const [author, setAuthor] = useState('')
   const [published, setPublished] = useState(false)
+  const [uploading, setUploading] = useState(false)
 
   const handleTitleChange = (value: string) => {
     setTitle(value)
     setSlug(slugify(value))
+  }
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setUploading(true)
+    setError(null)
+
+    const formData = new FormData()
+    formData.append('file', file)
+
+    try {
+      const res = await fetch('/api/admin/blog/upload', {
+        method: 'POST',
+        body: formData,
+      })
+
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || 'Upload failed')
+      }
+
+      const data = await res.json()
+      setFeaturedImage(data.url)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to upload image')
+    } finally {
+      setUploading(false)
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -133,15 +166,75 @@ export default function AdminBlogNewPage() {
             </div>
 
             {/* Featured Image */}
-            <div className="space-y-2">
-              <Label htmlFor="featuredImage">Featured Image URL</Label>
-              <Input
-                id="featuredImage"
-                value={featuredImage}
-                onChange={(e) => setFeaturedImage(e.target.value)}
-                placeholder="https://..."
-                type="url"
-              />
+            <div className="space-y-4">
+              <Label>Featured Image</Label>
+              
+              {featuredImage && (
+                <div className="group relative aspect-video w-full max-w-md overflow-hidden rounded-lg border bg-muted">
+                  <Image
+                    src={featuredImage}
+                    alt="Featured preview"
+                    fill
+                    className="object-cover"
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => setFeaturedImage('')}
+                    >
+                      <X className="mr-2 h-4 w-4" />
+                      Remove Image
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              <div className="grid gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="relative">
+                    <Input
+                      id="imageUpload"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      disabled={uploading}
+                      className="hidden"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled={uploading}
+                      onClick={() => document.getElementById('imageUpload')?.click()}
+                    >
+                      {uploading ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <Upload className="mr-2 h-4 w-4" />
+                      )}
+                      {featuredImage ? 'Change Image' : 'Upload Image'}
+                    </Button>
+                  </div>
+                  {uploading && <span className="text-xs text-muted-foreground">Uploading...</span>}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Recommended: 1200x675px (16:9). Max size: 5MB.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="featuredImage" className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                  Or manual image URL
+                </Label>
+                <Input
+                  id="featuredImage"
+                  value={featuredImage}
+                  onChange={(e) => setFeaturedImage(e.target.value)}
+                  type="url"
+                  placeholder="https://..."
+                />
+              </div>
             </div>
 
             {/* Excerpt */}
@@ -160,17 +253,11 @@ export default function AdminBlogNewPage() {
             {/* Content */}
             <div className="space-y-2">
               <Label htmlFor="content">Content</Label>
-              <textarea
-                id="content"
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                placeholder="Write your blog post content here... (HTML supported)"
-                rows={12}
-                className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs placeholder:text-muted-foreground focus-visible:border-ring focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 font-mono"
+              <RichTextEditor
+                content={content}
+                onChange={setContent}
+                placeholder="Write your blog post content here..."
               />
-              <p className="text-xs text-muted-foreground">
-                Supports HTML for rich formatting.
-              </p>
             </div>
 
             {/* Published Toggle */}

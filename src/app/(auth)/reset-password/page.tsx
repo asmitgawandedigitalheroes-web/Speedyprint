@@ -73,13 +73,14 @@ export default function ResetPasswordPage() {
         if (manualSession) setMode('update')
         if (error) console.error('[ResetPassword] Manual session recovery failed:', error.message)
       } else if (!session && isRecoveryUrl) {
-        // Give it one more try after a short delay
+        // Give it one more try after a short delay (session may still be loading)
         setTimeout(async () => {
           const { data: { session: retrySession } } = await supabase.auth.getSession()
           if (retrySession) {
             setMode('update')
           } else {
             console.warn('[ResetPassword] Recovery URL without session detected after retry.')
+            toast.error('Your reset link is invalid or has expired. Please request a new one.')
           }
         }, 800)
       }

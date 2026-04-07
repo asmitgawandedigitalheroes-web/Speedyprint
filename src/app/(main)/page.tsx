@@ -10,6 +10,9 @@ import { DesignerDemo } from '@/components/home/DesignerDemo'
 import { HomeFAQ } from '@/components/home/HomeFAQ'
 import { FeaturedWork } from '@/components/home/FeaturedWork'
 import { CTABand } from '@/components/home/CTABand'
+import { BlogSection } from '@/components/home/BlogSection'
+import { createAdminClient } from '@/lib/supabase/admin'
+import type { BlogPost } from '@/types'
 import {
   ArrowRight,
   Star,
@@ -65,7 +68,20 @@ const WHY_US = [
   },
 ]
 
-export default function HomePage() {
+async function getLatestPosts(): Promise<BlogPost[]> {
+  const supabase = createAdminClient()
+  const { data } = await supabase
+    .from('blog_posts')
+    .select('*')
+    .eq('published', true)
+    .order('published_at', { ascending: false })
+    .limit(3)
+  return (data as BlogPost[]) || []
+}
+
+export default async function HomePage() {
+  const latestPosts = await getLatestPosts()
+
   return (
     <div className="overflow-x-hidden">
 
@@ -224,7 +240,10 @@ export default function HomePage() {
       {/* ── 8. INLINE FAQ ───────────────────────────────────────────── */}
       <HomeFAQ />
 
-      {/* ── 9. CTA BAND ─────────────────────────────────────────────── */}
+      {/* ── 9. BLOG SECTION ─────────────────────────────────────────── */}
+      <BlogSection posts={latestPosts} />
+
+      {/* ── 10. CTA BAND ─────────────────────────────────────────────── */}
       <CTABand />
 
     </div>

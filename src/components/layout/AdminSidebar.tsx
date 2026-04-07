@@ -294,7 +294,7 @@ export function AdminSidebar() {
         </div>
 
         {/* Navigation */}
-        <div className="flex-1 overflow-y-auto scrollbar-thin">{navContent}</div>
+        <div className="flex-1 overflow-y-auto no-scrollbar">{navContent}</div>
 
         {/* Footer */}
         <div className="border-t border-white/10 p-3 space-y-0.5">
