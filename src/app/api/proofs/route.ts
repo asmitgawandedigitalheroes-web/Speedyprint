@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { generatePDF, mergeVariables } from '@/lib/pdf/generator'
 import { sendProofReady } from '@/lib/email/resend'
 import { logProofAudit, getClientIp } from '@/lib/proofAudit'
+import { logActivity } from '@/lib/audit'
 import { SITE_URL } from '@/lib/utils/constants'
 import type { Order, ProductTemplate } from '@/types'
 
@@ -39,13 +40,15 @@ export async function POST(request: NextRequest) {
   // ── Generate proof PDF ──────────────────────────────────────────────────────
   let proof_file_url: string | null = body.proof_file_url ?? null
   let proof_thumbnail_url: string | null = body.proof_thumbnail_url ?? null
+  let orderItem: any = null
 
   try {
     const { data: item } = await admin
       .from('order_items')
-      .select('design_id, product_template_id, csv_job_id, csv_job:csv_jobs(parsed_data, column_mapping)')
+      .select('design_id, product_template_id, csv_job_id, csv_job:csv_jobs(parsed_data, column_mapping), order:orders(order_number)')
       .eq('id', order_item_id)
       .single()
+    orderItem = item
 
     const resolvedDesignId = design_id || item?.design_id
 
@@ -92,15 +95,26 @@ export async function POST(request: NextRequest) {
           .from('proofs')
           .upload(storagePath, pdfBytes, { contentType: 'application/pdf', upsert: true })
 
-        if (!uploadError) {
-          const { data: { publicUrl } } = admin.storage.from('proofs').getPublicUrl(storagePath)
-          proof_file_url = publicUrl
-          proof_thumbnail_url = publicUrl
+        if (uploadError) {
+          console.error('[Proof] PDF upload error:', uploadError)
+          return NextResponse.json({ 
+            error: 'Failed to upload proof file to storage. Please ensure the bucket exists and is accessible.',
+            details: uploadError.message
+          }, { status: 500 })
         }
+
+        const { data: { publicUrl } } = admin.storage.from('proofs').getPublicUrl(storagePath)
+        proof_file_url = publicUrl
+        proof_thumbnail_url = publicUrl
+      } else {
+        return NextResponse.json({ error: 'Design canvas data is missing. Cannot generate proof.' }, { status: 400 })
       }
+    } else {
+      return NextResponse.json({ error: 'No design associated with this item or provided in request.' }, { status: 400 })
     }
-  } catch (genErr) {
+  } catch (genErr: any) {
     console.error('[Proof] PDF generation error:', genErr)
+    return NextResponse.json({ error: 'Failed to generate proof PDF.', details: genErr.message }, { status: 500 })
   }
 
   // ── Insert proof record ────────────────────────────────────────────────────
@@ -119,7 +133,7 @@ export async function POST(request: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  // Update order item status to proof_sent
+  // Update order item status to proof_sent ONLY after successful proof creation
   await admin.from('order_items').update({ status: 'proof_sent' }).eq('id', order_item_id)
 
   // ── Audit log ─────────────────────────────────────────────────────────────
@@ -131,6 +145,20 @@ export async function POST(request: NextRequest) {
     actor_role:    profile.role as 'admin' | 'production_staff',
     client_ip:     getClientIp(request.headers),
     metadata:      { version, design_id: design_id ?? null },
+  })
+
+  // Global Audit Log
+  await logActivity({
+    user_id: user.id,
+    action: 'proof_created',
+    entity_type: 'proof',
+    entity_id: proof!.id,
+    metadata: { 
+      order_item_id, 
+      version,
+      order_number: (orderItem?.order as any)?.order_number
+    },
+    is_admin_action: true,
   })
 
   // ── Send "proof ready" email to customer ───────────────────────────────────

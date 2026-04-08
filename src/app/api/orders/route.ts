@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { logActivity } from '@/lib/audit'
 
 export async function GET() {
   const supabase = await createClient()
@@ -73,6 +74,20 @@ export async function POST(request: NextRequest) {
 
   const { error: itemsError } = await supabase.from('order_items').insert(orderItems)
   if (itemsError) return NextResponse.json({ error: itemsError.message }, { status: 500 })
+
+  // Log activity
+  await logActivity({
+    user_id: user.id,
+    action: 'order_placed',
+    entity_type: 'order',
+    entity_id: order.id,
+    metadata: {
+      order_number: order.order_number,
+      total: order.total,
+      item_count: items.length,
+    },
+    is_admin_action: false
+  })
 
   return NextResponse.json(order, { status: 201 })
 }

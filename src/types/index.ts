@@ -339,4 +339,5 @@ export interface CartItem {
   csv_job_id?: string
   thumbnail_url?: string
   artwork_url?: string
+  selected?: boolean
 }

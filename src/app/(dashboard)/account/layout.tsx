@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { UserSidebar } from '@/components/layout/UserSidebar'
 import { useAuth } from '@/hooks/useAuth'
 import { createClient } from '@/lib/supabase/client'
-import { Bell, ChevronRight, ShoppingCart } from 'lucide-react'
+import { Bell, ChevronRight, ShoppingCart, ArrowRight } from 'lucide-react'
 import { useCart } from '@/hooks/useCart'
 import type { Order } from '@/types'
 
@@ -83,6 +83,14 @@ function TopBar() {
 
       {/* Right side */}
       <div className="flex items-center gap-3">
+        {/* Get Quote Now CTA */}
+        <Link
+          href="/order-now"
+          className="hidden sm:flex items-center gap-1.5 rounded-lg bg-brand-primary px-4 py-1.5 text-sm font-bold text-white shadow-sm shadow-brand-primary/20 transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90"
+        >
+          Get Quote Now
+          <ArrowRight className="h-3.5 w-3.5" />
+        </Link>
         {/* Notification bell — links to proofs when there are pending items */}
         <Link
           href="/account/proofs"

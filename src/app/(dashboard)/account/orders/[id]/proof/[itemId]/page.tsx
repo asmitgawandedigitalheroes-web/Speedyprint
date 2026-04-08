@@ -73,8 +73,8 @@ export default function ProofReviewPage() {
   const [selectedProof,  setSelectedProof]  = useState<Proof | null>(null)
   const [notes,          setNotes]          = useState('')
   const [loading,        setLoading]        = useState(true)
-  const [submitting,     setSubmitting]     = useState(false)
-  const [viewMode,       setViewMode]       = useState<'pdf' | 'image'>('pdf')
+  const [submittingAction, setSubmittingAction] = useState<string | null>(null)
+  const [viewMode,         setViewMode]         = useState<'pdf' | 'image'>('pdf')
 
   const fetchProofs = useCallback(async () => {
     if (!itemId) return
@@ -96,9 +96,10 @@ export default function ProofReviewPage() {
     if (user && itemId) fetchProofs()
   }, [user, itemId, fetchProofs])
 
+
   const handleApprove = async () => {
     if (!selectedProof) return
-    setSubmitting(true)
+    setSubmittingAction('approve')
     try {
       const res = await fetch(`/api/proofs/${selectedProof.id}/approve`, {
         method:  'POST',
@@ -112,7 +113,7 @@ export default function ProofReviewPage() {
     } catch {
       toast.error('Failed to approve. Please try again.')
     }
-    setSubmitting(false)
+    setSubmittingAction(null)
   }
 
   const handleRequestRevision = async () => {
@@ -121,7 +122,7 @@ export default function ProofReviewPage() {
       toast.error('Please describe the changes needed before requesting a revision.')
       return
     }
-    setSubmitting(true)
+    setSubmittingAction('revision')
     try {
       const res = await fetch(`/api/proofs/${selectedProof.id}/revision`, {
         method:  'POST',
@@ -140,7 +141,7 @@ export default function ProofReviewPage() {
     } catch {
       toast.error('Failed to request revision. Please try again.')
     }
-    setSubmitting(false)
+    setSubmittingAction(null)
   }
 
   const handleCancel = async () => {
@@ -148,7 +149,7 @@ export default function ProofReviewPage() {
     const confirmed = window.confirm('Are you sure you want to cancel this item? This action cannot be undone.')
     if (!confirmed) return
 
-    setSubmitting(true)
+    setSubmittingAction('cancel')
     try {
       const res = await fetch(`/api/proofs/${selectedProof.id}/cancel`, {
         method:  'POST',
@@ -162,7 +163,7 @@ export default function ProofReviewPage() {
     } catch {
       toast.error('Failed to cancel. Please contact support.')
     }
-    setSubmitting(false)
+    setSubmittingAction(null)
   }
 
   /* ── Loading ── */
@@ -268,10 +269,8 @@ export default function ProofReviewPage() {
 
                 {selectedProof?.proof_file_url && (
                   <a
-                    href={selectedProof.proof_file_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    download
+                    href={`/api/proofs/${selectedProof.id}/file`}
+                    download={`proof-v${selectedProof.version}.pdf`}
                     className="inline-flex items-center gap-1.5 rounded-lg border border-[#E7E5E4] px-3 py-1.5 text-xs font-medium transition hover:border-brand-primary hover:text-brand-primary"
                   >
                     <Download className="h-3.5 w-3.5" />
@@ -283,23 +282,28 @@ export default function ProofReviewPage() {
               {/* Preview area */}
               <div className="flex min-h-[480px] items-center justify-center overflow-hidden bg-[#F5F6F7]">
                 {selectedProof?.proof_file_url ? (
-                  viewMode === 'pdf' ? (
-                    <iframe
-                      src={`${selectedProof.proof_file_url}#toolbar=0`}
-                      className="h-[480px] w-full"
-                      title={`Proof v${selectedProof?.version}`}
-                    />
-                  ) : (
-                    <img
-                      src={selectedProof.proof_thumbnail_url ?? selectedProof.proof_file_url}
-                      alt={`Proof v${selectedProof?.version}`}
-                      className="max-h-[480px] max-w-full object-contain p-6"
-                    />
-                  )
+                  <iframe
+                    key={selectedProof.id}
+                    src={`/api/proofs/${selectedProof.id}/file`}
+                    className="h-[480px] w-full border-0"
+                    title={`Proof v${selectedProof.version}`}
+                  />
                 ) : (
-                  <div className="text-center text-brand-text-muted">
-                    <FileText className="mx-auto mb-2 h-12 w-12 opacity-25" />
-                    <p className="text-sm">Preview not available</p>
+                  <div className="max-w-sm px-6 text-center">
+                    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-black/5">
+                      <FileText className="h-8 w-8 text-brand-text-muted opacity-40" />
+                    </div>
+                    <p className="font-heading text-base font-semibold text-brand-text">Preview not available</p>
+                    <p className="mt-2 text-sm text-brand-text-muted">
+                      There was an issue loading the proof preview. Please try refreshing the page or
+                      contacting our support team if the problem persists.
+                    </p>
+                    <Link
+                      href="/contact"
+                      className="mt-6 inline-flex h-9 items-center justify-center rounded-lg border border-[#E7E5E4] bg-white px-4 text-xs font-medium text-brand-text transition hover:bg-[#F5F6F7]"
+                    >
+                      Contact Support
+                    </Link>
                   </div>
                 )}
               </div>
@@ -327,10 +331,10 @@ export default function ProofReviewPage() {
                     {/* Approve — brand primary red */}
                     <button
                       onClick={handleApprove}
-                      disabled={submitting}
+                      disabled={!!submittingAction}
                       className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-brand-primary py-3 text-sm font-semibold text-white transition hover:bg-brand-primary-dark disabled:opacity-50"
                     >
-                      {submitting
+                      {submittingAction === 'approve'
                         ? <RefreshCw className="h-4 w-4 animate-spin" />
                         : <CheckCircle2 className="h-4 w-4" />}
                       Approve &amp; Start Production
@@ -339,7 +343,7 @@ export default function ProofReviewPage() {
                     {/* Revision — brand yellow */}
                     <button
                       onClick={handleRequestRevision}
-                      disabled={submitting}
+                      disabled={!!submittingAction}
                       className="flex flex-1 items-center justify-center gap-2 rounded-xl border-2 py-3 text-sm font-semibold transition disabled:opacity-50"
                       style={{
                         borderColor:     'rgba(255,193,7,0.6)',
@@ -347,7 +351,7 @@ export default function ProofReviewPage() {
                         color:           '#7a5c00',
                       }}
                     >
-                      {submitting
+                      {submittingAction === 'revision'
                         ? <RefreshCw className="h-4 w-4 animate-spin" />
                         : <AlertCircle className="h-4 w-4" />}
                       Request Revision
@@ -357,7 +361,7 @@ export default function ProofReviewPage() {
                   <div className="flex justify-center border-t border-dashed border-[#E7E5E4] pt-4">
                     <button
                       onClick={handleCancel}
-                      disabled={submitting}
+                      disabled={!!submittingAction}
                       className="text-xs font-medium text-brand-text-muted hover:text-brand-primary hover:underline transition disabled:opacity-50"
                     >
                       I no longer want this item. Cancel it.

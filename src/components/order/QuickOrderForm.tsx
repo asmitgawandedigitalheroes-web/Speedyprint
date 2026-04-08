@@ -24,6 +24,7 @@ import {
   ACCEPTED_IMAGE_TYPES,
   MAX_FILE_SIZE,
   DIVISIONS,
+  VAT_RATE,
 } from '@/lib/utils/constants'
 import {
   calculateQuickPrice,
@@ -149,8 +150,8 @@ export function QuickOrderForm({
     <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
       {/* Form */}
       <div className="lg:col-span-2">
-        <div className="rounded-xl border bg-white p-6 shadow-sm">
-          <h2 className="font-heading text-xl font-bold text-brand-text">
+        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm sm:p-8">
+          <h2 className="font-heading text-2xl font-black tracking-tight text-brand-text sm:text-3xl">
             Configure Your {activeDivision.name}
           </h2>
 
@@ -410,7 +411,7 @@ export function QuickOrderForm({
                 </span>
               </div>
               <div className="mt-1 flex justify-between text-sm">
-                <span className="text-brand-text-muted">VAT (15%)</span>
+                <span className="text-brand-text-muted">GST ({Math.round(VAT_RATE * 100)}%)</span>
                 <span>
                   {CURRENCY_SYMBOL}{price.vat.toFixed(2)}
                 </span>

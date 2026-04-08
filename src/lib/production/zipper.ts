@@ -26,6 +26,21 @@ import { createAdminClient } from '@/lib/supabase/admin'
 
 const BUCKET = 'production'
 
+/**
+ * Extracts the storage path from a public Supabase URL.
+ * Example: https://.../public/production/folder/file.pdf -> folder/file.pdf
+ */
+function getStoragePath(url: string, bucket: string): string | null {
+  try {
+    const marker = `/public/${bucket}/`
+    const index = url.indexOf(marker)
+    if (index === -1) return null
+    return url.slice(index + marker.length)
+  } catch {
+    return null
+  }
+}
+
 // ── Single-order ZIP ──────────────────────────────────────────────────────────
 
 export async function buildOrderZip(orderId: string): Promise<{
@@ -37,7 +52,7 @@ export async function buildOrderZip(orderId: string): Promise<{
   const zip = new JSZip()
 
   // ── Load order & items ─────────────────────────────────────────────────────
-  const { data: order } = await admin
+  const { data: order, error: orderError } = await admin
     .from('orders')
     .select(
       'order_number, status, shipping_address, billing_address, subtotal, tax, shipping_cost, total,' +
@@ -45,23 +60,38 @@ export async function buildOrderZip(orderId: string): Promise<{
     )
     .eq('id', orderId)
     .single()
+  
+  console.log(`[Zipper] Building ZIP for order: ${orderId}`)
+
+  if (orderError) {
+    console.error(`[Zipper] Error fetching order ${orderId}:`, orderError)
+    throw new Error(`Order fetch failed: ${orderError.message}`)
+  }
 
   if (!order) throw new Error('Order not found')
   const o = order as any
   const orderNum = o.order_number ?? orderId.slice(0, 8)
 
-  const { data: items } = await admin
+  const { data: items, error: itemsError } = await admin
     .from('order_items')
     .select(
       'id, quantity, status, selected_params,' +
-      'product_group:product_groups(name),' +
-      'product_template:product_templates(name),' +
-      'csv_job:csv_jobs(original_filename, file_url)'
+      'product_group:product_groups!order_items_product_group_id_fkey(name),' +
+      'product_template:product_templates!order_items_product_template_id_fkey(name),' +
+      'csv_job:csv_jobs!fk_csv_job(original_filename, file_url)'
     )
     .eq('order_id', orderId)
+  
+  console.log(`[Zipper] Found ${items?.length ?? 0} items for order ${orderId}`)
+
+  if (itemsError) {
+    console.error(`[Zipper] Error fetching items for ${orderId}:`, itemsError)
+    throw new Error(`Items fetch failed: ${itemsError.message}`)
+  }
 
   if (!items || items.length === 0) throw new Error('No items found')
   const itemIds = (items as any[]).map((i) => i.id)
+  console.log(`[Zipper] Item IDs:`, itemIds)
 
   // ── Fetch production files ─────────────────────────────────────────────────
   const { data: productionFiles } = await admin
@@ -69,6 +99,8 @@ export async function buildOrderZip(orderId: string): Promise<{
     .select('order_item_id, file_name, file_url, file_type, resolution_dpi, has_bleed')
     .in('order_item_id', itemIds)
     .order('file_name')
+  
+  console.log(`[Zipper] Found ${productionFiles?.length ?? 0} production files in DB for these items.`)
 
   // ── 1. order_manifest.json ─────────────────────────────────────────────────
   // Try to pull pre-built manifest from storage first
@@ -115,6 +147,7 @@ export async function buildOrderZip(orderId: string): Promise<{
   let bundledCount = 0
 
   if (productionFiles && productionFiles.length > 0) {
+    console.log(`[Zipper] Starting production file bundling...`)
     // Group files → { [itemId]: file[] }
     const byItem = (productionFiles as any[]).reduce<Record<string, any[]>>(
       (acc, f) => {
@@ -132,11 +165,28 @@ export async function buildOrderZip(orderId: string): Promise<{
       await Promise.all(
         files.map(async (file) => {
           try {
-            const res = await fetch(file.file_url)
-            if (!res.ok) return
-            folder.file(file.file_name, await res.arrayBuffer())
+            const path = getStoragePath(file.file_url, BUCKET)
+            if (!path) {
+              console.warn(`[Zipper] Could not parse path from URL: ${file.file_url}`)
+              return
+            }
+            console.log(`[Zipper] Downloading from storage: ${path}`)
+
+            const { data, error } = await admin.storage
+              .from(BUCKET)
+              .download(path)
+            
+            if (error || !data) {
+              console.warn(`[Zipper] Storage download failed for ${path}:`, error?.message || 'No data returned')
+              return
+            }
+            
+            console.log(`[Zipper] Added file to ZIP: ${file.file_name} (${data.size} bytes)`)
+
+            folder.file(file.file_name, await data.arrayBuffer())
             bundledCount++
-          } catch {
+          } catch (err) {
+            console.error(`[Zipper] Error bundled file ${file.file_name}:`, err)
             // Non-fatal — skip missing file
           }
         })
@@ -185,6 +235,8 @@ export async function buildOrderZip(orderId: string): Promise<{
     compression: 'DEFLATE',
     compressionOptions: { level: 6 },
   })
+  
+  console.log(`[Zipper] ZIP generation complete. Total production files: ${bundledCount}. Final ZIP size: ${zipBytes.length} bytes.`)
 
   return {
     zipBytes,
@@ -234,10 +286,15 @@ export async function buildBatchZip(filter: BatchFilter = {}): Promise<{
     const orderNum = (order.order_number ?? order.id).replace(/[^a-zA-Z0-9\-_]/g, '')
 
     // Get item ids for this order
-    const { data: itemRows } = await admin
+    const { data: itemRows, error: itemsError } = await admin
       .from('order_items')
-      .select('id, product_group:product_groups(name)')
+      .select('id, product_group:product_groups!order_items_product_group_id_fkey(name)')
       .eq('order_id', order.id)
+
+    if (itemsError) {
+      console.warn(`[Zipper] Batch items fetch failed for ${order.id}:`, itemsError)
+      continue
+    }
 
     if (!itemRows || itemRows.length === 0) continue
 
@@ -286,11 +343,20 @@ export async function buildBatchZip(filter: BatchFilter = {}): Promise<{
       await Promise.all(
         files.map(async (file) => {
           try {
-            const res = await fetch(file.file_url)
-            if (!res.ok) return
-            itemFolder.file(file.file_name, await res.arrayBuffer())
+            const path = getStoragePath(file.file_url, BUCKET)
+            if (!path) return
+
+            const { data, error } = await admin.storage
+              .from(BUCKET)
+              .download(path)
+            
+            if (error || !data) return
+
+            itemFolder.file(file.file_name, await data.arrayBuffer())
             totalFiles++
-          } catch { }
+          } catch (err) {
+            console.error(`[Zipper] Batch error for ${file.file_name}:`, err)
+          }
         })
       )
     }

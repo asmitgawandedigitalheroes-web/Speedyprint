@@ -151,8 +151,10 @@ export default function AdminOrderDetailPage({
       const a = document.createElement('a')
       a.href = url
       a.download = `${order?.order_number || id}_production_files.zip`
+      document.body.appendChild(a)
       a.click()
-      URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+      setTimeout(() => URL.revokeObjectURL(url), 100)
     } catch (err) {
       console.error('ZIP download error:', err)
       alert('Failed to download ZIP')
@@ -909,7 +911,7 @@ export default function AdminOrderDetailPage({
                         </td>
                         <td className="px-4 py-3 text-right">
                           <div className="flex items-center justify-end gap-1">
-                            {item.design && (
+                            {item.design && item.product_template_id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(item.product_template_id) && (
                               <Button
                                 size="sm"
                                 variant="ghost"
@@ -917,7 +919,7 @@ export default function AdminOrderDetailPage({
                                 asChild
                               >
                                 <a
-                                  href={`/designer/${item.product_template_id}?designId=${item.design_id}`}
+                                  href={item.design.thumbnail_url || '#'}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                 >

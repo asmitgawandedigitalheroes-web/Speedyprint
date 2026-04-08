@@ -23,7 +23,7 @@ import type { Order, OrderItem } from '@/types'
 const ORDER_BADGE: Record<string, { label: string; bg: string; text: string }> = {
   draft:           { label: 'Draft',           bg: 'rgba(224,224,224,0.9)', text: '#555' },
   pending_payment: { label: 'Pending Payment', bg: 'rgba(255,193,7,0.18)',  text: '#7a5c00' },
-  paid:            { label: 'Paid',            bg: 'rgba(30,41,59,0.12)',   text: '#1E293B' },
+  paid:            { label: 'Paid',            bg: 'rgba(34,197,94,0.12)',  text: '#15803d' },
   in_production:   { label: 'In Production',   bg: 'rgba(227,6,19,0.12)',   text: '#c00510' },
   completed:       { label: 'Completed',       bg: 'rgba(30,41,59,0.18)',   text: '#1E293B' },
   cancelled:       { label: 'Cancelled',       bg: 'rgba(227,6,19,0.08)',   text: '#E30613' },
@@ -119,15 +119,29 @@ export default function OrderDetailPage() {
     setDownloading(true)
     try {
       const res = await fetch(`/api/orders/${order.id}/files`, { method: 'POST' })
-      if (!res.ok) { const d = await res.json(); alert(d.error || 'Download failed'); return }
+      if (!res.ok) {
+        const d = await res.json()
+        alert(d.error || 'Download failed')
+        return
+      }
       const blob = await res.blob()
-      const url  = URL.createObjectURL(blob)
-      const a    = document.createElement('a')
-      a.href = url; a.download = `${order.order_number}_production.zip`
-      document.body.appendChild(a); a.click()
-      document.body.removeChild(a); URL.revokeObjectURL(url)
-    } catch { alert('Failed to download files. Please try again.') }
-    finally   { setDownloading(false) }
+      if (blob.size === 0) {
+        alert('The download file appears to be empty. Please try again.')
+        return
+      }
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${order.order_number}_production.zip`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      setTimeout(() => URL.revokeObjectURL(url), 100)
+    } catch {
+      alert('Failed to download files. Please try again.')
+    } finally {
+      setDownloading(false)
+    }
   }
 
   const handleCompletePayment = async () => {
@@ -233,14 +247,15 @@ export default function OrderDetailPage() {
               </button>
             )}
 
-            {productionFiles.length > 0 && (
+            {(order.status === 'completed' || order.status === 'in_production' || productionFiles.length > 0) && (
               <button
                 onClick={handleDownloadFiles}
-                disabled={downloading}
+                disabled={downloading || productionFiles.length === 0}
+                title={productionFiles.length === 0 ? 'Production files are not ready yet' : `Download ${productionFiles.length} file(s)`}
                 className="inline-flex items-center gap-2 rounded-lg border border-brand-primary px-4 py-2 text-sm font-semibold text-brand-primary transition hover:bg-brand-primary hover:text-white disabled:opacity-60"
               >
                 {downloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-                {downloading ? 'Preparing…' : `Download Files (${productionFiles.length})`}
+                {downloading ? 'Preparing…' : productionFiles.length > 0 ? `Download Files (${productionFiles.length})` : 'Files Not Ready'}
               </button>
             )}
 

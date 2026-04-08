@@ -152,7 +152,7 @@ export function calculateQuickPrice(input: QuickPriceInput): QuickPriceResult {
 
   breakdown.push(
     { label: 'Subtotal', value: subtotal, type: 'subtotal' },
-    { label: 'VAT (15%)', value: vat, type: 'tax' },
+    { label: `VAT (${Math.round(VAT_RATE * 100)}%)`, value: vat, type: 'tax' },
     { label: 'Total', value: total, type: 'total' }
   )
 

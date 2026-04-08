@@ -21,6 +21,7 @@ import {
   Printer,
   LogOut,
   Inbox,
+  ClipboardList,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { SITE_NAME } from '@/lib/utils/constants'
@@ -49,6 +50,7 @@ const CONTENT_NAV = [
 
 const ADMIN_NAV = [
   { href: '/admin/enquiries', label: 'Enquiries', icon: Inbox,    staffAllowed: false, badgeKey: 'enquiries' },
+  { href: '/admin/audit-logs', label: 'Audit Logs', icon: ClipboardList, staffAllowed: true, badgeKey: '' },
   { href: '/admin/users',     label: 'Users',     icon: Users,    staffAllowed: false, badgeKey: '' },
   { href: '/admin/settings',  label: 'Settings',  icon: Settings, staffAllowed: false, badgeKey: '' },
 ]

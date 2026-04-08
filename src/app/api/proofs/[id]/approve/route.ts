@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { logProofAudit } from '@/lib/proofAudit'
 import { generateOrderProductionFiles } from '@/lib/production/generator'
+import { logActivity } from '@/lib/audit'
 
 // ── POST /api/proofs/:id/approve – Customer approves a proof ─────────────────
 export async function POST(
@@ -92,6 +93,21 @@ export async function POST(
       responded_at: respondedAt,
       ...(isStaff ? { on_behalf_of_customer: true } : {}),
     },
+  })
+
+  // Global Audit Log
+  await logActivity({
+    user_id: user.id,
+    action: 'proof_approved',
+    entity_type: 'proof',
+    entity_id: id,
+    metadata: {
+      order_item_id: proof!.order_item_id,
+      version: proof!.version,
+      notes: sanitizedNotes,
+      order_number: (await admin.from('order_items').select('order:orders(order_number)').eq('id', proof!.order_item_id).single()).data?.order?.order_number
+    },
+    is_admin_action: isStaff,
   })
 
   // ── Auto-generate production files in the background ──────────────────────

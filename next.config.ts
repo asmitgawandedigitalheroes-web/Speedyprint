@@ -36,7 +36,9 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
-        source: '/(.*)',
+        // HTML pages only — X-Frame-Options is meaningless on API/binary responses
+        // and blocks our own iframe PDF viewer when set on the proof file endpoint.
+        source: '/((?!api/).*)',
         headers: [
           {
             // Note: Content-Security-Policy is moved to middleware.ts

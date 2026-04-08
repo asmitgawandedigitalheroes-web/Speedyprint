@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { logActivity } from '@/lib/audit'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -122,6 +123,16 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
+    // Log activity
+    await logActivity({
+      user_id: user.id,
+      action: 'design_updated',
+      entity_type: 'design',
+      entity_id: id,
+      metadata: { name: body.name || data.name },
+      is_admin_action: isAdmin
+    })
+
     return NextResponse.json(data)
   } catch (err) {
     console.error('PATCH /api/designs/:id error:', err)
@@ -153,7 +164,7 @@ export async function DELETE(_request: NextRequest, { params }: RouteParams) {
     // Verify ownership
     const { data: existing, error: fetchError } = await admin
       .from('designs')
-      .select('user_id')
+      .select('user_id, name')
       .eq('id', id)
       .single()
 
@@ -180,6 +191,16 @@ export async function DELETE(_request: NextRequest, { params }: RouteParams) {
       console.error('Error deleting design:', error)
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
+
+    // Log activity
+    await logActivity({
+      user_id: user.id,
+      action: 'design_deleted',
+      entity_type: 'design',
+      entity_id: id,
+      metadata: { name: existing?.name || 'Unknown' },
+      is_admin_action: isAdmin
+    })
 
     return NextResponse.json({ success: true })
   } catch (err) {

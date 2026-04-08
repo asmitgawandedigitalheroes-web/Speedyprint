@@ -3,10 +3,26 @@
 import Link from 'next/link'
 import { useCart } from '@/hooks/useCart'
 import { formatCurrency } from '@/lib/utils/format'
-import { Trash2, ArrowRight, ShoppingBag } from 'lucide-react'
+import { livePricing } from '@/hooks/useSiteSettings'
+import { Trash2, ArrowRight, ShoppingBag, Check } from 'lucide-react'
 
 export default function CartPage() {
-  const { items, removeItem, updateQuantity, getSubtotal, getTax, getTotal, getItemCount } = useCart()
+  const { 
+    items, 
+    removeItem, 
+    updateQuantity, 
+    toggleSelection, 
+    selectAll,
+    getSubtotal, 
+    getTax, 
+    getTotal, 
+    getItemCount,
+    getSelectedCount 
+  } = useCart()
+
+  const allSelected = items.length > 0 && items.every(i => i.selected !== false)
+  const selectedCount = getSelectedCount()
+  const totalItemsCount = items.length
 
   if (items.length === 0) {
     return (
@@ -48,57 +64,95 @@ export default function CartPage() {
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           {/* Cart Items */}
           <div className="lg:col-span-2 space-y-3">
+            {/* Select All Toggle */}
+            <div className="flex items-center gap-3 rounded-md border border-gray-100 bg-white px-4 py-3">
+              <button
+                onClick={() => selectAll(!allSelected)}
+                className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border transition ${
+                  allSelected 
+                    ? 'border-brand-primary bg-brand-primary text-white' 
+                    : 'border-gray-300 bg-white'
+                }`}
+              >
+                {allSelected && <Check className="h-3.5 w-3.5 bold" />}
+              </button>
+              <span className="text-sm font-medium text-brand-text">
+                Select all <span className="text-brand-text-muted font-normal">({totalItemsCount} items)</span>
+              </span>
+            </div>
+
             {items.map((item) => (
-              <div key={item.id} className="flex gap-4 rounded-md border border-gray-100 bg-white p-4">
-                <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-md border border-gray-100 bg-brand-bg overflow-hidden">
-                  {item.thumbnail_url ? (
-                    <img src={item.thumbnail_url} alt={item.product_name} className="h-full w-full object-cover" />
-                  ) : (
-                    <span className="text-xs text-brand-text-muted">Preview</span>
-                  )}
-                </div>
-                <div className="flex flex-1 flex-col justify-between">
-                  <div>
-                    <h3 className="font-semibold text-brand-text">{item.product_name}</h3>
-                    <p className="text-sm text-brand-text-muted">{item.template_name}</p>
-                    {Object.entries(item.selected_params).length > 0 && (
-                      <p className="mt-1 text-xs text-brand-text-muted">
-                        {Object.entries(item.selected_params).map(([k, v]) => {
-                          const label = k
-                            .replace(/_mm$/, '')
-                            .replace(/_/g, ' ')
-                            .replace(/\b\w/g, (c) => c.toUpperCase())
-                          const unit = k.endsWith('_mm') ? 'mm' : ''
-                          return `${label}: ${v}${unit}`
-                        }).join(' · ')}
-                      </p>
+              <div 
+                key={item.id} 
+                className={`flex items-center gap-3 rounded-md border p-4 transition ${
+                  item.selected !== false 
+                    ? 'border-brand-primary/20 bg-white' 
+                    : 'border-gray-100 bg-gray-50/50 grayscale-[0.5]'
+                }`}
+              >
+                {/* Checkbox */}
+                <button
+                  onClick={() => toggleSelection(item.id)}
+                  className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border transition ${
+                    item.selected !== false 
+                      ? 'border-brand-primary bg-brand-primary text-white' 
+                      : 'border-gray-300 bg-white'
+                  }`}
+                >
+                  {item.selected !== false && <Check className="h-3.5 w-3.5 bold" />}
+                </button>
+
+                <div className="flex flex-1 gap-4">
+                  <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-md border border-gray-100 bg-brand-bg overflow-hidden">
+                    {item.thumbnail_url ? (
+                      <img src={item.thumbnail_url} alt={item.product_name} className="h-full w-full object-cover" />
+                    ) : (
+                      <span className="text-xs text-brand-text-muted">Preview</span>
                     )}
                   </div>
-                  <div className="mt-3 flex items-center justify-between">
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                        className="flex h-8 w-8 items-center justify-center rounded-md border border-gray-200 text-brand-text-muted hover:border-brand-primary hover:text-brand-primary transition"
-                      >
-                        −
-                      </button>
-                      <span className="w-10 text-center text-sm font-semibold text-brand-text">{item.quantity}</span>
-                      <button
-                        onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                        className="flex h-8 w-8 items-center justify-center rounded-md border border-gray-200 text-brand-text-muted hover:border-brand-primary hover:text-brand-primary transition"
-                      >
-                        +
-                      </button>
+                  <div className="flex flex-1 flex-col justify-between">
+                    <div>
+                      <h3 className="font-semibold text-brand-text">{item.product_name}</h3>
+                      <p className="text-sm text-brand-text-muted">{item.template_name}</p>
+                      {Object.entries(item.selected_params).length > 0 && (
+                        <p className="mt-1 text-xs text-brand-text-muted">
+                          {Object.entries(item.selected_params).map(([k, v]) => {
+                            const label = k
+                              .replace(/_mm$/, '')
+                              .replace(/_/g, ' ')
+                              .replace(/\b\w/g, (c) => c.toUpperCase())
+                            const unit = k.endsWith('_mm') ? 'mm' : ''
+                            return `${label}: ${v}${unit}`
+                          }).join(' · ')}
+                        </p>
+                      )}
                     </div>
-                    <div className="flex items-center gap-4">
-                      <span className="font-semibold text-brand-text">{formatCurrency(item.line_total)}</span>
-                      <button
-                        onClick={() => removeItem(item.id)}
-                        className="text-brand-text-muted hover:text-red-500 transition"
-                        aria-label="Remove item"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
+                    <div className="mt-3 flex items-center justify-between">
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                          className="flex h-8 w-8 items-center justify-center rounded-md border border-gray-200 text-brand-text-muted hover:border-brand-primary hover:text-brand-primary transition"
+                        >
+                          −
+                        </button>
+                        <span className="w-10 text-center text-sm font-semibold text-brand-text">{item.quantity}</span>
+                        <button
+                          onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                          className="flex h-8 w-8 items-center justify-center rounded-md border border-gray-200 text-brand-text-muted hover:border-brand-primary hover:text-brand-primary transition"
+                        >
+                          +
+                        </button>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <span className="font-semibold text-brand-text">{formatCurrency(item.line_total)}</span>
+                        <button
+                          onClick={() => removeItem(item.id)}
+                          className="text-brand-text-muted hover:text-red-500 transition"
+                          aria-label="Remove item"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -117,7 +171,7 @@ export default function CartPage() {
                   <span className="font-medium text-brand-text">{formatCurrency(getSubtotal())}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-brand-text-muted">VAT (15%)</span>
+                  <span className="text-brand-text-muted">GST ({Math.round(livePricing.vatRate * 100)}%)</span>
                   <span className="font-medium text-brand-text">{formatCurrency(getTax())}</span>
                 </div>
                 <div className="flex justify-between">
@@ -131,10 +185,15 @@ export default function CartPage() {
                 <span className="font-heading text-xl font-bold text-brand-primary">{formatCurrency(getTotal())}</span>
               </div>
               <Link
-                href="/checkout"
-                className="mt-5 flex w-full items-center justify-center gap-2 rounded-md bg-brand-primary py-3 text-sm font-semibold text-white transition hover:bg-brand-primary-dark"
+                href={selectedCount > 0 ? "/checkout" : "#"}
+                className={`mt-5 flex w-full items-center justify-center gap-2 rounded-md py-3 text-sm font-semibold text-white transition ${
+                  selectedCount > 0 
+                    ? 'bg-brand-primary hover:bg-brand-primary-dark cursor-pointer' 
+                    : 'bg-gray-300 cursor-not-allowed'
+                }`}
+                onClick={(e) => selectedCount === 0 && e.preventDefault()}
               >
-                Proceed to checkout <ArrowRight className="h-4 w-4" />
+                {selectedCount === 0 ? 'Select items to checkout' : 'Proceed to checkout'} <ArrowRight className="h-4 w-4" />
               </Link>
               <Link
                 href="/products"

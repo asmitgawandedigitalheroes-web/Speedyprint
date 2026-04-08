@@ -307,37 +307,45 @@ export default function Toolbar() {
   const handleExportPDF = useCallback(async () => {
     if (!canvas) return
     try {
-      const canvasJson = JSON.parse(exportJSON(canvas))
-      // Remove the artboard rect from PDF export (it's just the white background)
-      if (canvasJson.objects?.length) {
-        // Keep the artboard as a white background but filter guides
-        canvasJson.objects = canvasJson.objects.filter(
-          (o: Record<string, unknown>) => !o.isGuide
-        )
-      }
-      const printSpecs = template
-        ? {
-            print_width_mm: template.print_width_mm,
-            print_height_mm: template.print_height_mm,
-            bleed_mm: template.bleed_mm || 0,
-          }
-        : { print_width_mm: 210, print_height_mm: 297, bleed_mm: 0 }
+      // Step 1: Capture the canvas as PNG FIRST (synchronously, before any re-renders)
+      // This ensures drawn paths and all canvas content are captured correctly.
+      const pngDataUrl = exportPNG(canvas)
 
-      const res = await fetch('/api/export/pdf', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ canvas_json: canvasJson, print_specs: printSpecs }),
+      // Step 2: Determine print dimensions (mm → points: 1mm = 2.83465pt)
+      const MM_TO_PT = 2.83465
+      const printWidthMm = template?.print_width_mm ?? 210
+      const printHeightMm = template?.print_height_mm ?? 297
+      const pageWidthPt = printWidthMm * MM_TO_PT
+      const pageHeightPt = printHeightMm * MM_TO_PT
+
+      // Step 3: Build PDF client-side using pdf-lib so drawn content is never lost
+      const { PDFDocument } = await import('pdf-lib')
+      const pdfDoc = await PDFDocument.create()
+      const page = pdfDoc.addPage([pageWidthPt, pageHeightPt])
+
+      // Convert data URL to Uint8Array for embedding
+      const base64 = pngDataUrl.split(',')[1]
+      const pngBytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0))
+      const pngImage = await pdfDoc.embedPng(pngBytes)
+
+      // Draw image to fill the page (white background from artboard is preserved in PNG)
+      page.drawImage(pngImage, {
+        x: 0,
+        y: 0,
+        width: pageWidthPt,
+        height: pageHeightPt,
       })
 
-      if (!res.ok) throw new Error('PDF export failed')
-
-      const blob = await res.blob()
+      const pdfBytes = await pdfDoc.save()
+      const blob = new Blob([pdfBytes], { type: 'application/pdf' })
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
       a.download = `${designName || 'design'}.pdf`
+      document.body.appendChild(a)
       a.click()
-      URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+      setTimeout(() => URL.revokeObjectURL(url), 100)
     } catch (err) {
       console.error('PDF export failed:', err)
     }

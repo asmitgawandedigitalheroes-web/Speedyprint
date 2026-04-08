@@ -43,7 +43,7 @@ export const SA_PROVINCES = [
 export const ORDER_STATUS_LABELS: Record<string, { label: string; color: string }> = {
   draft: { label: 'Draft', color: 'bg-gray-100 text-gray-700' },
   pending_payment: { label: 'Pending Payment', color: 'bg-yellow-100 text-yellow-700' },
-  paid: { label: 'Paid', color: 'bg-blue-100 text-blue-700' },
+  paid: { label: 'Paid', color: 'bg-green-100 text-green-700' },
   pending_design: { label: 'Pending Design', color: 'bg-orange-100 text-orange-700' },
   proof_pending_review: { label: 'Proof: Pending Review', color: 'bg-amber-100 text-amber-700' },
   in_production: { label: 'In Production', color: 'bg-purple-100 text-purple-700' },
