@@ -96,6 +96,16 @@ export async function POST(
   })
 
   // Global Audit Log
+  const { data: itemWithOrder } = await admin
+    .from('order_items')
+    .select('order:orders(order_number)')
+    .eq('id', proof!.order_item_id)
+    .single()
+
+  const orderNumber = Array.isArray(itemWithOrder?.order)
+    ? itemWithOrder?.order[0]?.order_number
+    : (itemWithOrder?.order as any)?.order_number
+
   await logActivity({
     user_id: user.id,
     action: 'proof_approved',
@@ -105,7 +115,7 @@ export async function POST(
       order_item_id: proof!.order_item_id,
       version: proof!.version,
       notes: sanitizedNotes,
-      order_number: (await admin.from('order_items').select('order:orders(order_number)').eq('id', proof!.order_item_id).single()).data?.order?.order_number
+      order_number: orderNumber
     },
     is_admin_action: isStaff,
   })
