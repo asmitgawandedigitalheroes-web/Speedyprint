@@ -208,6 +208,8 @@ export default function EditorCanvas() {
     canvas.on('object:moving', (e) => {
       const obj = e.target
       if (!obj) return
+      const meta = obj as unknown as Record<string, unknown>
+      if (meta.isArtboard || meta.isGuide) return
       const { artboardWidth, artboardHeight } = useEditorStore.getState()
       if (!artboardWidth || !artboardHeight) return
 

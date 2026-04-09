@@ -195,10 +195,13 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     if (!entry) return
     set({ isRestoring: true })
     canvas.loadFromJSON(JSON.parse(entry.json)).then(() => {
-      // The artboard is always the first object — re-mark it after JSON restore
+      // The artboard is always the first object — re-mark and re-lock it after JSON restore
+      // selectable/evented may not survive loadFromJSON, so explicitly reset them
       const objs = canvas.getObjects()
       if (objs.length > 0) {
-        ;(objs[0] as unknown as Record<string, unknown>).isArtboard = true
+        const artboard = objs[0]
+        ;(artboard as unknown as Record<string, unknown>).isArtboard = true
+        artboard.set({ selectable: false, evented: false })
       }
       canvas.renderAll()
       set({ historyIndex: newIndex, isRestoring: false })
@@ -214,10 +217,13 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     if (!entry) return
     set({ isRestoring: true })
     canvas.loadFromJSON(JSON.parse(entry.json)).then(() => {
-      // The artboard is always the first object — re-mark it after JSON restore
+      // The artboard is always the first object — re-mark and re-lock it after JSON restore
+      // selectable/evented may not survive loadFromJSON, so explicitly reset them
       const objs = canvas.getObjects()
       if (objs.length > 0) {
-        ;(objs[0] as unknown as Record<string, unknown>).isArtboard = true
+        const artboard = objs[0]
+        ;(artboard as unknown as Record<string, unknown>).isArtboard = true
+        artboard.set({ selectable: false, evented: false })
       }
       canvas.renderAll()
       set({ historyIndex: newIndex, isRestoring: false })

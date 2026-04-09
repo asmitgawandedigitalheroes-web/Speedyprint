@@ -20,6 +20,7 @@ import {
   Check,
   LayoutTemplate,
   MoreVertical,
+  RotateCcw,
 } from 'lucide-react'
 import {
   DropdownMenu,
@@ -298,10 +299,80 @@ export default function Toolbar() {
   const handlePreview = useCallback(() => {
     if (!canvas) return
     const dataUrl = exportPNG(canvas)
-    const win = window.open()
+    const win = window.open('', '_blank')
     if (win) {
-      win.document.write(`<img src="${dataUrl}" style="max-width:100%;background:#f1f5f9"/>`)
+      const title = designName || 'Preview'
+      win.document.write(`<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>${title}</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      width: 100%; height: 100%;
+      background: #e5e7eb;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: sans-serif;
     }
+    .wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      padding: 24px;
+      max-width: 100vw;
+      max-height: 100vh;
+    }
+    img {
+      display: block;
+      max-width: calc(100vw - 48px);
+      max-height: calc(100vh - 80px);
+      width: auto;
+      height: auto;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.18);
+      border-radius: 4px;
+      background: #fff;
+    }
+    p { font-size: 12px; color: #6b7280; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <img src="${dataUrl}" alt="Design Preview"/>
+    <p>${title}</p>
+  </div>
+</body>
+</html>`)
+      win.document.close()
+    }
+  }, [canvas, designName])
+
+  const handleReset = useCallback(() => {
+    if (!canvas) return
+    if (!window.confirm('Reset design? All elements will be removed and the canvas will be cleared.')) return
+    // Remove every object except the artboard and guides
+    const toRemove = canvas.getObjects().filter((o) => {
+      const meta = o as unknown as Record<string, unknown>
+      return !meta.isArtboard && !meta.isGuide
+    })
+    toRemove.forEach((o) => canvas.remove(o))
+    // Reset artboard fill back to white
+    const artboard = canvas.getObjects().find(
+      (o) => (o as unknown as Record<string, unknown>).isArtboard
+    )
+    if (artboard) artboard.set('fill', '#ffffff')
+    canvas.discardActiveObject()
+    canvas.renderAll()
+    // Capture into history so the reset is undoable
+    useEditorStore.getState().pushHistory(
+      // @ts-ignore
+      JSON.stringify(canvas.toJSON(['isArtboard', 'rawText']))
+    )
+    useEditorStore.getState().refreshObjects()
+    useEditorStore.getState().setActiveObject(null)
   }, [canvas])
 
   const handleExportPDF = useCallback(async () => {
@@ -530,6 +601,9 @@ export default function Toolbar() {
         <button onClick={redo} disabled={noCanvas} title="Redo (Ctrl+Y)" className={iconBtn}>
           <Redo2 size={15} />
         </button>
+        <button onClick={handleReset} disabled={noCanvas} title="Reset Design" className={`${iconBtn} hover:text-red-500`}>
+          <RotateCcw size={15} />
+        </button>
 
         <div className="w-px h-4 bg-ed-border mx-2" />
 
@@ -622,6 +696,10 @@ export default function Toolbar() {
               <DropdownMenuItem onClick={() => useEditorStore.getState().togglePrintBoundaries()} disabled={noCanvas}>
                 <Maximize2 className="mr-2 h-4 w-4" />
                 <span>Toggle Boundaries</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleReset} disabled={noCanvas} className="text-red-500 focus:text-red-500">
+                <RotateCcw className="mr-2 h-4 w-4" />
+                <span>Reset Design</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleSave} disabled={noCanvas || saving}>
