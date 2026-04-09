@@ -162,7 +162,7 @@ export default function AdminProductsPage() {
                       <div className="flex items-center gap-3">
                         {product.image_url || (product.images && product.images.length > 0) ? (
                           <img
-                            src={product.image_url || product.images[0]}
+                            src={product.image_url || product.images?.[0] || ''}
                             alt={product.name}
                             className="h-10 w-10 rounded-md border object-cover"
                           />
