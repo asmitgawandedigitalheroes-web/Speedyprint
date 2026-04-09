@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { toast } from 'sonner'
+import { ImageUploader } from '@/components/admin/ImageUploader'
 
 export default function AdminSettingsPage() {
   const [loading, setLoading] = useState(true)
@@ -314,12 +315,12 @@ export default function AdminSettingsPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="logo_url">Logo URL</Label>
-            <Input
-              id="logo_url"
-              value={settings.logo_url || ''}
-              onChange={(e) => updateSetting('logo_url', e.target.value)}
-              placeholder="/images/logo.png"
+            <Label>Logo</Label>
+            <ImageUploader 
+              value={settings.logo_url ? [settings.logo_url] : []}
+              onChange={(urls) => updateSetting('logo_url', urls[0] || '')}
+              maxImages={1}
+              folder="branding"
             />
           </div>
         </CardContent>

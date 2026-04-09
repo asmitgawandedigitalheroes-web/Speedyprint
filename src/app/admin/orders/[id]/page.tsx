@@ -48,6 +48,7 @@ import { formatCurrency, formatDateTime } from '@/lib/utils/format'
 import {
   ORDER_STATUS_LABELS,
   ORDER_ITEM_STATUS_LABELS,
+  SITE_URL,
 } from '@/lib/utils/constants'
 import type {
   Order,
@@ -312,11 +313,37 @@ export default function AdminOrderDetailPage({
     setSendingEmail(type)
     setEmailSuccess(null)
     try {
+      let proofUrl: string | undefined
+
+      if (type === 'proof') {
+        // Find the latest proof across all items
+        let latestProofDate = 0
+        let targetItemId: string | undefined
+
+        order?.items?.forEach((item) => {
+          item.proofs?.forEach((p) => {
+            const date = new Date(p.created_at).getTime()
+            if (date > latestProofDate) {
+              latestProofDate = date
+              targetItemId = item.id
+            }
+          })
+        })
+
+        if (!targetItemId) {
+          alert('No proof found to send. Please generate a proof first.')
+          return
+        }
+
+        proofUrl = `${SITE_URL}/account/orders/${id}/proof/${targetItemId}`
+      }
+
       const res = await fetch(`/api/admin/orders/${id}/email`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           type,
+          proofUrl,
           trackingNumber: trackingNumber || order?.tracking_number || 'N/A',
         }),
       })

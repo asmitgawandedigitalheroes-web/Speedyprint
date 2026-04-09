@@ -20,6 +20,7 @@ import { Separator } from '@/components/ui/separator'
 import { createClient } from '@/lib/supabase/client'
 import { DIVISIONS } from '@/lib/utils/constants'
 import { slugify } from '@/lib/utils/format'
+import { ImageUploader } from '@/components/admin/ImageUploader'
 import type {
   ProductGroup,
   ProductTemplate,
@@ -136,7 +137,7 @@ export default function AdminProductEditPage({
   const [slug, setSlug] = useState('')
   const [description, setDescription] = useState('')
   const [division, setDivision] = useState('')
-  const [imageUrl, setImageUrl] = useState('')
+  const [images, setImages] = useState<string[]>([])
   const [displayOrder, setDisplayOrder] = useState(0)
   const [isActive, setIsActive] = useState(true)
 
@@ -169,7 +170,7 @@ export default function AdminProductEditPage({
         setSlug(product.slug)
         setDescription(product.description || '')
         setDivision(product.division)
-        setImageUrl(product.image_url || '')
+        setImages(product.images || (product.image_url ? [product.image_url] : []))
         setDisplayOrder(product.display_order)
         setIsActive(product.is_active)
 
@@ -221,7 +222,8 @@ export default function AdminProductEditPage({
           slug: slug || slugify(name),
           description: description || null,
           division,
-          image_url: imageUrl || null,
+          images: images.length > 0 ? images : [],
+          image_url: images[0] || null, // Keep for backward compatibility
           display_order: displayOrder,
           is_active: isActive,
         })
@@ -505,13 +507,13 @@ export default function AdminProductEditPage({
               </Select>
             </div>
 
+            {/* Images */}
             <div className="space-y-2">
-              <Label htmlFor="imageUrl">Image URL</Label>
-              <Input
-                id="imageUrl"
-                value={imageUrl}
-                onChange={(e) => setImageUrl(e.target.value)}
-                type="url"
+              <Label>Product Images (Up to 3)</Label>
+              <ImageUploader 
+                value={images} 
+                onChange={setImages} 
+                maxImages={3} 
               />
             </div>
 
@@ -610,17 +612,12 @@ export default function AdminProductEditPage({
                 </div>
 
                 <div className="space-y-1">
-                  <Label className="text-xs">Template Image URL</Label>
-                  <Input
-                    value={editingTemplate.image_url}
-                    onChange={(e) =>
-                      setEditingTemplate((prev) =>
-                        prev
-                          ? { ...prev, image_url: e.target.value }
-                          : prev
-                      )
-                    }
-                    placeholder="e.g., /images/products/template-variant.jpg"
+                  <Label className="text-xs">Template Image</Label>
+                  <ImageUploader 
+                    value={editingTemplate.image_url ? [editingTemplate.image_url] : []}
+                    onChange={(urls) => setEditingTemplate(prev => prev ? { ...prev, image_url: urls[0] || '' } : prev)}
+                    maxImages={1}
+                    folder="templates"
                   />
                   <p className="text-[10px] text-muted-foreground">
                     Image shown on product page when this template is selected

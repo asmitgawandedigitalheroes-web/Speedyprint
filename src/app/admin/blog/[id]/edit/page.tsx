@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { RichTextEditor } from '@/components/ui/rich-text-editor'
-import Image from 'next/image'
+import { ImageUploader } from '@/components/admin/ImageUploader'
 import type { BlogPost } from '@/types'
 
 export default function AdminBlogEditPage() {
@@ -57,35 +57,6 @@ export default function AdminBlogEditPage() {
     fetchPost()
   }, [id])
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-
-    setUploading(true)
-    setError(null)
-
-    const formData = new FormData()
-    formData.append('file', file)
-
-    try {
-      const res = await fetch('/api/admin/blog/upload', {
-        method: 'POST',
-        body: formData,
-      })
-
-      if (!res.ok) {
-        const data = await res.json()
-        throw new Error(data.error || 'Upload failed')
-      }
-
-      const data = await res.json()
-      setFeaturedImage(data.url)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to upload image')
-    } finally {
-      setUploading(false)
-    }
-  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -208,75 +179,15 @@ export default function AdminBlogEditPage() {
             </div>
 
             {/* Featured Image */}
-            <div className="space-y-4">
+            <div className="space-y-2">
               <Label>Featured Image</Label>
-              
-              {featuredImage && (
-                <div className="group relative aspect-video w-full max-w-md overflow-hidden rounded-lg border bg-muted">
-                  <Image
-                    src={featuredImage}
-                    alt="Featured preview"
-                    fill
-                    className="object-cover"
-                  />
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => setFeaturedImage('')}
-                    >
-                      <X className="mr-2 h-4 w-4" />
-                      Remove Image
-                    </Button>
-                  </div>
-                </div>
-              )}
-
-              <div className="grid gap-3">
-                <div className="flex items-center gap-3">
-                  <div className="relative">
-                    <Input
-                      id="imageUpload"
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                      disabled={uploading}
-                      className="hidden"
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      disabled={uploading}
-                      onClick={() => document.getElementById('imageUpload')?.click()}
-                    >
-                      {uploading ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      ) : (
-                        <Upload className="mr-2 h-4 w-4" />
-                      )}
-                      {featuredImage ? 'Change Image' : 'Upload Image'}
-                    </Button>
-                  </div>
-                  {uploading && <span className="text-xs text-muted-foreground">Uploading...</span>}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Recommended: 1200x675px (16:9). Max size: 5MB.
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="featuredImage" className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                  Or manual image URL
-                </Label>
-                <Input
-                  id="featuredImage"
-                  value={featuredImage}
-                  onChange={(e) => setFeaturedImage(e.target.value)}
-                  type="url"
-                  placeholder="https://..."
-                />
-              </div>
+              <ImageUploader 
+                value={featuredImage ? [featuredImage] : []}
+                onChange={(urls) => setFeaturedImage(urls[0] || '')}
+                maxImages={1}
+                bucket="blog"
+                folder="featured"
+              />
             </div>
 
             {/* Excerpt */}

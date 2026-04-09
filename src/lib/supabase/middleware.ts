@@ -135,10 +135,10 @@ export async function updateSession(request: NextRequest) {
     script-src 'self' 'nonce-${nonce}' 'strict-dynamic' 'unsafe-eval' https: http:;
     style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
     font-src 'self' https://fonts.gstatic.com;
-    img-src 'self' data: blob: https://atqjywawohnhvlnggozu.supabase.co;
+    img-src 'self' data: blob: https://atqjywawohnhvlnggozu.supabase.co https://res.cloudinary.com;
     connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.stripe.com;
-    frame-src 'self' https://js.stripe.com https://hooks.stripe.com;
-    frame-ancestors 'none';
+    frame-src 'self' data: blob: https://js.stripe.com https://hooks.stripe.com;
+    frame-ancestors 'self';
     object-src 'none';
     base-uri 'self';
     form-action 'self';

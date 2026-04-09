@@ -43,11 +43,20 @@ export async function POST(request: NextRequest) {
   let orderItem: any = null
 
   try {
-    const { data: item } = await admin
+    const { data: item, error: fetchError } = await admin
       .from('order_items')
-      .select('design_id, product_template_id, csv_job_id, csv_job:csv_jobs(parsed_data, column_mapping), order:orders(order_number)')
+      .select('design_id, product_template_id, csv_job_id, csv_job:csv_jobs!csv_job_id(parsed_data, column_mapping), order:orders!order_id(order_number)')
       .eq('id', order_item_id)
       .single()
+    
+    if (fetchError) {
+      console.error('[Proof] Order item fetch error:', fetchError)
+      return NextResponse.json({ 
+        error: 'Failed to fetch order item details from database.',
+        details: fetchError.message 
+      }, { status: 500 })
+    }
+
     orderItem = item
 
     const resolvedDesignId = design_id || item?.design_id
@@ -55,7 +64,7 @@ export async function POST(request: NextRequest) {
     if (resolvedDesignId) {
       const { data: design } = await admin
         .from('designs')
-        .select('canvas_json, product_template:product_templates(print_width_mm, print_height_mm, bleed_mm)')
+        .select('canvas_json, thumbnail_url, product_template:product_templates(print_width_mm, print_height_mm, bleed_mm)')
         .eq('id', resolvedDesignId)
         .single()
 
@@ -105,7 +114,8 @@ export async function POST(request: NextRequest) {
 
         const { data: { publicUrl } } = admin.storage.from('proofs').getPublicUrl(storagePath)
         proof_file_url = publicUrl
-        proof_thumbnail_url = publicUrl
+        // BUG-FIX: Use the design thumbnail for "Image View" because PDF URLs break <img> tags.
+        proof_thumbnail_url = design?.thumbnail_url || publicUrl
       } else {
         return NextResponse.json({ error: 'Design canvas data is missing. Cannot generate proof.' }, { status: 400 })
       }

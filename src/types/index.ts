@@ -43,6 +43,7 @@ export interface ProductGroup {
   description: string | null
   division: Division
   image_url: string | null
+  images: string[] | null
   display_order: number
   is_active: boolean
   created_at: string

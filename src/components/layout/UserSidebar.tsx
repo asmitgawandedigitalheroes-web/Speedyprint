@@ -61,23 +61,15 @@ export function UserSidebar() {
       .toUpperCase() ?? '?'
 
   const handleLogout = async () => {
-    // BUG-015 FIX: Always redirect the user within 3 seconds even if signOut hangs.
-    // The Supabase auth lock can deadlock if a non-singleton client is used (BUG-001).
-    // Belt-and-suspenders: force-navigate after 3s so the user is never permanently trapped.
-    const forceRedirect = setTimeout(() => {
-      router.replace('/')
-      router.refresh()
-    }, 3000)
-
+    // BUG-015 FIX: Use window.location.href for logout to ensure a clean break.
+    // Standard router navigation can fail if the component unmounts during the transition
+    // (which happens when the parent layout sees the auth state change to null).
+    // Hard-loading the homepage is the most reliable way to clear all session state.
     try {
       await logout()
-      clearTimeout(forceRedirect)
-      router.replace('/')
-      router.refresh()
+      window.location.href = '/'
     } catch {
-      clearTimeout(forceRedirect)
-      router.replace('/')
-      router.refresh()
+      window.location.href = '/'
     }
   }
 

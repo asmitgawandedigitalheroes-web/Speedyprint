@@ -98,7 +98,7 @@ export async function POST(
   // Global Audit Log
   const { data: itemWithOrder } = await admin
     .from('order_items')
-    .select('order:orders(order_number)')
+    .select('order:orders!order_id(order_number)')
     .eq('id', proof!.order_item_id)
     .single()
 

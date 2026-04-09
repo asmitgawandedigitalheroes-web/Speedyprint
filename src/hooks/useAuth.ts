@@ -129,13 +129,23 @@ export const useAuth = create<AuthState>()(
       },
 
       logout: async () => {
-        const supabase = createClient()
-        await supabase.auth.signOut()
-        // BUG-029 FIX: Clear the cart on logout so the next user (or role) sees a fresh cart.
-        // Without this, persisted cart items from a customer session were visible to admin/staff
-        // logins and to different customers sharing the same browser.
-        useCart.getState().clearCart()
-        set({ user: null, isAuthenticated: false })
+        try {
+          const supabase = createClient()
+          // BUG-015 FIX: Set isLoading to false immediately so the next state
+          // isn't stuck in a "waiting" mode.
+          set({ isLoading: false })
+          
+          await supabase.auth.signOut()
+          
+          // BUG-029 FIX: Clear the cart on logout so the next user (or role) sees a fresh cart.
+          // Without this, persisted cart items from a customer session were visible to admin/staff
+          // logins and to different customers sharing the same browser.
+          useCart.getState().clearCart()
+          set({ user: null, isAuthenticated: false, isLoading: false })
+        } catch (err) {
+          console.error('[useAuth] Logout error:', err)
+          set({ user: null, isAuthenticated: false, isLoading: false })
+        }
       },
 
       resetPassword: async (email) => {

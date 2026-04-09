@@ -81,9 +81,11 @@ export async function GET(
       return new NextResponse(buffer, {
         status: 200,
         headers: {
-          'Content-Type': upstream.headers.get('Content-Type') ?? 'application/pdf',
+          'Content-Type': 'application/octet-stream', // Stealth type to bypass interceptors like IDM
           'Content-Disposition': 'inline',
           'Cache-Control': 'private, max-age=3600',
+          'X-Frame-Options': 'SAMEORIGIN',
+          'Content-Security-Policy': "frame-ancestors 'self'",
         },
       })
     } catch {
@@ -105,9 +107,11 @@ export async function GET(
   return new NextResponse(buffer, {
     status: 200,
     headers: {
-      'Content-Type': 'application/pdf',
+      'Content-Type': 'application/octet-stream', // Stealth type to bypass interceptors like IDM
       'Content-Disposition': 'inline',
       'Cache-Control': 'private, max-age=3600',
+      'X-Frame-Options': 'SAMEORIGIN',
+      'Content-Security-Policy': "frame-ancestors 'self'",
     },
   })
 }

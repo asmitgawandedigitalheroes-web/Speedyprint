@@ -56,8 +56,8 @@ export async function POST(
   // Global Audit Log
   const { data: itemWithOrder } = await admin
     .from('order_items')
-    .select('order:orders(order_number)')
-    .eq('id', proof.order_item_id)
+    .select('order:orders!order_id(order_number)')
+    .eq('id', proof!.order_item_id)
     .single()
 
   const orderNumForLog = Array.isArray(itemWithOrder?.order)
@@ -82,8 +82,8 @@ export async function POST(
   try {
     const { data: item } = await admin
       .from('order_items')
-      .select('order:orders(order_number)')
-      .eq('id', proof.order_item_id)
+      .select('order:orders!order_id(order_number)')
+      .eq('id', proof!.order_item_id)
       .single()
 
     const orderNum = (item?.order as any)?.order_number

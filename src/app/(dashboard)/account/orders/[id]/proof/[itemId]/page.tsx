@@ -16,6 +16,7 @@ import {
   RefreshCw,
   ShieldCheck,
   XCircle,
+  Image as ImageIcon,
 } from 'lucide-react'
 import type { Proof } from '@/types'
 
@@ -75,6 +76,11 @@ export default function ProofReviewPage() {
   const [loading,        setLoading]        = useState(true)
   const [submittingAction, setSubmittingAction] = useState<string | null>(null)
   const [viewMode,         setViewMode]         = useState<'pdf' | 'image'>('pdf')
+  
+  // Hybrid Proxy-Blob Preview State
+  const [blobUrl, setBlobUrl] = useState<string | null>(null)
+  const [previewLoading, setPreviewLoading] = useState(false)
+  const [previewError, setPreviewError] = useState<string | null>(null)
 
   const fetchProofs = useCallback(async () => {
     if (!itemId) return
@@ -95,6 +101,54 @@ export default function ProofReviewPage() {
   useEffect(() => {
     if (user && itemId) fetchProofs()
   }, [user, itemId, fetchProofs])
+
+  // Fetch PDF as blob via proxy to bypass X-Frame-Options and IDM
+  useEffect(() => {
+    let active = true
+    if (selectedProof?.id && !blobUrl) {
+      setPreviewLoading(true)
+      setPreviewError(null)
+      fetch(`/api/proof-data/${selectedProof.id}`)
+        .then(async (res) => {
+          if (!res.ok) throw new Error(`HTTP ${res.status}`)
+          const json = await res.json()
+          if (!json.data) throw new Error('Missing data in response')
+          
+          // Convert Base64 back to Blob
+          const binaryString = atob(json.data)
+          const bytes = new Uint8Array(binaryString.length)
+          for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i)
+          }
+          const pdfBlob = new Blob([bytes], { type: 'application/pdf' })
+
+          if (active) {
+            const url = URL.createObjectURL(pdfBlob)
+            setBlobUrl(url)
+          }
+        })
+        .catch((err) => {
+          if (active) {
+            console.error('[ProofPreview] Fetch failed:', err)
+            setPreviewError('Failed to load preview. Please use the Download button above.')
+          }
+        })
+        .finally(() => {
+          if (active) setPreviewLoading(false)
+        })
+    }
+    return () => { active = false }
+  }, [selectedProof?.id, blobUrl])
+
+  // Reset blob when proof changes
+  useEffect(() => {
+    if (blobUrl) {
+      if (blobUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(blobUrl)
+      }
+      setBlobUrl(null)
+    }
+  }, [selectedProof?.id])
 
 
   const handleApprove = async () => {
@@ -280,30 +334,60 @@ export default function ProofReviewPage() {
               </div>
 
               {/* Preview area */}
-              <div className="flex min-h-[480px] items-center justify-center overflow-hidden bg-[#F5F6F7]">
-                {selectedProof?.proof_file_url ? (
+              <div className="flex min-h-[520px] items-center justify-center overflow-hidden bg-[#F5F6F7] relative">
+                {previewLoading ? (
+                  <div className="flex flex-col items-center gap-3">
+                    <RefreshCw className="h-10 w-10 animate-spin text-brand-primary" />
+                    <p className="text-sm font-medium text-brand-text-muted">Preparing PDF Preview...</p>
+                  </div>
+                ) : previewError ? (
+                  <div className="max-w-sm px-6 text-center">
+                    <AlertCircle className="mx-auto mb-4 h-12 w-12 text-red-500 opacity-50" />
+                    <p className="font-heading text-base font-semibold text-brand-text">Preview not available</p>
+                    <p className="mt-2 text-sm text-brand-text-muted">{previewError}</p>
+                    <a
+                      href={`/api/proofs/${selectedProof?.id}/file`}
+                      className="mt-6 inline-flex h-9 items-center justify-center rounded-lg border border-[#E7E5E4] bg-white px-4 text-xs font-medium text-brand-text transition hover:bg-[#F5F6F7]"
+                    >
+                      Open PDF Directly
+                    </a>
+                  </div>
+                ) : viewMode === 'image' ? (
+                  <div className="flex flex-col items-center justify-center p-4">
+                    {selectedProof?.proof_thumbnail_url && !selectedProof.proof_thumbnail_url.toLowerCase().endsWith('.pdf') ? (
+                      <img
+                        src={selectedProof.proof_thumbnail_url}
+                        alt={`Proof v${selectedProof.version}`}
+                        className="max-h-[600px] w-auto rounded-lg shadow-md object-contain"
+                      />
+                    ) : (
+                      <div className="flex flex-col items-center gap-3 py-16 text-center">
+                        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-100">
+                          <ImageIcon className="h-8 w-8 text-slate-300" />
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-sm font-medium text-slate-600">No image version available</p>
+                          <p className="max-w-[200px] text-xs text-slate-400">Please use the "PDF View" tab to review this proof version.</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : blobUrl ? (
                   <iframe
-                    key={selectedProof.id}
-                    src={`/api/proofs/${selectedProof.id}/file`}
-                    className="h-[480px] w-full border-0"
-                    title={`Proof v${selectedProof.version}`}
+                    key={selectedProof?.id}
+                    src={blobUrl}
+                    className="h-[520px] w-full border-0"
+                    title={`Proof v${selectedProof?.version}`}
                   />
                 ) : (
                   <div className="max-w-sm px-6 text-center">
                     <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-black/5">
                       <FileText className="h-8 w-8 text-brand-text-muted opacity-40" />
                     </div>
-                    <p className="font-heading text-base font-semibold text-brand-text">Preview not available</p>
+                    <p className="font-heading text-base font-semibold text-brand-text">Waiting for proof...</p>
                     <p className="mt-2 text-sm text-brand-text-muted">
-                      There was an issue loading the proof preview. Please try refreshing the page or
-                      contacting our support team if the problem persists.
+                      Please select a version or refresh the page.
                     </p>
-                    <Link
-                      href="/contact"
-                      className="mt-6 inline-flex h-9 items-center justify-center rounded-lg border border-[#E7E5E4] bg-white px-4 text-xs font-medium text-brand-text transition hover:bg-[#F5F6F7]"
-                    >
-                      Contact Support
-                    </Link>
                   </div>
                 )}
               </div>

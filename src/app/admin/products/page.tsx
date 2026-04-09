@@ -160,9 +160,9 @@ export default function AdminProductsPage() {
                   <tr key={product.id} className="border-b hover:bg-muted/50">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
-                        {product.image_url ? (
+                        {product.image_url || (product.images && product.images.length > 0) ? (
                           <img
-                            src={product.image_url}
+                            src={product.image_url || product.images[0]}
                             alt={product.name}
                             className="h-10 w-10 rounded-md border object-cover"
                           />

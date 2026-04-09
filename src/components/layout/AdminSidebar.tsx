@@ -331,7 +331,14 @@ export function AdminSidebar() {
           </Link>
 
           <button
-            onClick={async () => { await logout(); router.push('/login') }}
+            onClick={async () => {
+              try {
+                await logout()
+                window.location.href = '/'
+              } catch {
+                window.location.href = '/'
+              }
+            }}
             title={collapsed ? 'Sign out' : undefined}
             className={cn(
               'flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-red-400 transition-all hover:bg-white/[0.07] hover:text-red-300',
