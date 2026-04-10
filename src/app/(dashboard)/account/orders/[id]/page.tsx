@@ -228,7 +228,18 @@ export default function OrderDetailPage() {
             {order.tracking_number && (
               <p className="mt-1 text-xs text-brand-text-muted">
                 Tracking:{' '}
-                <span className="font-mono font-semibold text-brand-text">{order.tracking_number}</span>
+                {order.gobob_tracking_url ? (
+                  <a
+                    href={order.gobob_tracking_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-mono font-semibold text-brand-primary hover:underline"
+                  >
+                    {order.tracking_number}
+                  </a>
+                ) : (
+                  <span className="font-mono font-semibold text-brand-text">{order.tracking_number}</span>
+                )}
               </p>
             )}
           </div>

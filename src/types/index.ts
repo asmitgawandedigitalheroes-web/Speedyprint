@@ -162,6 +162,9 @@ export interface Order {
   total: number
   payment_method: string | null
   payment_reference: string | null
+  payment_status?: string | null
+  payfast_payment_id?: string | null
+  switch_payment_id?: string | null
   shipping_address: ShippingAddress
   billing_address: ShippingAddress
   notes: string | null
@@ -172,6 +175,11 @@ export interface Order {
   admin_notes?: string | null
   approved_at?: string | null
   shipped_at?: string | null
+  gobob_shipment_id?: string | null
+  gobob_tracking_url?: string | null
+  gobob_waybill_number?: string | null
+  gobob_quoted_rate?: number | null
+  gobob_service_type?: string | null
   items?: OrderItem[]
   profile?: Profile
 }

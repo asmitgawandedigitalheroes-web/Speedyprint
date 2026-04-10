@@ -6,9 +6,9 @@ export const SITE_NAME = 'Speedy Print Suite'
 export const SITE_DESCRIPTION = 'Premium custom print and fabrication solutions for business, events and brands — South Africa\'s complete print suite.'
 export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://speedyprint.co.za'
 
-export const VAT_RATE = 0.18 // 18% Indian GST
-export const CURRENCY = 'INR'
-export const CURRENCY_SYMBOL = '₹'
+export const VAT_RATE = 0.15 // 15% South African VAT
+export const CURRENCY = 'ZAR'
+export const CURRENCY_SYMBOL = 'R'
 
 export const DIVISIONS = [
   { key: 'labels' as const, name: 'Labels', description: 'Custom labels, stickers, and product packaging', icon: 'Tag' },
@@ -72,8 +72,8 @@ export const MAX_CSV_ROWS = 5000
 
 export const WHATSAPP_NUMBER = '27123456789' // Update with real number
 export const WHATSAPP_URL = `https://wa.me/${WHATSAPP_NUMBER}`
-export const FREE_DELIVERY_THRESHOLD = 2500 // ₹2500
-export const FLAT_SHIPPING_RATE = 400 // ₹400
+export const FREE_DELIVERY_THRESHOLD = 500 // R500
+export const FLAT_SHIPPING_RATE = 85 // R85
 export const MAX_CART_QUANTITY = 10000
 
 // V2 Sticker/Label Divisions
@@ -135,8 +135,8 @@ export const PRODUCT_FAMILIES = [
 ]
 
 // Pricing Constants
-export const BASE_PRICE_PER_UNIT = 25.0 // ₹25.00 for 100x100mm on white vinyl
-export const DOMING_SURCHARGE = 15.0 // ₹15.00 per unit
+export const BASE_PRICE_PER_UNIT = 25.0 // R25.00 for 100x100mm on white vinyl
+export const DOMING_SURCHARGE = 15.0 // R15.00 per unit
 export const BASE_SIZE_MM = { width: 100, height: 100 }
 
 export const MATERIALS = [

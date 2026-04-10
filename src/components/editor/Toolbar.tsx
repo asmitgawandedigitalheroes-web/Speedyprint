@@ -1,6 +1,7 @@
 'use client'
 
 import { useRef, useCallback, useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import {
   ArrowLeft,
   Undo2,
@@ -30,6 +31,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { useAuth } from '@/hooks/useAuth'
+import { toast } from 'sonner'
 import { useEditorStore } from '@/lib/editor/useEditorStore'
 import { exportJSON, exportPNG, exportSVG, loadJSON } from '@/lib/editor/fabricUtils'
 import { createClient } from '@/lib/supabase/client'
@@ -66,7 +68,8 @@ export default function Toolbar() {
   const saveStatus = useEditorStore((s) => s.saveStatus)
   const setSaveStatus = useEditorStore((s) => s.setSaveStatus)
   const addItem = useCart((s) => s.addItem)
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, user } = useAuth()
+  const router = useRouter()
 
   const noCanvas = !canvas
   const groupName = template?.product_group?.name ?? template?.name ?? null
@@ -443,9 +446,14 @@ export default function Toolbar() {
 
   const handleOpenCartModal = useCallback(() => {
     if (!canvas) return
+    if (!user) {
+      const returnUrl = encodeURIComponent(window.location.pathname + window.location.search)
+      router.push(`/login?redirect=${returnUrl}`)
+      return
+    }
     setCartAdded(false)
     setShowCartModal(true)
-  }, [canvas])
+  }, [canvas, user, router])
 
   const handleConfirmAddToCart = useCallback(async () => {
     if (!canvas) return
@@ -487,6 +495,12 @@ export default function Toolbar() {
       }
 
       if (!res.ok) {
+        if (res.status === 401) {
+          setShowCartModal(false)
+          const returnUrl = encodeURIComponent(window.location.pathname + window.location.search)
+          router.push(`/login?redirect=${returnUrl}`)
+          return
+        }
         throw new Error(`Failed to save design before adding to cart: ${res.status}`)
       }
 
@@ -508,8 +522,9 @@ export default function Toolbar() {
       })
 
       setCartAdded(true)
-    } catch (err) {
+    } catch (err: any) {
       console.error('Add to cart failed:', err)
+      toast.error(err?.message || 'Failed to add to cart. Please try again.')
     } finally {
       setAddingToCart(false)
     }

@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Prepare line items for Stripe
-    const currency = (process.env.STRIPE_CURRENCY || 'inr').toLowerCase()
+    const currency = (process.env.STRIPE_CURRENCY || 'zar').toLowerCase()
     const lineItems = order.items.map((item: any) => ({
       price_data: {
         currency: currency,
@@ -84,10 +84,6 @@ export async function POST(req: NextRequest) {
   } catch (error: any) {
     console.error('Stripe Checkout Error:', error)
     // Map regulation errors to more user-friendly messages if possible
-    let userMessage = error.message
-    if (userMessage.includes('Indian regulations')) {
-      userMessage = 'Local Regulation Error: Please check the project environment variables for STRIPE_CURRENCY (use INR for Indian personal accounts in Dev).'
-    }
-    return NextResponse.json({ error: userMessage }, { status: 500 })
+    return NextResponse.json({ error: error.message }, { status: 500 })
   }
 }

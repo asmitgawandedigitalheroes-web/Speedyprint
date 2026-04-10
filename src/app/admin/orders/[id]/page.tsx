@@ -710,7 +710,7 @@ export default function AdminOrderDetailPage({
           </CardContent>
         </Card>
 
-        {/* Tracking Number */}
+        {/* Tracking Information */}
         <Card>
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
@@ -718,9 +718,33 @@ export default function AdminOrderDetailPage({
               Tracking Information
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-4">
+            {/* GoBob shipment info (auto-populated) */}
+            {order.gobob_shipment_id && (
+              <div className="rounded-lg bg-green-50 border border-green-100 p-3 space-y-1.5">
+                <p className="text-[10px] font-black uppercase tracking-widest text-green-600">GoBob Shipment Booked</p>
+                <p className="text-xs text-muted-foreground">
+                  Waybill:{' '}
+                  {order.gobob_tracking_url ? (
+                    <a
+                      href={order.gobob_tracking_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-mono font-semibold text-green-700 hover:underline"
+                    >
+                      {order.gobob_waybill_number || order.gobob_shipment_id}
+                    </a>
+                  ) : (
+                    <span className="font-mono font-semibold">{order.gobob_waybill_number || order.gobob_shipment_id}</span>
+                  )}
+                </p>
+                <p className="text-[10px] text-muted-foreground">ID: {order.gobob_shipment_id}</p>
+              </div>
+            )}
+
+            {/* Manual tracking number (fallback) */}
             <div className="space-y-2">
-              <Label>Tracking Number</Label>
+              <Label>Tracking Number {order.gobob_shipment_id && <span className="text-[10px] text-muted-foreground font-normal">(auto-filled from GoBob)</span>}</Label>
               <Input
                 placeholder="Enter tracking number..."
                 value={trackingNumber}
