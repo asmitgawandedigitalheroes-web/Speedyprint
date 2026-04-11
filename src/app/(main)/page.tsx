@@ -10,6 +10,7 @@ import { DesignerDemo } from '@/components/home/DesignerDemo'
 import { HomeFAQ } from '@/components/home/HomeFAQ'
 import { FeaturedWork } from '@/components/home/FeaturedWork'
 import { CTABand } from '@/components/home/CTABand'
+import { PopularProducts } from '@/components/home/PopularProducts'
 import { BlogSection } from '@/components/home/BlogSection'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { BlogPost } from '@/types'
@@ -169,24 +170,14 @@ export default async function HomePage() {
               </div>
 
               {/* Floating Badge */}
-              <div className="absolute -right-4 top-1/2 z-20 -translate-y-1/2 rounded-2xl bg-white p-6 shadow-2xl ring-1 ring-black/5 lg:-right-8">
-                <div className="flex items-center gap-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-brand-primary/10">
-                    <Zap className="h-6 w-6 text-brand-primary" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold text-brand-text">24hr Turnaround</p>
-                    <p className="text-xs text-brand-text-muted">Swift Dispatch Nationwide</p>
-                  </div>
-                </div>
-              </div>
+
             </div>
 
           </div>
         </div>
       </section>
 
-      
+
       {/* Trust bar / Proof Row */}
       <ProofRow />
 
@@ -196,7 +187,9 @@ export default async function HomePage() {
         <ProductHub />
       </div>
 
-      {/* ── 3. WHY SPEEDY ────────────────────────────────────────────── */}
+
+
+      {/* ── 4. WHY SPEEDY ────────────────────────────────────────────── */}
       <section className="bg-brand-secondary py-20 lg:py-28">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="mb-16 text-center">
@@ -233,6 +226,9 @@ export default async function HomePage() {
 
       {/* ── 6. ONLINE DESIGNER TOOL ─────────────────────────────────── */}
       <DesignerDemo />
+
+      {/* ── 3. POPULAR PRODUCTS TAG CLOUD ───────────────────────────── */}
+      <PopularProducts />
 
       {/* ── 7. TESTIMONIALS ─────────────────────────────────────────── */}
       <TestimonialsCarousel />

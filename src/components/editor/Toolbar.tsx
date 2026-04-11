@@ -506,6 +506,21 @@ export default function Toolbar() {
 
       const unitPrice = getUnitPrice(cartQuantity)
 
+      // Restore product configuration params saved by ProductConfigurator
+      let savedParams: Record<string, string> = {}
+      if (template?.id) {
+        try {
+          const raw = sessionStorage.getItem(`speedy_params_${template.id}`)
+          if (raw) {
+            const parsed = JSON.parse(raw)
+            savedParams = parsed.params ?? {}
+            sessionStorage.removeItem(`speedy_params_${template.id}`)
+          }
+        } catch {
+          // ignore — fall back to dimensions only
+        }
+      }
+
       addItem({
         product_group_id: template?.product_group_id ?? 'custom-design',
         product_template_id: template?.id ?? 'custom',
@@ -516,6 +531,7 @@ export default function Toolbar() {
         selected_params: {
           width_mm: template?.print_width_mm ?? 100,
           height_mm: template?.print_height_mm ?? 100,
+          ...savedParams,
         },
         design_id: savedDesignId ?? undefined,
         thumbnail_url: thumbnailUrl,

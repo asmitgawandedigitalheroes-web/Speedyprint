@@ -2,17 +2,12 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
-import { Search, ExternalLink, Loader2, ChevronLeft, ChevronRight } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { ExternalLink, Layers } from 'lucide-react'
+import { toast } from 'sonner'
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
+  PageHeader, SectionCard, SearchInput,
+  EmptyState, StatusBadge, SkeletonRows, Pagination,
+} from '@/components/admin/AdminUI'
 
 interface DesignRow {
   id: string
@@ -23,10 +18,11 @@ interface DesignRow {
   is_saved_template: boolean
   created_at: string
   updated_at: string
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  profiles: any
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  product_templates: any
+  profiles: { full_name: string | null; email: string | null } | null
+  product_templates: {
+    name: string | null
+    product_groups: { name: string | null } | null
+  } | null
 }
 
 interface DesignsResponse {
@@ -35,6 +31,13 @@ interface DesignsResponse {
   page: number
   limit: number
   totalPages: number
+}
+
+function formatDate(dateStr: string) {
+  return new Date(dateStr).toLocaleDateString('en-ZA', {
+    year: 'numeric', month: 'short', day: 'numeric',
+    hour: '2-digit', minute: '2-digit',
+  })
 }
 
 export default function AdminDesignsPage() {
@@ -48,186 +51,116 @@ export default function AdminDesignsPage() {
     try {
       const params = new URLSearchParams({ page: String(page), limit: '20' })
       if (search) params.set('search', search)
-
       const res = await fetch(`/api/admin/designs?${params}`)
-      if (!res.ok) throw new Error('Failed to fetch')
-      const json = await res.json()
-      setData(json)
-    } catch (err) {
-      console.error('Failed to fetch designs:', err)
+      if (!res.ok) throw new Error()
+      setData(await res.json())
+    } catch {
+      toast.error('Failed to load designs')
     } finally {
       setLoading(false)
     }
   }, [page, search])
 
-  useEffect(() => {
-    fetchDesigns()
-  }, [fetchDesigns])
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault()
-    setPage(1)
-    fetchDesigns()
-  }
-
-  const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    })
-  }
+  useEffect(() => { fetchDesigns() }, [fetchDesigns])
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-brand-text">Designs</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          View and manage all user designs
-        </p>
-      </div>
+      <PageHeader
+        title="Designs"
+        description={`View and manage all customer designs${data ? ` — ${data.total} total` : ''}`}
+      />
 
-      {/* Search */}
-      <form onSubmit={handleSearch} className="flex gap-2">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by design name..."
-            className="pl-9"
-          />
-        </div>
-        <Button type="submit" variant="outline">
-          Search
-        </Button>
-      </form>
+      <SearchInput
+        value={search}
+        onChange={(v) => { setSearch(v); setPage(1) }}
+        placeholder="Search by design name…"
+        className="max-w-sm"
+      />
 
-      {/* Stats */}
-      {data && (
-        <p className="text-sm text-muted-foreground">
-          {data.total} design{data.total !== 1 ? 's' : ''} total
-        </p>
-      )}
-
-      {/* Table */}
-      {loading ? (
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-        </div>
-      ) : (
-        <div className="rounded-lg border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-16">Preview</TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead>User</TableHead>
-                <TableHead>Product</TableHead>
-                <TableHead>Updated</TableHead>
-                <TableHead className="w-20">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data?.designs.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                    No designs found
-                  </TableCell>
-                </TableRow>
+      <SectionCard noPad>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-gray-100">
+                <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Design</th>
+                <th className="hidden px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-400 md:table-cell">Customer</th>
+                <th className="hidden px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-400 lg:table-cell">Product</th>
+                <th className="px-5 py-3.5 text-center text-xs font-semibold uppercase tracking-wide text-gray-400">Type</th>
+                <th className="hidden px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-400 sm:table-cell">Updated</th>
+                <th className="px-5 py-3.5 text-right text-xs font-semibold uppercase tracking-wide text-gray-400">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <SkeletonRows rows={6} cols={6} />
+              ) : !data || data.designs.length === 0 ? (
+                <tr>
+                  <td colSpan={6}>
+                    <EmptyState icon={Layers} title="No designs found" description="Customer designs will appear here once they use the editor" />
+                  </td>
+                </tr>
               ) : (
-                data?.designs.map((design) => (
-                  <TableRow key={design.id}>
-                    <TableCell>
-                      {design.thumbnail_url ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={design.thumbnail_url}
-                          alt={design.name}
-                          className="h-10 w-10 rounded border object-cover"
-                        />
-                      ) : (
-                        <div className="flex h-10 w-10 items-center justify-center rounded border bg-gray-50 text-xs text-gray-400">
-                          N/A
-                        </div>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <div className="font-medium">{design.name}</div>
-                      {design.is_saved_template && (
-                        <span className="text-xs text-blue-600">Template</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-sm">
-                        {design.profiles?.full_name || 'Unknown'}
+                data.designs.map((design) => (
+                  <tr key={design.id} className="border-b border-gray-50 transition-colors last:border-0 hover:bg-gray-50">
+                    <td className="px-5 py-3.5">
+                      <div className="flex items-center gap-3">
+                        {design.thumbnail_url ? (
+                          <img
+                            src={design.thumbnail_url}
+                            alt={design.name}
+                            className="h-10 w-10 rounded-lg border border-gray-100 object-cover"
+                          />
+                        ) : (
+                          <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-gray-100 bg-gray-50 text-[10px] text-gray-400">
+                            N/A
+                          </div>
+                        )}
+                        <p className="font-medium text-gray-800 max-w-[160px] truncate">{design.name}</p>
                       </div>
-                      <div className="text-xs text-muted-foreground">
-                        {design.profiles?.email || '—'}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-sm">
-                        {design.product_templates?.product_groups?.name || '—'}
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        {design.product_templates?.name || '—'}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
+                    </td>
+                    <td className="hidden px-5 py-3.5 md:table-cell">
+                      <p className="text-sm text-gray-700">{design.profiles?.full_name ?? 'Unknown'}</p>
+                      <p className="text-[11px] text-gray-400">{design.profiles?.email ?? '—'}</p>
+                    </td>
+                    <td className="hidden px-5 py-3.5 lg:table-cell">
+                      <p className="text-sm text-gray-700">{design.product_templates?.product_groups?.name ?? '—'}</p>
+                      <p className="text-[11px] text-gray-400">{design.product_templates?.name ?? '—'}</p>
+                    </td>
+                    <td className="px-5 py-3.5 text-center">
+                      <StatusBadge
+                        label={design.is_saved_template ? 'Template' : 'Design'}
+                        color={design.is_saved_template ? 'blue' : 'gray'}
+                      />
+                    </td>
+                    <td className="hidden px-5 py-3.5 text-xs text-gray-400 sm:table-cell">
                       {formatDate(design.updated_at)}
-                    </TableCell>
-                    <TableCell>
+                    </td>
+                    <td className="px-5 py-3.5 text-right">
                       {design.product_template_id && (
-                        <Button variant="ghost" size="icon" asChild>
-                          <Link
-                            href={`/designer/${design.product_template_id}?designId=${design.id}`}
-                            target="_blank"
-                            title="Open in Designer"
-                          >
-                            <ExternalLink className="h-4 w-4" />
-                          </Link>
-                        </Button>
+                        <Link
+                          href={`/designer/${design.product_template_id}?designId=${design.id}`}
+                          target="_blank"
+                          className="inline-flex items-center gap-1 rounded-lg border border-gray-200 px-2.5 py-1 text-xs font-medium text-gray-600 hover:border-gray-300 hover:bg-gray-50"
+                        >
+                          Open <ExternalLink className="h-3 w-3" />
+                        </Link>
                       )}
-                    </TableCell>
-                  </TableRow>
+                    </td>
+                  </tr>
                 ))
               )}
-            </TableBody>
-          </Table>
+            </tbody>
+          </table>
         </div>
-      )}
-
-      {/* Pagination */}
-      {data && data.totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">
-            Page {data.page} of {data.totalPages}
-          </p>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={page <= 1}
-              onClick={() => setPage((p) => p - 1)}
-            >
-              <ChevronLeft className="h-4 w-4" />
-              Previous
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={page >= data.totalPages}
-              onClick={() => setPage((p) => p + 1)}
-            >
-              Next
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      )}
+        {data && (
+          <Pagination
+            page={data.page}
+            totalPages={data.totalPages}
+            total={data.total}
+            onPage={(p) => setPage(p)}
+          />
+        )}
+      </SectionCard>
     </div>
   )
 }

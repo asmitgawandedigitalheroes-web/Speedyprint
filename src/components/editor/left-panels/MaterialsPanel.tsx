@@ -7,7 +7,7 @@ import { useEditorStore } from '@/lib/editor/useEditorStore'
 import { setBackground, setBackgroundPattern, setBackgroundGradient, addSVGToCanvas, getArtboardCenter } from '@/lib/editor/fabricUtils'
 import { Rect, Pattern } from 'fabric'
 
-const StrapiMaterialsBrowser = dynamic(() => import('./StrapiMaterialsBrowser'), {
+const StrapiMaterialsBrowser = dynamic(() => import('./IconifyLibrary'), {
   ssr: false,
   loading: () => (
     <div className="flex items-center justify-center h-full">
@@ -988,8 +988,8 @@ export default function MaterialsPanel() {
             <Download size={12} className="text-ed-accent" />
           </div>
           <div className="text-left flex-1">
-            <p className="text-[11px] font-semibold text-ed-accent">Online Library</p>
-            <p className="text-[9px] text-ed-text-dim">1200+ stickers & clipart</p>
+            <p className="text-[11px] font-semibold text-ed-accent">Element Library</p>
+            <p className="text-[9px] text-ed-text-dim">200,000+ icons, shapes & elements</p>
           </div>
           <ChevronRight size={14} className="text-ed-accent/60" />
         </button>

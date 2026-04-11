@@ -17,12 +17,12 @@ const QUICK_LINKS = [
 ]
 
 const PRODUCT_LINKS = [
-  { href: '/products?division=labels', label: 'Labels & Stickers' },
-  { href: '/products?division=race-numbers', label: 'Race Numbers' },
-  { href: '/products?division=mtb-boards', label: 'MTB Boards' },
-  { href: '/products?division=print', label: 'Custom Stamps' },
+  { href: '/products?division=labels', label: 'Labels, Stickers & Wristbands' },
+  { href: '/products?division=race-numbers', label: 'Race Numbers & Event Tags' },
+  { href: '/products?division=mtb-boards', label: 'MTB Boards & Correx' },
+  { href: '/products?division=print', label: 'Print & Stationery' },
+  { href: '/products?division=laser', label: 'Laser & NFC Stands' },
   { href: '/products?division=trophies', label: 'Trophies & Awards' },
-  { href: '/products?division=laser', label: 'Laser Cutting' },
 ]
 
 export function Footer() {
@@ -31,8 +31,8 @@ export function Footer() {
 
   // Dynamic values with fallbacks
   const companyEmail = settings.company_email || 'info@speedylabels.co.za'
-  const companyPhone = settings.company_phone || '+27 (0) 12 345 6789'
-  const companyAddress = settings.company_address || 'Cape Town, South Africa'
+  const companyPhone = settings.company_phone || '011 027 1811'
+  const companyAddress = settings.company_address || '13 Langwa Street, Strydompark, Randburg'
   const whatsappNumber = settings.whatsapp_number
   const whatsappUrl = whatsappNumber
     ? `https://wa.me/${whatsappNumber.replace(/[^0-9]/g, '')}`
@@ -154,7 +154,7 @@ export function Footer() {
               </li>
               <li className="flex items-start gap-2">
                 <Clock className="mt-0.5 h-4 w-4 shrink-0 text-white" />
-                <span>Mon - Fri: 08:00 - 17:00</span>
+                <span>Mon–Fri: 08:00–16:30 (closed weekends &amp; public holidays)</span>
               </li>
             </ul>
             <a

@@ -3,20 +3,26 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Plus, Pencil, Trash2 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
+import { Plus, Pencil, Trash2, Package } from 'lucide-react'
+import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
 import { DIVISIONS } from '@/lib/utils/constants'
+import {
+  PageHeader, SectionCard, FilterTabs, EmptyState,
+  StatusBadge, SkeletonRows, ActionBtn,
+} from '@/components/admin/AdminUI'
 import type { ProductGroup } from '@/types'
 
 type DivisionFilter = 'all' | ProductGroup['division']
 
+const DIVISION_TABS: { value: DivisionFilter; label: string }[] = [
+  { value: 'all', label: 'All' },
+  ...DIVISIONS.map((d) => ({ value: d.key as DivisionFilter, label: d.name })),
+]
+
 export default function AdminProductsPage() {
   const router = useRouter()
-  const [products, setProducts] = useState<
-    (ProductGroup & { template_count: number })[]
-  >([])
+  const [products, setProducts] = useState<(ProductGroup & { template_count: number })[]>([])
   const [loading, setLoading] = useState(true)
   const [divisionFilter, setDivisionFilter] = useState<DivisionFilter>('all')
   const [deleting, setDeleting] = useState<string | null>(null)
@@ -26,213 +32,157 @@ export default function AdminProductsPage() {
       setLoading(true)
       try {
         const supabase = createClient()
-
         let query = supabase
           .from('product_groups')
           .select('*, templates:product_templates(id)')
           .order('display_order', { ascending: true })
-
-        if (divisionFilter !== 'all') {
-          query = query.eq('division', divisionFilter)
-        }
-
+        if (divisionFilter !== 'all') query = query.eq('division', divisionFilter)
         const { data, error } = await query
-
         if (error) throw error
-
-        const productsWithCount = (data ?? []).map((p: any) => ({
+        setProducts((data ?? []).map((p: any) => ({
           ...p,
           template_count: p.templates?.length ?? 0,
           templates: undefined,
-        }))
-
-        setProducts(productsWithCount)
-      } catch (err) {
-        console.error('Products fetch error:', err)
+        })))
+      } catch {
+        toast.error('Failed to load products')
       } finally {
         setLoading(false)
       }
     }
-
     fetchProducts()
   }, [divisionFilter])
 
-  const handleDelete = async (productId: string) => {
-    if (!confirm('Are you sure you want to delete this product group?')) return
-    setDeleting(productId)
+  const handleDelete = async (id: string) => {
+    if (!confirm('Delete this product group? This cannot be undone.')) return
+    setDeleting(id)
     try {
       const supabase = createClient()
-      const { error } = await supabase
-        .from('product_groups')
-        .delete()
-        .eq('id', productId)
-
+      const { error } = await supabase.from('product_groups').delete().eq('id', id)
       if (error) throw error
-      setProducts((prev) => prev.filter((p) => p.id !== productId))
-    } catch (err) {
-      console.error('Delete error:', err)
-      alert('Failed to delete product. It may have associated templates or orders.')
+      setProducts((prev) => prev.filter((p) => p.id !== id))
+      toast.success('Product deleted')
+    } catch {
+      toast.error('Failed to delete — it may have associated templates or orders.')
     } finally {
       setDeleting(null)
     }
   }
 
-  const divisionTabs: { key: DivisionFilter; label: string }[] = [
-    { key: 'all', label: 'All Divisions' },
-    ...DIVISIONS.map((d) => ({ key: d.key as DivisionFilter, label: d.name })),
-  ]
+  const divisionName = (key: string) => DIVISIONS.find(d => d.key === key)?.name ?? key
 
   return (
     <div className="space-y-6">
-      {/* Page Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-brand-text">Products</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Manage product groups, templates, and pricing
-          </p>
-        </div>
-        <Button asChild>
-          <Link href="/admin/products/new">
-            <Plus className="mr-2 h-4 w-4" />
+      <PageHeader
+        title="Products"
+        description="Manage product groups, templates, and pricing"
+        actions={
+          <Link
+            href="/admin/products/new"
+            className="flex items-center gap-1.5 rounded-lg bg-gray-900 px-3.5 py-2 text-sm font-medium text-white hover:bg-gray-700 transition-colors"
+          >
+            <Plus className="h-4 w-4" />
             Add Product
           </Link>
-        </Button>
-      </div>
+        }
+      />
 
-      {/* Division Filter Tabs */}
-      <div className="flex flex-wrap gap-1 rounded-lg border bg-muted/50 p-1">
-        {divisionTabs.map((tab) => (
-          <button
-            key={tab.key}
-            onClick={() => setDivisionFilter(tab.key)}
-            className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-              divisionFilter === tab.key
-                ? 'bg-white text-gray-900 shadow-sm'
-                : 'text-muted-foreground hover:text-gray-900'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+      {/* Division filter */}
+      <FilterTabs
+        options={DIVISION_TABS}
+        value={divisionFilter}
+        onChange={setDivisionFilter}
+      />
 
-      {/* Products Table */}
-      <div className="overflow-x-auto rounded-lg border">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b bg-muted/50">
-              <th className="px-4 py-3 text-left font-medium">Name</th>
-              <th className="px-4 py-3 text-left font-medium">Division</th>
-              <th className="px-4 py-3 text-center font-medium">Templates</th>
-              <th className="px-4 py-3 text-center font-medium">
-                Display Order
-              </th>
-              <th className="px-4 py-3 text-center font-medium">Status</th>
-              <th className="px-4 py-3 text-right font-medium">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              Array.from({ length: 5 }).map((_, i) => (
-                <tr key={i} className="border-b">
-                  <td colSpan={6} className="px-4 py-4">
-                    <div className="h-5 w-full animate-pulse rounded bg-gray-200" />
+      {/* Table */}
+      <SectionCard noPad>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-gray-100">
+                <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Product</th>
+                <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Division</th>
+                <th className="px-5 py-3.5 text-center text-xs font-semibold uppercase tracking-wide text-gray-400">Templates</th>
+                <th className="hidden px-5 py-3.5 text-center text-xs font-semibold uppercase tracking-wide text-gray-400 sm:table-cell">Order</th>
+                <th className="px-5 py-3.5 text-center text-xs font-semibold uppercase tracking-wide text-gray-400">Status</th>
+                <th className="px-5 py-3.5 text-right text-xs font-semibold uppercase tracking-wide text-gray-400">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <SkeletonRows rows={6} cols={6} />
+              ) : products.length === 0 ? (
+                <tr>
+                  <td colSpan={6}>
+                    <EmptyState icon={Package} title="No products found" description="Add your first product group to get started" />
                   </td>
                 </tr>
-              ))
-            ) : products.length === 0 ? (
-              <tr>
-                <td
-                  colSpan={6}
-                  className="px-4 py-12 text-center text-muted-foreground"
-                >
-                  No products found
-                </td>
-              </tr>
-            ) : (
-              products.map((product) => {
-                const division = DIVISIONS.find(
-                  (d) => d.key === product.division
-                )
-
-                return (
-                  <tr key={product.id} className="border-b hover:bg-muted/50">
-                    <td className="px-4 py-3">
+              ) : (
+                products.map((product) => (
+                  <tr key={product.id} className="border-b border-gray-50 transition-colors last:border-0 hover:bg-gray-50">
+                    <td className="px-5 py-3.5">
                       <div className="flex items-center gap-3">
-                        {product.image_url || (product.images && product.images.length > 0) ? (
+                        {(product.image_url || (product.images && product.images.length > 0)) ? (
                           <img
                             src={product.image_url || product.images?.[0] || ''}
                             alt={product.name}
-                            className="h-10 w-10 rounded-md border object-cover"
+                            className="h-10 w-10 rounded-lg border border-gray-100 object-cover"
                           />
                         ) : (
-                          <div className="flex h-10 w-10 items-center justify-center rounded-md border bg-gray-50 text-xs text-muted-foreground">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-gray-100 bg-gray-50 text-[10px] font-medium text-gray-400">
                             IMG
                           </div>
                         )}
-                        <div>
-                          <p className="font-medium">{product.name}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {product.slug}
-                          </p>
+                        <div className="min-w-0">
+                          <p className="font-medium text-gray-800 truncate">{product.name}</p>
+                          <p className="text-[11px] text-gray-400 font-mono truncate">{product.slug}</p>
                         </div>
                       </div>
                     </td>
-                    <td className="px-4 py-3">
-                      <Badge variant="outline" className="text-xs">
-                        {division?.name ?? product.division}
-                      </Badge>
+                    <td className="px-5 py-3.5">
+                      <span className="inline-flex items-center rounded-full border border-gray-200 px-2.5 py-0.5 text-[11px] font-medium text-gray-600">
+                        {divisionName(product.division)}
+                      </span>
                     </td>
-                    <td className="px-4 py-3 text-center">
-                      {product.template_count}
+                    <td className="px-5 py-3.5 text-center">
+                      <span className="inline-flex h-6 min-w-[24px] items-center justify-center rounded-full bg-gray-100 px-2 text-[11px] font-semibold text-gray-600">
+                        {product.template_count}
+                      </span>
                     </td>
-                    <td className="px-4 py-3 text-center">
+                    <td className="hidden px-5 py-3.5 text-center text-xs text-gray-500 sm:table-cell">
                       {product.display_order}
                     </td>
-                    <td className="px-4 py-3 text-center">
-                      <Badge
-                        variant="secondary"
-                        className={
-                          product.is_active
-                            ? 'bg-green-100 text-green-700'
-                            : 'bg-gray-100 text-gray-500'
-                        }
-                      >
-                        {product.is_active ? 'Active' : 'Inactive'}
-                      </Badge>
+                    <td className="px-5 py-3.5 text-center">
+                      <StatusBadge
+                        label={product.is_active ? 'Active' : 'Inactive'}
+                        color={product.is_active ? 'green' : 'gray'}
+                      />
                     </td>
-                    <td className="px-4 py-3 text-right">
+                    <td className="px-5 py-3.5">
                       <div className="flex items-center justify-end gap-1">
-                        <Button
-                          size="sm"
+                        <ActionBtn
+                          onClick={() => router.push(`/admin/products/${product.id}/edit`)}
+                          icon={Pencil}
+                          label="Edit"
                           variant="ghost"
-                          onClick={() =>
-                            router.push(
-                              `/admin/products/${product.id}/edit`
-                            )
-                          }
-                        >
-                          <Pencil className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="text-red-500 hover:text-red-700"
+                        />
+                        <ActionBtn
                           onClick={() => handleDelete(product.id)}
+                          icon={Trash2}
+                          label="Delete"
+                          variant="ghost"
+                          danger
                           disabled={deleting === product.id}
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
+                        />
                       </div>
                     </td>
                   </tr>
-                )
-              })
-            )}
-          </tbody>
-        </table>
-      </div>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </SectionCard>
     </div>
   )
 }

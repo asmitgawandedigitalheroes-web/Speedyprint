@@ -58,7 +58,6 @@ export async function POST(req: NextRequest) {
         slug: slug || name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
         description: description || null,
         division,
-        images: images || [],
         image_url: image_url || (images && images.length > 0 ? images[0] : null),
         display_order: display_order ?? 0,
         is_active: is_active ?? true,

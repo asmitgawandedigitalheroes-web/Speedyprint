@@ -170,7 +170,7 @@ export default function AdminProductEditPage({
         setSlug(product.slug)
         setDescription(product.description || '')
         setDivision(product.division)
-        setImages(product.images || (product.image_url ? [product.image_url] : []))
+        setImages(product.image_url ? [product.image_url] : [])
         setDisplayOrder(product.display_order)
         setIsActive(product.is_active)
 
@@ -222,8 +222,7 @@ export default function AdminProductEditPage({
           slug: slug || slugify(name),
           description: description || null,
           division,
-          images: images.length > 0 ? images : [],
-          image_url: images[0] || null, // Keep for backward compatibility
+          image_url: images[0] || null,
           display_order: displayOrder,
           is_active: isActive,
         })

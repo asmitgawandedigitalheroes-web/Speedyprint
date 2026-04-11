@@ -56,8 +56,7 @@ export default function AdminProductNewPage() {
           slug: slug || slugify(name),
           description: description || null,
           division,
-          images: images.length > 0 ? images : [],
-          image_url: images[0] || null, // Keep for backward compatibility
+          image_url: images[0] || null,
           display_order: displayOrder,
           is_active: isActive,
         }),

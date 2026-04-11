@@ -40,7 +40,7 @@ export default function CheckoutPage() {
   const [loading, setLoading] = useState(false)
   const [step, setStep] = useState(1)
   const [errors, setErrors] = useState<Partial<Record<keyof ShippingData, string>>>({})
-  const [paymentMethod, setPaymentMethod] = useState<'switch' | 'stripe'>('switch')
+  const [paymentMethod, setPaymentMethod] = useState<'switch' | 'stripe' | 'pay_later'>('switch')
 
   const [shipping, setShipping] = useState<ShippingData>({
     full_name: '',
@@ -186,6 +186,11 @@ export default function CheckoutPage() {
 
       const { error: itemsError } = await supabase.from('order_items').insert(orderItems)
       if (itemsError) throw itemsError
+
+      if (paymentMethod === 'pay_later') {
+        router.push(`/checkout/success?order_id=${order.id}`)
+        return
+      }
 
       const endpoint = paymentMethod === 'switch' ? '/api/checkout/switch' : '/api/checkout/stripe'
       const response = await fetch(endpoint, {
@@ -421,6 +426,7 @@ export default function CheckoutPage() {
                     {([
                       { id: 'switch', label: 'Switch', description: 'South African payment gateway' },
                       { id: 'stripe', label: 'Card (Stripe)', description: 'Credit or debit card' },
+                      { id: 'pay_later', label: 'Pay Later / Proforma Invoice', description: 'We will send you an invoice — pay before production starts' },
                     ] as const).map(method => (
                       <button
                         key={method.id}
@@ -454,6 +460,8 @@ export default function CheckoutPage() {
                 >
                   {loading ? (
                     <><div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" /> Processing...</>
+                  ) : paymentMethod === 'pay_later' ? (
+                    <><ArrowRight className="h-4 w-4" /> Place Order (Pay Later)</>
                   ) : (
                     <><CreditCard className="h-4 w-4" /> Pay {formatCurrency(getTotal())}</>
                   )}

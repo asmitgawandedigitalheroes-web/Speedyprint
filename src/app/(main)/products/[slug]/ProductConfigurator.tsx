@@ -391,7 +391,11 @@ export function ProductConfigurator({
             <Button
               onClick={() => {
                 setNavigatingState('design')
-                const url = designId 
+                sessionStorage.setItem(
+                  `speedy_params_${selectedTemplateId}`,
+                  JSON.stringify({ params: allParams, quantity })
+                )
+                const url = designId
                   ? `/designer/${selectedTemplateId}?design=${designId}`
                   : `/designer/${selectedTemplateId}`
                 router.push(url)
@@ -411,6 +415,10 @@ export function ProductConfigurator({
               disabled={navigatingState !== null}
               onClick={() => {
                 setNavigatingState('upload')
+                sessionStorage.setItem(
+                  `speedy_params_${selectedTemplateId}`,
+                  JSON.stringify({ params: allParams, quantity })
+                )
                 router.push(`/designer/${selectedTemplateId}?mode=upload`)
               }}
             >
@@ -427,6 +435,10 @@ export function ProductConfigurator({
                 disabled={navigatingState !== null}
                 onClick={() => {
                   setNavigatingState('bulk')
+                  sessionStorage.setItem(
+                    `speedy_params_${selectedTemplateId}`,
+                    JSON.stringify({ params: allParams, quantity })
+                  )
                   router.push(`/designer/${selectedTemplateId}/csv`)
                 }}
               >

@@ -58,12 +58,12 @@ export default function ContactPage() {
               {
                 icon: Phone,
                 title: 'Phone',
-                lines: ['+27 12 345 6789', 'Mon–Fri, 8am – 5pm SAST'],
+                lines: ['011 027 1811', 'Mon–Fri, 08:00–16:30'],
               },
               {
                 icon: MapPin,
                 title: 'Address',
-                lines: ['Cape Town, Western Cape', 'South Africa'],
+                lines: ['13 Langwa Street, Strydompark', 'Randburg'],
               },
             ].map((item) => (
               <div key={item.title} className="flex gap-4">
@@ -87,13 +87,13 @@ export default function ContactPage() {
               </div>
               <div className="space-y-1.5 text-sm text-brand-text-muted">
                 <div className="flex justify-between">
-                  <span>Monday – Friday</span><span className="font-medium text-brand-text">08:00 – 17:00</span>
+                  <span>Monday – Friday</span><span className="font-medium text-brand-text">08:00 – 16:30</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Saturday</span><span className="font-medium text-brand-text">09:00 – 13:00</span>
+                  <span>Saturday</span><span className="text-brand-text-muted">Closed</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Sunday</span><span className="text-brand-text-muted">Closed</span>
+                  <span>Sunday & Public Holidays</span><span className="text-brand-text-muted">Closed</span>
                 </div>
               </div>
             </div>
