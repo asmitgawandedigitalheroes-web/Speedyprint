@@ -10,7 +10,12 @@ import { useAuth } from '@/hooks/useAuth'
 import { SITE_NAME } from '@/lib/utils/constants'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { PasswordInput } from '@/components/ui/password-input'
 import { Label } from '@/components/ui/label'
+
+// BUG-007 FIX: Read the store snapshot after login completes to get the resolved role.
+// Using getState() avoids adding 'user' as a component dependency (no re-render).
+const getAuthUser = () => useAuth.getState().user
 
 function LoginForm() {
   const router = useRouter()
@@ -36,11 +41,29 @@ function LoginForm() {
       return
     }
     toast.success('Signed in successfully')
-    // BUG-012 FIX: Validate that redirect is a relative path to prevent open redirect attacks.
-    // An attacker could craft /login?redirect=https://phishing.com — after login the user
-    // would be silently redirected to an external site. Only allow paths starting with '/'.
-    const safeRedirect = redirect && redirect.startsWith('/') ? redirect : '/account'
-    router.push(safeRedirect)
+
+    // BUG-007 FIX: Redirect based on role so customers never land on /admin.
+    // Previously all users were sent to the `redirect` param verbatim, so a customer
+    // who reached the login page via /admin (unauthenticated guard) was sent back to
+    // /admin after login — showing the inline 403 error page.
+    const loggedInUser = getAuthUser()
+    const role = loggedInUser?.role ?? 'customer'
+    const isAdminOrStaff = role === 'admin' || role === 'production_staff'
+
+    // BUG-012 FIX: Validate redirect is a relative path to prevent open redirect attacks.
+    const safeRedirect = redirect && redirect.startsWith('/') ? redirect : null
+
+    if (isAdminOrStaff) {
+      // Admin/staff: honour the redirect param (e.g. deep-link to /admin/orders)
+      router.push(safeRedirect ?? '/admin')
+    } else {
+      // Customers: only honour non-admin redirects; never send a customer to /admin
+      if (safeRedirect && !safeRedirect.startsWith('/admin')) {
+        router.push(safeRedirect)
+      } else {
+        router.push('/account')
+      }
+    }
   }
 
   async function handleResendConfirmation() {
@@ -123,9 +146,8 @@ function LoginForm() {
               Forgot password?
             </Link>
           </div>
-          <Input
+          <PasswordInput
             id="password"
-            type="password"
             placeholder="Enter your password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}

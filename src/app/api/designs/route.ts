@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { logActivity } from '@/lib/audit'
 
 /**
  * POST /api/designs
@@ -48,6 +49,15 @@ export async function POST(request: NextRequest) {
       console.error('Error saving design:', error)
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
+
+    // Log activity
+    await logActivity({
+      user_id: user.id,
+      action: 'design_created',
+      entity_type: 'design',
+      entity_id: data.id,
+      metadata: { name: data.name },
+    })
 
     return NextResponse.json(data, { status: 201 })
   } catch (err) {

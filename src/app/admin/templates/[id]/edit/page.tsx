@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/select'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
+import { ImageUploader } from '@/components/admin/ImageUploader'
 import type { ProductTemplate, ProductGroup, TemplateParameter } from '@/types'
 
 type TemplateDetail = ProductTemplate & {
@@ -204,12 +205,12 @@ export default function AdminTemplateEditPage({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="image-url">Image URL</Label>
-              <Input
-                id="image-url"
-                value={imageUrl}
-                onChange={(e) => setImageUrl(e.target.value)}
-                placeholder="https://..."
+              <Label>Template Image</Label>
+              <ImageUploader 
+                value={imageUrl ? [imageUrl] : []}
+                onChange={(urls) => setImageUrl(urls[0] || '')}
+                maxImages={1}
+                folder="templates"
               />
             </div>
           </CardContent>

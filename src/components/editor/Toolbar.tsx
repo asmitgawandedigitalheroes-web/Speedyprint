@@ -1,6 +1,7 @@
 'use client'
 
 import { useRef, useCallback, useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import {
   ArrowLeft,
   Undo2,
@@ -19,8 +20,18 @@ import {
   Plus,
   Check,
   LayoutTemplate,
+  MoreVertical,
+  RotateCcw,
 } from 'lucide-react'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { useAuth } from '@/hooks/useAuth'
+import { toast } from 'sonner'
 import { useEditorStore } from '@/lib/editor/useEditorStore'
 import { exportJSON, exportPNG, exportSVG, loadJSON } from '@/lib/editor/fabricUtils'
 import { createClient } from '@/lib/supabase/client'
@@ -30,8 +41,6 @@ import type { ProductTemplate } from '@/types'
 
 export default function Toolbar() {
   const [saving, setSaving] = useState(false)
-  const [saveStatus, setSaveStatus] = useState<'unsaved' | 'saving' | 'saved'>('unsaved')
-  const [designName, setDesignName] = useState('Untitled Design')
   const autoSaveTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const lastSavedJsonRef = useRef<string | null>(null)
   const [siblingTemplates, setSiblingTemplates] = useState<ProductTemplate[]>([])
@@ -54,7 +63,13 @@ export default function Toolbar() {
   const setTemplate = useEditorStore((s) => s.setTemplate)
   const designId = useEditorStore((s) => s.designId)
   const setDesignId = useEditorStore((s) => s.setDesignId)
+  const designName = useEditorStore((s) => s.designName)
+  const setDesignName = useEditorStore((s) => s.setDesignName)
+  const saveStatus = useEditorStore((s) => s.saveStatus)
+  const setSaveStatus = useEditorStore((s) => s.setSaveStatus)
   const addItem = useCart((s) => s.addItem)
+  const { isAuthenticated, user } = useAuth()
+  const router = useRouter()
 
   const noCanvas = !canvas
   const groupName = template?.product_group?.name ?? template?.name ?? null
@@ -65,20 +80,23 @@ export default function Toolbar() {
       return
     }
 
-    const supabase = createClient()
-    supabase
-      .from('product_templates')
-      .select('*, product_group:product_groups(*)')
-      .eq('product_group_id', template.product_group_id)
-      .eq('is_active', true)
-      .order('name')
-      .then(({ data }) => {
-        if (data && data.length > 1) {
-          setSiblingTemplates(data as unknown as ProductTemplate[])
-        } else {
-          setSiblingTemplates([])
-        }
-      })
+    const fetchSiblings = async () => {
+      const supabase = createClient()
+      const { data, error } = await supabase
+        .from('product_templates')
+        .select('*, product_group:product_groups(*)')
+        .eq('product_group_id', template.product_group_id)
+        .eq('is_active', true)
+        .order('name')
+      
+      if (!error && data && data.length > 1) {
+        setSiblingTemplates(data as unknown as ProductTemplate[])
+      } else {
+        setSiblingTemplates([])
+      }
+    }
+
+    fetchSiblings()
   }, [template?.product_group_id])
 
   useEffect(() => {
@@ -102,6 +120,21 @@ export default function Toolbar() {
 
   const handleSave = useCallback(async () => {
     if (!canvas) return
+
+    // If not authenticated, save to local storage and redirect to login
+    if (!isAuthenticated) {
+      const canvasJson = exportJSON(canvas)
+      const pendingData = {
+        name: designName || 'Untitled Design',
+        canvas_json: JSON.parse(canvasJson),
+        product_template_id: template?.id ?? null,
+        timestamp: Date.now()
+      }
+      localStorage.setItem('sp_pending_design', JSON.stringify(pendingData))
+      window.location.href = `/login?redirect=${encodeURIComponent(window.location.pathname)}`
+      return
+    }
+
     setSaving(true)
     try {
       const canvasJson = JSON.parse(exportJSON(canvas))
@@ -114,28 +147,39 @@ export default function Toolbar() {
         product_template_id: template?.id ?? null,
       }
 
+      let res: Response
       if (designId) {
-        await fetch(`/api/designs/${designId}`, {
+        res = await fetch(`/api/designs/${designId}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body),
         })
       } else {
-        const res = await fetch('/api/designs', {
+        res = await fetch('/api/designs', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body),
         })
-        const data = await res.json()
-        if (data?.id) setDesignId(data.id)
+        if (res.ok) {
+          const data = await res.json()
+          if (data?.id) setDesignId(data.id)
+        }
       }
+
+      if (!res.ok) {
+        const errorText = await res.text()
+        throw new Error(`Failed to save: ${res.status} ${res.statusText} - ${errorText}`)
+      }
+
+      setSaveStatus('saved')
     } catch (err) {
       console.error('Save failed:', err)
+      setSaveStatus('unsaved')
+      alert(err instanceof Error ? err.message : 'Save failed. Please check your connection.')
     } finally {
       setSaving(false)
-      setSaveStatus('saved')
     }
-  }, [canvas, template, designId, setDesignId, designName])
+  }, [canvas, template, designId, setDesignId, designName, isAuthenticated])
 
   const handleSaveAsDefault = useCallback(async () => {
     if (!canvas || !template) return
@@ -161,13 +205,14 @@ export default function Toolbar() {
       
       // Update local state
       setTemplate({ ...template, template_json: newTj })
+      setSaveStatus('saved')
       alert('Default design saved successfully!')
     } catch (err) {
       console.error('Save as default failed:', err)
+      setSaveStatus('unsaved')
       alert('Failed to save default design. Check console for details.')
     } finally {
       setSaving(false)
-      setSaveStatus('saved')
     }
   }, [canvas, template, setTemplate])
 
@@ -191,23 +236,31 @@ export default function Toolbar() {
           product_template_id: template?.id ?? null,
         }
         const currentDesignId = useEditorStore.getState().designId
+        let res: Response
         if (currentDesignId) {
-          await fetch(`/api/designs/${currentDesignId}`, {
+          res = await fetch(`/api/designs/${currentDesignId}`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(body),
           })
         } else {
-          const res = await fetch('/api/designs', {
+          res = await fetch('/api/designs', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(body),
           })
-          const data = await res.json()
-          if (data?.id) useEditorStore.getState().setDesignId(data.id)
+          if (res.ok) {
+            const data = await res.json()
+            if (data?.id) useEditorStore.getState().setDesignId(data.id)
+          }
+        }
+
+        if (!res.ok) {
+          throw new Error(`Auto-save failed: ${res.status}`)
         }
         setSaveStatus('saved')
-      } catch {
+      } catch (err) {
+        console.warn('Auto-save background failure:', err)
         setSaveStatus('unsaved')
       }
     }
@@ -221,7 +274,12 @@ export default function Toolbar() {
   // Mark as unsaved when canvas changes
   useEffect(() => {
     if (!canvas) return
-    const markUnsaved = () => setSaveStatus('unsaved')
+    const markUnsaved = () => {
+      // Don't mark as unsaved if we are currently saving or just finished
+      if (useEditorStore.getState().saveStatus !== 'unsaved') {
+        setSaveStatus('unsaved')
+      }
+    }
     canvas.on('object:modified', markUnsaved)
     canvas.on('object:added', markUnsaved)
     canvas.on('object:removed', markUnsaved)
@@ -244,46 +302,124 @@ export default function Toolbar() {
   const handlePreview = useCallback(() => {
     if (!canvas) return
     const dataUrl = exportPNG(canvas)
-    const win = window.open()
+    const win = window.open('', '_blank')
     if (win) {
-      win.document.write(`<img src="${dataUrl}" style="max-width:100%;background:#f1f5f9"/>`)
+      const title = designName || 'Preview'
+      win.document.write(`<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>${title}</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      width: 100%; height: 100%;
+      background: #e5e7eb;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: sans-serif;
     }
+    .wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      padding: 24px;
+      max-width: 100vw;
+      max-height: 100vh;
+    }
+    img {
+      display: block;
+      max-width: calc(100vw - 48px);
+      max-height: calc(100vh - 80px);
+      width: auto;
+      height: auto;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.18);
+      border-radius: 4px;
+      background: #fff;
+    }
+    p { font-size: 12px; color: #6b7280; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <img src="${dataUrl}" alt="Design Preview"/>
+    <p>${title}</p>
+  </div>
+</body>
+</html>`)
+      win.document.close()
+    }
+  }, [canvas, designName])
+
+  const handleReset = useCallback(() => {
+    if (!canvas) return
+    if (!window.confirm('Reset design? All elements will be removed and the canvas will be cleared.')) return
+    // Remove every object except the artboard and guides
+    const toRemove = canvas.getObjects().filter((o) => {
+      const meta = o as unknown as Record<string, unknown>
+      return !meta.isArtboard && !meta.isGuide
+    })
+    toRemove.forEach((o) => canvas.remove(o))
+    // Reset artboard fill back to white
+    const artboard = canvas.getObjects().find(
+      (o) => (o as unknown as Record<string, unknown>).isArtboard
+    )
+    if (artboard) artboard.set('fill', '#ffffff')
+    canvas.discardActiveObject()
+    canvas.renderAll()
+    // Capture into history so the reset is undoable
+    useEditorStore.getState().pushHistory(
+      // @ts-ignore
+      JSON.stringify(canvas.toJSON(['isArtboard', 'rawText']))
+    )
+    useEditorStore.getState().refreshObjects()
+    useEditorStore.getState().setActiveObject(null)
   }, [canvas])
 
   const handleExportPDF = useCallback(async () => {
     if (!canvas) return
     try {
-      const canvasJson = JSON.parse(exportJSON(canvas))
-      // Remove the artboard rect from PDF export (it's just the white background)
-      if (canvasJson.objects?.length) {
-        // Keep the artboard as a white background but filter guides
-        canvasJson.objects = canvasJson.objects.filter(
-          (o: Record<string, unknown>) => !o.isGuide
-        )
-      }
-      const printSpecs = template
-        ? {
-            print_width_mm: template.print_width_mm,
-            print_height_mm: template.print_height_mm,
-            bleed_mm: template.bleed_mm || 0,
-          }
-        : { print_width_mm: 210, print_height_mm: 297, bleed_mm: 0 }
+      // Step 1: Capture the canvas as PNG FIRST (synchronously, before any re-renders)
+      // This ensures drawn paths and all canvas content are captured correctly.
+      const pngDataUrl = exportPNG(canvas)
 
-      const res = await fetch('/api/export/pdf', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ canvas_json: canvasJson, print_specs: printSpecs }),
+      // Step 2: Determine print dimensions (mm → points: 1mm = 2.83465pt)
+      const MM_TO_PT = 2.83465
+      const printWidthMm = template?.print_width_mm ?? 210
+      const printHeightMm = template?.print_height_mm ?? 297
+      const pageWidthPt = printWidthMm * MM_TO_PT
+      const pageHeightPt = printHeightMm * MM_TO_PT
+
+      // Step 3: Build PDF client-side using pdf-lib so drawn content is never lost
+      const { PDFDocument } = await import('pdf-lib')
+      const pdfDoc = await PDFDocument.create()
+      const page = pdfDoc.addPage([pageWidthPt, pageHeightPt])
+
+      // Convert data URL to Uint8Array for embedding
+      const base64 = pngDataUrl.split(',')[1]
+      const pngBytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0))
+      const pngImage = await pdfDoc.embedPng(pngBytes)
+
+      // Draw image to fill the page (white background from artboard is preserved in PNG)
+      page.drawImage(pngImage, {
+        x: 0,
+        y: 0,
+        width: pageWidthPt,
+        height: pageHeightPt,
       })
 
-      if (!res.ok) throw new Error('PDF export failed')
-
-      const blob = await res.blob()
+      const pdfBytes = await pdfDoc.save()
+      const blob = new Blob([pdfBytes] as any, { type: 'application/pdf' })
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
       a.download = `${designName || 'design'}.pdf`
+      document.body.appendChild(a)
       a.click()
-      URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+      setTimeout(() => URL.revokeObjectURL(url), 100)
     } catch (err) {
       console.error('PDF export failed:', err)
     }
@@ -310,9 +446,14 @@ export default function Toolbar() {
 
   const handleOpenCartModal = useCallback(() => {
     if (!canvas) return
+    if (!user) {
+      const returnUrl = encodeURIComponent(window.location.pathname + window.location.search)
+      router.push(`/login?redirect=${returnUrl}`)
+      return
+    }
     setCartAdded(false)
     setShowCartModal(true)
-  }, [canvas])
+  }, [canvas, user, router])
 
   const handleConfirmAddToCart = useCallback(async () => {
     if (!canvas) return
@@ -331,26 +472,54 @@ export default function Toolbar() {
         product_template_id: template?.id ?? null,
       }
 
+      let res: Response
       if (designId) {
-        await fetch(`/api/designs/${designId}`, {
+        res = await fetch(`/api/designs/${designId}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body),
         })
       } else {
-        const res = await fetch('/api/designs', {
+        res = await fetch('/api/designs', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body),
         })
-        const data = await res.json()
-        if (data?.id) {
-          savedDesignId = data.id
-          setDesignId(data.id)
+        if (res.ok) {
+          const data = await res.json()
+          if (data?.id) {
+            savedDesignId = data.id
+            setDesignId(data.id)
+          }
         }
       }
 
+      if (!res.ok) {
+        if (res.status === 401) {
+          setShowCartModal(false)
+          const returnUrl = encodeURIComponent(window.location.pathname + window.location.search)
+          router.push(`/login?redirect=${returnUrl}`)
+          return
+        }
+        throw new Error(`Failed to save design before adding to cart: ${res.status}`)
+      }
+
       const unitPrice = getUnitPrice(cartQuantity)
+
+      // Restore product configuration params saved by ProductConfigurator
+      let savedParams: Record<string, string> = {}
+      if (template?.id) {
+        try {
+          const raw = sessionStorage.getItem(`speedy_params_${template.id}`)
+          if (raw) {
+            const parsed = JSON.parse(raw)
+            savedParams = parsed.params ?? {}
+            sessionStorage.removeItem(`speedy_params_${template.id}`)
+          }
+        } catch {
+          // ignore — fall back to dimensions only
+        }
+      }
 
       addItem({
         product_group_id: template?.product_group_id ?? 'custom-design',
@@ -362,14 +531,16 @@ export default function Toolbar() {
         selected_params: {
           width_mm: template?.print_width_mm ?? 100,
           height_mm: template?.print_height_mm ?? 100,
+          ...savedParams,
         },
         design_id: savedDesignId ?? undefined,
         thumbnail_url: thumbnailUrl,
       })
 
       setCartAdded(true)
-    } catch (err) {
+    } catch (err: any) {
       console.error('Add to cart failed:', err)
+      toast.error(err?.message || 'Failed to add to cart. Please try again.')
     } finally {
       setAddingToCart(false)
     }
@@ -379,28 +550,28 @@ export default function Toolbar() {
   const ghostBtn = 'flex items-center gap-1.5 px-3 py-1.5 border border-ed-border text-ed-text-muted text-xs font-medium rounded-md hover:text-ed-text hover:border-ed-border-light hover:bg-ed-surface-hover disabled:opacity-30 disabled:cursor-not-allowed transition-colors'
 
   return (
-    <div className="h-11 bg-ed-surface border-b border-ed-border flex items-center px-3 gap-1 flex-shrink-0">
+    <div className="h-11 bg-ed-surface border-b border-ed-border flex items-center px-3 gap-2 flex-shrink-0 z-[60]">
       {/* LEFT: Back + Breadcrumb + Name + Status */}
-      <div className="flex items-center gap-2 min-w-0">
+      <div className="flex items-center gap-2 flex-1 min-w-0">
         <button onClick={() => window.history.back()} title="Back" className={iconBtn}>
           <ArrowLeft size={16} />
         </button>
 
         {groupName && (
-          <>
+          <div className="hidden sm:flex items-center gap-2">
             <span className="text-xs text-ed-text-dim whitespace-nowrap">{groupName}</span>
             <span className="text-xs text-ed-border-light">/</span>
-          </>
+          </div>
         )}
 
         {siblingTemplates.length > 1 && template ? (
-          <div ref={templatePickerRef} className="relative">
+          <div ref={templatePickerRef} className="relative flex-shrink-0">
             <button
               onClick={() => setShowTemplatePicker((v) => !v)}
-              className="flex items-center gap-1 text-sm font-semibold text-ed-text hover:bg-ed-surface-hover rounded-md px-2 py-1 transition-colors"
+              className="flex items-center gap-1 text-sm font-semibold text-ed-text hover:bg-ed-surface-hover rounded-md px-2 py-0.5 transition-colors max-w-[120px] sm:max-w-none"
             >
-              {template.name}
-              <ChevronDown size={14} className="text-ed-text-dim" />
+              <span className="truncate">{template.name}</span>
+              <ChevronDown size={14} className="text-ed-text-dim flex-shrink-0" />
             </button>
             {showTemplatePicker && (
               <div className="absolute top-full left-0 mt-1 bg-ed-surface border border-ed-border rounded-lg shadow-xl shadow-black/10 z-50 min-w-[200px] py-1">
@@ -426,8 +597,8 @@ export default function Toolbar() {
             type="text"
             value={designName}
             onChange={(e) => setDesignName(e.target.value)}
-            className="text-sm font-semibold text-ed-text bg-transparent border-none outline-none min-w-[100px] max-w-[180px] hover:bg-ed-surface-hover focus:bg-ed-surface-hover px-2 py-0.5 rounded-md transition-all"
-            placeholder="Untitled Design"
+            className="text-sm font-semibold text-ed-text bg-transparent border-none outline-none flex-1 min-w-[60px] max-w-[180px] hover:bg-ed-surface-hover focus:bg-ed-surface-hover px-2 py-0.5 rounded-md transition-all truncate"
+            placeholder="Untitled"
           />
         )}
 
@@ -436,30 +607,33 @@ export default function Toolbar() {
             type="text"
             value={designName}
             onChange={(e) => setDesignName(e.target.value)}
-            className="text-sm font-semibold text-ed-text bg-transparent border-none outline-none min-w-[100px] max-w-[140px] hover:bg-ed-surface-hover focus:bg-ed-surface-hover px-2 py-0.5 rounded-md transition-all"
-            placeholder="Untitled Design"
+            className="hidden sm:block text-sm font-semibold text-ed-text bg-transparent border-none outline-none min-w-[60px] max-w-[140px] hover:bg-ed-surface-hover focus:bg-ed-surface-hover px-2 py-0.5 rounded-md transition-all truncate"
+            placeholder="Untitled"
           />
         )}
 
-        {/* Save status */}
+        {/* Save status - hide text on mobile */}
         <span className="flex items-center gap-1.5 text-[11px] whitespace-nowrap">
-          <span className={`w-1.5 h-1.5 rounded-full ${
+          <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
             saveStatus === 'saving' || saving ? 'bg-blue-400 animate-pulse' :
             saveStatus === 'saved' ? 'bg-emerald-400' : 'bg-amber-400'
           }`} />
-          <span className="text-ed-text-dim">
+          <span className="hidden md:inline text-ed-text-dim">
             {saving || saveStatus === 'saving' ? 'Saving...' : saveStatus === 'saved' ? 'Saved' : 'Unsaved'}
           </span>
         </span>
       </div>
 
-      {/* CENTER: Undo/Redo + Zoom */}
-      <div className="flex-1 flex items-center justify-center gap-0.5">
+      {/* CENTER: Undo/Redo + Zoom - Hidden on mobile to prevent overlap, tail-end of scroll on tablet */}
+      <div className="hidden lg:flex flex-1 items-center justify-center gap-0.5 flex-shrink-0">
         <button onClick={undo} disabled={noCanvas} title="Undo (Ctrl+Z)" className={iconBtn}>
           <Undo2 size={15} />
         </button>
         <button onClick={redo} disabled={noCanvas} title="Redo (Ctrl+Y)" className={iconBtn}>
           <Redo2 size={15} />
+        </button>
+        <button onClick={handleReset} disabled={noCanvas} title="Reset Design" className={`${iconBtn} hover:text-red-500`}>
+          <RotateCcw size={15} />
         </button>
 
         <div className="w-px h-4 bg-ed-border mx-2" />
@@ -481,69 +655,116 @@ export default function Toolbar() {
       </div>
 
       {/* RIGHT: Actions */}
-      <div className="flex items-center gap-1.5">
-        <button onClick={handlePreview} disabled={noCanvas} title="Preview" className={iconBtn}>
-          <Eye size={16} />
-        </button>
-        <button
-          onClick={() => useEditorStore.getState().togglePrintBoundaries()}
-          disabled={noCanvas}
-          title="Toggle Print Boundaries"
-          className={iconBtn}
-          style={{ opacity: useEditorStore.getState().showPrintBoundaries ? 1 : 0.4 }}
-        >
-          <Maximize2 size={15} />
-        </button>
-
-        <div className="w-px h-4 bg-ed-border mx-0.5" />
-
-        {template && (
+      <div className="flex items-center gap-1.5 flex-shrink-0">
+        <div className="hidden lg:flex items-center gap-1.5">
+          <button onClick={handlePreview} disabled={noCanvas} title="Preview" className={iconBtn}>
+            <Eye size={16} />
+          </button>
           <button
-            onClick={() => window.open(`/designer/${template.id}/csv${designId ? `?design=${designId}` : ''}`, '_blank')}
+            onClick={() => useEditorStore.getState().togglePrintBoundaries()}
             disabled={noCanvas}
-            title="Batch CSV Upload"
-            className={ghostBtn}
+            title="Toggle Print Boundaries"
+            className={iconBtn}
+            style={{ opacity: useEditorStore.getState().showPrintBoundaries ? 1 : 0.4 }}
           >
-            <Table2 size={14} />
-            CSV
+            <Maximize2 size={15} />
           </button>
-        )}
-        <button onClick={handleSave} disabled={noCanvas || saving} title="Save Design" className={ghostBtn}>
-          <Save size={14} />
-          {saving ? 'Saving...' : 'Save'}
-        </button>
-        <button onClick={handleExport} disabled={noCanvas} title="Export PNG" className={ghostBtn}>
-          <Download size={14} />
-          Export
-        </button>
-        <button onClick={handleExportPDF} disabled={noCanvas} title="Export PDF" className={ghostBtn}>
-          <Download size={14} />
-          PDF
-        </button>
 
-        {useAuth.getState().user?.role === 'admin' && (
-          <button 
-            onClick={handleSaveAsDefault} 
-            disabled={noCanvas || saving} 
-            title="Save as Default Template Design (Admin Only)" 
-            className={`${ghostBtn} bg-blue-50/50 border-blue-200 text-blue-600 hover:bg-blue-100/50`}
-          >
-            <LayoutTemplate size={14} />
-            Set Default
+          <div className="w-px h-4 bg-ed-border mx-0.5" />
+
+          {template && (
+            <button
+              onClick={() => window.open(`/designer/${template.id}/csv${designId ? `?design=${designId}` : ''}`, '_blank')}
+              disabled={noCanvas}
+              title="Batch CSV Upload"
+              className={ghostBtn}
+            >
+              <Table2 size={14} />
+              CSV
+            </button>
+          )}
+          <button onClick={handleSave} disabled={noCanvas || saving} title="Save Design" className={ghostBtn}>
+            <Save size={14} />
+            {saving ? 'Saving...' : 'Save'}
           </button>
-        )}
+          <button onClick={handleExport} disabled={noCanvas} title="Export PNG" className={ghostBtn}>
+            <Download size={14} />
+            Export
+          </button>
+          <button onClick={handleExportPDF} disabled={noCanvas} title="Export PDF" className={ghostBtn}>
+            <Download size={14} />
+            PDF
+          </button>
 
-        <div className="w-px h-4 bg-ed-border mx-0.5" />
+          {useAuth.getState().user?.role === 'admin' && (
+            <button 
+              onClick={handleSaveAsDefault} 
+              disabled={noCanvas || saving} 
+              title="Save as Default Template Design (Admin Only)" 
+              className={`${ghostBtn} bg-blue-50/50 border-blue-200 text-blue-600 hover:bg-blue-100/50`}
+            >
+              <LayoutTemplate size={14} />
+              Set Default
+            </button>
+          )}
 
-        {/* Primary CTA — gold gradient */}
+          <div className="w-px h-4 bg-ed-border mx-0.5" />
+        </div>
+
+        {/* Mobile More Actions Dropdown — shown when < lg */}
+        <div className="flex lg:hidden items-center mr-1">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button title="More Actions" className={iconBtn}>
+                <MoreVertical size={18} />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem onClick={handlePreview} disabled={noCanvas}>
+                <Eye className="mr-2 h-4 w-4" />
+                <span>Preview</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => useEditorStore.getState().togglePrintBoundaries()} disabled={noCanvas}>
+                <Maximize2 className="mr-2 h-4 w-4" />
+                <span>Toggle Boundaries</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleReset} disabled={noCanvas} className="text-red-500 focus:text-red-500">
+                <RotateCcw className="mr-2 h-4 w-4" />
+                <span>Reset Design</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleSave} disabled={noCanvas || saving}>
+                <Save className="mr-2 h-4 w-4" />
+                <span>{saving ? 'Saving...' : 'Save Design'}</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleExport} disabled={noCanvas}>
+                <Download className="mr-2 h-4 w-4" />
+                <span>Export PNG</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleExportPDF} disabled={noCanvas}>
+                <Download className="mr-2 h-4 w-4" />
+                <span>Export PDF</span>
+              </DropdownMenuItem>
+              {template && (
+                <DropdownMenuItem onClick={() => window.open(`/designer/${template.id}/csv${designId ? `?design=${designId}` : ''}`, '_blank')} disabled={noCanvas}>
+                  <Table2 className="mr-2 h-4 w-4" />
+                  <span>Batch CSV</span>
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
+        {/* Primary CTA — compact text on mobile */}
         <button
           onClick={handleOpenCartModal}
           disabled={noCanvas}
           title="Add to Cart"
-          className="flex items-center gap-1.5 px-4 py-1.5 bg-gradient-to-r from-ed-accent to-ed-accent-hover text-white text-xs font-bold rounded-md hover:from-ed-accent-hover hover:to-ed-accent disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-lg shadow-ed-accent/20 hover:shadow-ed-accent/30 active:scale-95"
+          className="flex items-center gap-1.5 px-3 sm:px-4 py-1.5 bg-gradient-to-r from-ed-accent to-ed-accent-hover text-white text-xs font-bold rounded-md hover:from-ed-accent-hover hover:to-ed-accent disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-lg shadow-ed-accent/20 hover:shadow-ed-accent/30 active:scale-95"
         >
-          <ShoppingCart size={14} />
-          Add to Cart
+          <ShoppingCart size={14} className="flex-shrink-0" />
+          <span className="sm:inline">Add to Cart</span>
+          <span className="hidden sm:hidden">Add</span>
         </button>
       </div>
 

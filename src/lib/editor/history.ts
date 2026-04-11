@@ -20,7 +20,8 @@ export class HistoryManager {
     if (this.isPaused) return
     if (this.debounceTimer) clearTimeout(this.debounceTimer)
     this.debounceTimer = setTimeout(() => {
-      const json = JSON.stringify(canvas.toJSON())
+      // @ts-ignore - include custom props so isArtboard/rawText survive undo/redo
+      const json = JSON.stringify(canvas.toJSON(['isArtboard', 'rawText']))
       this.onSave(json)
     }, this.debounceMs)
   }
@@ -29,7 +30,8 @@ export class HistoryManager {
   captureImmediate(canvas: FabricCanvas) {
     if (this.isPaused) return
     if (this.debounceTimer) clearTimeout(this.debounceTimer)
-    const json = JSON.stringify(canvas.toJSON())
+    // @ts-ignore - include custom props so isArtboard/rawText survive undo/redo
+    const json = JSON.stringify(canvas.toJSON(['isArtboard', 'rawText']))
     this.onSave(json)
   }
 

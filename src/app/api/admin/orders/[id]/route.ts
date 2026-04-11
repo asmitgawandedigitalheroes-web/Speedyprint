@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { logActivity } from '@/lib/audit'
 
 type RouteParams = { params: Promise<{ id: string }> }
 
@@ -98,6 +99,21 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
         status: body.status,
         notes: body.notes || null,
         changed_by: null,
+      })
+
+      // Log to global audit logs
+      await logActivity({
+        user_id: null, // Admin action, actor_id could be added if available in request
+        action: 'order_status_updated',
+        entity_type: 'order',
+        entity_id: id,
+        metadata: {
+          status: body.status,
+          notes: body.notes,
+          order_number: data.order_number,
+          order_user_id: data.user_id,
+        },
+        is_admin_action: true
       })
     }
 

@@ -15,6 +15,8 @@ import {
   FileText,
   RefreshCw,
   ShieldCheck,
+  XCircle,
+  Image as ImageIcon,
 } from 'lucide-react'
 import type { Proof } from '@/types'
 
@@ -56,6 +58,13 @@ const STATUS_CFG: Record<string, StatusCfg> = {
     border: 'rgba(227,6,19,0.25)',
     icon:   AlertCircle,
   },
+  cancelled: {
+    label:  'Cancelled',
+    bg:     'rgba(100,116,139,0.08)',
+    text:   '#475569',
+    border: 'rgba(100,116,139,0.25)',
+    icon:   XCircle,
+  },
 }
 
 export default function ProofReviewPage() {
@@ -65,8 +74,13 @@ export default function ProofReviewPage() {
   const [selectedProof,  setSelectedProof]  = useState<Proof | null>(null)
   const [notes,          setNotes]          = useState('')
   const [loading,        setLoading]        = useState(true)
-  const [submitting,     setSubmitting]     = useState(false)
-  const [viewMode,       setViewMode]       = useState<'pdf' | 'image'>('pdf')
+  const [submittingAction, setSubmittingAction] = useState<string | null>(null)
+  const [viewMode,         setViewMode]         = useState<'pdf' | 'image'>('pdf')
+  
+  // Hybrid Proxy-Blob Preview State
+  const [blobUrl, setBlobUrl] = useState<string | null>(null)
+  const [previewLoading, setPreviewLoading] = useState(false)
+  const [previewError, setPreviewError] = useState<string | null>(null)
 
   const fetchProofs = useCallback(async () => {
     if (!itemId) return
@@ -88,9 +102,58 @@ export default function ProofReviewPage() {
     if (user && itemId) fetchProofs()
   }, [user, itemId, fetchProofs])
 
+  // Fetch PDF as blob via proxy to bypass X-Frame-Options and IDM
+  useEffect(() => {
+    let active = true
+    if (selectedProof?.id && !blobUrl) {
+      setPreviewLoading(true)
+      setPreviewError(null)
+      fetch(`/api/proof-data/${selectedProof.id}`)
+        .then(async (res) => {
+          if (!res.ok) throw new Error(`HTTP ${res.status}`)
+          const json = await res.json()
+          if (!json.data) throw new Error('Missing data in response')
+          
+          // Convert Base64 back to Blob
+          const binaryString = atob(json.data)
+          const bytes = new Uint8Array(binaryString.length)
+          for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i)
+          }
+          const pdfBlob = new Blob([bytes], { type: 'application/pdf' })
+
+          if (active) {
+            const url = URL.createObjectURL(pdfBlob)
+            setBlobUrl(url)
+          }
+        })
+        .catch((err) => {
+          if (active) {
+            console.error('[ProofPreview] Fetch failed:', err)
+            setPreviewError('Failed to load preview. Please use the Download button above.')
+          }
+        })
+        .finally(() => {
+          if (active) setPreviewLoading(false)
+        })
+    }
+    return () => { active = false }
+  }, [selectedProof?.id, blobUrl])
+
+  // Reset blob when proof changes
+  useEffect(() => {
+    if (blobUrl) {
+      if (blobUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(blobUrl)
+      }
+      setBlobUrl(null)
+    }
+  }, [selectedProof?.id])
+
+
   const handleApprove = async () => {
     if (!selectedProof) return
-    setSubmitting(true)
+    setSubmittingAction('approve')
     try {
       const res = await fetch(`/api/proofs/${selectedProof.id}/approve`, {
         method:  'POST',
@@ -104,7 +167,7 @@ export default function ProofReviewPage() {
     } catch {
       toast.error('Failed to approve. Please try again.')
     }
-    setSubmitting(false)
+    setSubmittingAction(null)
   }
 
   const handleRequestRevision = async () => {
@@ -113,7 +176,7 @@ export default function ProofReviewPage() {
       toast.error('Please describe the changes needed before requesting a revision.')
       return
     }
-    setSubmitting(true)
+    setSubmittingAction('revision')
     try {
       const res = await fetch(`/api/proofs/${selectedProof.id}/revision`, {
         method:  'POST',
@@ -132,7 +195,29 @@ export default function ProofReviewPage() {
     } catch {
       toast.error('Failed to request revision. Please try again.')
     }
-    setSubmitting(false)
+    setSubmittingAction(null)
+  }
+
+  const handleCancel = async () => {
+    if (!selectedProof) return
+    const confirmed = window.confirm('Are you sure you want to cancel this item? This action cannot be undone.')
+    if (!confirmed) return
+
+    setSubmittingAction('cancel')
+    try {
+      const res = await fetch(`/api/proofs/${selectedProof.id}/cancel`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ notes }),
+      })
+      if (!res.ok) throw new Error()
+      toast.success('Item cancelled.')
+      setSelectedProof((p) => p ? { ...p, status: 'cancelled' } : p)
+      setProofs((prev) => prev.map((p) => p.id === selectedProof.id ? { ...p, status: 'cancelled' } : p))
+    } catch {
+      toast.error('Failed to cancel. Please contact support.')
+    }
+    setSubmittingAction(null)
   }
 
   /* ── Loading ── */
@@ -238,10 +323,8 @@ export default function ProofReviewPage() {
 
                 {selectedProof?.proof_file_url && (
                   <a
-                    href={selectedProof.proof_file_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    download
+                    href={`/api/proofs/${selectedProof.id}/file`}
+                    download={`proof-v${selectedProof.version}.pdf`}
                     className="inline-flex items-center gap-1.5 rounded-lg border border-[#E7E5E4] px-3 py-1.5 text-xs font-medium transition hover:border-brand-primary hover:text-brand-primary"
                   >
                     <Download className="h-3.5 w-3.5" />
@@ -251,25 +334,60 @@ export default function ProofReviewPage() {
               </div>
 
               {/* Preview area */}
-              <div className="flex min-h-[480px] items-center justify-center overflow-hidden bg-[#F5F6F7]">
-                {selectedProof?.proof_file_url ? (
-                  viewMode === 'pdf' ? (
-                    <iframe
-                      src={`${selectedProof.proof_file_url}#toolbar=0`}
-                      className="h-[480px] w-full"
-                      title={`Proof v${selectedProof?.version}`}
-                    />
-                  ) : (
-                    <img
-                      src={selectedProof.proof_thumbnail_url ?? selectedProof.proof_file_url}
-                      alt={`Proof v${selectedProof?.version}`}
-                      className="max-h-[480px] max-w-full object-contain p-6"
-                    />
-                  )
+              <div className="flex min-h-[520px] items-center justify-center overflow-hidden bg-[#F5F6F7] relative">
+                {previewLoading ? (
+                  <div className="flex flex-col items-center gap-3">
+                    <RefreshCw className="h-10 w-10 animate-spin text-brand-primary" />
+                    <p className="text-sm font-medium text-brand-text-muted">Preparing PDF Preview...</p>
+                  </div>
+                ) : previewError ? (
+                  <div className="max-w-sm px-6 text-center">
+                    <AlertCircle className="mx-auto mb-4 h-12 w-12 text-red-500 opacity-50" />
+                    <p className="font-heading text-base font-semibold text-brand-text">Preview not available</p>
+                    <p className="mt-2 text-sm text-brand-text-muted">{previewError}</p>
+                    <a
+                      href={`/api/proofs/${selectedProof?.id}/file`}
+                      className="mt-6 inline-flex h-9 items-center justify-center rounded-lg border border-[#E7E5E4] bg-white px-4 text-xs font-medium text-brand-text transition hover:bg-[#F5F6F7]"
+                    >
+                      Open PDF Directly
+                    </a>
+                  </div>
+                ) : viewMode === 'image' ? (
+                  <div className="flex flex-col items-center justify-center p-4">
+                    {selectedProof?.proof_thumbnail_url && !selectedProof.proof_thumbnail_url.toLowerCase().endsWith('.pdf') ? (
+                      <img
+                        src={selectedProof.proof_thumbnail_url}
+                        alt={`Proof v${selectedProof.version}`}
+                        className="max-h-[600px] w-auto rounded-lg shadow-md object-contain"
+                      />
+                    ) : (
+                      <div className="flex flex-col items-center gap-3 py-16 text-center">
+                        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-slate-100">
+                          <ImageIcon className="h-8 w-8 text-slate-300" />
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-sm font-medium text-slate-600">No image version available</p>
+                          <p className="max-w-[200px] text-xs text-slate-400">Please use the "PDF View" tab to review this proof version.</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : blobUrl ? (
+                  <iframe
+                    key={selectedProof?.id}
+                    src={blobUrl}
+                    className="h-[520px] w-full border-0"
+                    title={`Proof v${selectedProof?.version}`}
+                  />
                 ) : (
-                  <div className="text-center text-brand-text-muted">
-                    <FileText className="mx-auto mb-2 h-12 w-12 opacity-25" />
-                    <p className="text-sm">Preview not available</p>
+                  <div className="max-w-sm px-6 text-center">
+                    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-black/5">
+                      <FileText className="h-8 w-8 text-brand-text-muted opacity-40" />
+                    </div>
+                    <p className="font-heading text-base font-semibold text-brand-text">Waiting for proof...</p>
+                    <p className="mt-2 text-sm text-brand-text-muted">
+                      Please select a version or refresh the page.
+                    </p>
                   </div>
                 )}
               </div>
@@ -297,10 +415,10 @@ export default function ProofReviewPage() {
                     {/* Approve — brand primary red */}
                     <button
                       onClick={handleApprove}
-                      disabled={submitting}
+                      disabled={!!submittingAction}
                       className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-brand-primary py-3 text-sm font-semibold text-white transition hover:bg-brand-primary-dark disabled:opacity-50"
                     >
-                      {submitting
+                      {submittingAction === 'approve'
                         ? <RefreshCw className="h-4 w-4 animate-spin" />
                         : <CheckCircle2 className="h-4 w-4" />}
                       Approve &amp; Start Production
@@ -309,7 +427,7 @@ export default function ProofReviewPage() {
                     {/* Revision — brand yellow */}
                     <button
                       onClick={handleRequestRevision}
-                      disabled={submitting}
+                      disabled={!!submittingAction}
                       className="flex flex-1 items-center justify-center gap-2 rounded-xl border-2 py-3 text-sm font-semibold transition disabled:opacity-50"
                       style={{
                         borderColor:     'rgba(255,193,7,0.6)',
@@ -317,10 +435,20 @@ export default function ProofReviewPage() {
                         color:           '#7a5c00',
                       }}
                     >
-                      {submitting
+                      {submittingAction === 'revision'
                         ? <RefreshCw className="h-4 w-4 animate-spin" />
                         : <AlertCircle className="h-4 w-4" />}
                       Request Revision
+                    </button>
+                  </div>
+
+                  <div className="flex justify-center border-t border-dashed border-[#E7E5E4] pt-4">
+                    <button
+                      onClick={handleCancel}
+                      disabled={!!submittingAction}
+                      className="text-xs font-medium text-brand-text-muted hover:text-brand-primary hover:underline transition disabled:opacity-50"
+                    >
+                      I no longer want this item. Cancel it.
                     </button>
                   </div>
 
@@ -387,6 +515,27 @@ export default function ProofReviewPage() {
                           {selectedProof.customer_notes}
                         </div>
                       )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Cancelled state footer */}
+              {selectedProof?.status === 'cancelled' && (
+                <div
+                  className="border-t p-5"
+                  style={{
+                    backgroundColor: 'rgba(100,116,139,0.05)',
+                    borderColor:     'rgba(100,116,139,0.15)',
+                  }}
+                >
+                  <div className="flex items-start gap-3">
+                    <XCircle className="mt-0.5 h-5 w-5 shrink-0 text-slate-400" />
+                    <div>
+                      <p className="text-sm font-semibold text-slate-600">This item has been cancelled</p>
+                      <p className="mt-0.5 text-xs text-slate-500">
+                        Production has been stopped. Please contact support if you believe this is an error.
+                      </p>
                     </div>
                   </div>
                 </div>

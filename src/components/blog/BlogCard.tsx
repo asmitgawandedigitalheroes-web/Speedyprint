@@ -18,7 +18,7 @@ export function BlogCard({ post }: BlogCardProps) {
   return (
     <Link
       href={`/blog/${post.slug}`}
-      className="group overflow-hidden rounded-xl border bg-white shadow-sm transition-shadow hover:shadow-md"
+      className="group flex h-full flex-col overflow-hidden rounded-xl border bg-white shadow-sm transition-shadow hover:shadow-md"
     >
       {/* Image */}
       {post.featured_image ? (
@@ -32,17 +32,24 @@ export function BlogCard({ post }: BlogCardProps) {
           />
         </div>
       ) : (
-        <div className="flex aspect-[16/9] items-center justify-center bg-brand-secondary/10">
-          <span className="text-4xl">📝</span>
+        <div className="flex aspect-[16/9] items-center justify-center bg-brand-bg/50 p-8 transition-opacity">
+          <div className="relative h-full w-full">
+            <Image
+              src="/images/logo.png"
+              alt="Speedy Print Suite"
+              fill
+              className="object-contain"
+            />
+          </div>
         </div>
       )}
 
       {/* Content */}
-      <div className="p-5">
+      <div className="flex flex-1 flex-col p-5">
         {date && (
           <p className="text-xs text-brand-text-muted">{date}</p>
         )}
-        <h3 className="mt-1 font-heading text-lg font-semibold text-brand-text group-hover:text-brand-primary">
+        <h3 className="mt-1 line-clamp-2 font-heading text-lg font-semibold text-brand-text group-hover:text-brand-primary">
           {post.title}
         </h3>
         {post.excerpt && (
@@ -50,7 +57,7 @@ export function BlogCard({ post }: BlogCardProps) {
             {post.excerpt}
           </p>
         )}
-        <p className="mt-3 text-sm font-medium text-brand-primary">
+        <p className="mt-auto pt-4 text-sm font-medium text-brand-primary">
           Read More →
         </p>
       </div>

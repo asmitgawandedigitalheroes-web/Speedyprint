@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { sendAdminRevisionRequested } from '@/lib/email/resend'
 import { logProofAudit, getClientIp } from '@/lib/proofAudit'
+import { logActivity } from '@/lib/audit'
 
 export async function POST(
   request: NextRequest,
@@ -52,12 +53,37 @@ export async function POST(
     metadata:      { version: proof.version },
   })
 
+  // Global Audit Log
+  const { data: itemWithOrder } = await admin
+    .from('order_items')
+    .select('order:orders!order_id(order_number)')
+    .eq('id', proof!.order_item_id)
+    .single()
+
+  const orderNumForLog = Array.isArray(itemWithOrder?.order)
+    ? itemWithOrder?.order[0]?.order_number
+    : (itemWithOrder?.order as any)?.order_number
+
+  await logActivity({
+    user_id: user.id,
+    action: 'proof_revision_requested',
+    entity_type: 'proof',
+    entity_id: id,
+    metadata: {
+      order_item_id: proof.order_item_id,
+      version: proof.version,
+      notes: body.notes,
+      order_number: orderNumForLog
+    },
+    is_admin_action: false,
+  })
+
   // ── Notify admin about the revision request ────────────────────────────────
   try {
     const { data: item } = await admin
       .from('order_items')
-      .select('order:orders(order_number)')
-      .eq('id', proof.order_item_id)
+      .select('order:orders!order_id(order_number)')
+      .eq('id', proof!.order_item_id)
       .single()
 
     const orderNum = (item?.order as any)?.order_number

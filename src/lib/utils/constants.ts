@@ -20,11 +20,11 @@ export const DIVISIONS = [
 ]
 
 export const HEADER_PRODUCTS = [
-  { href: '/products?division=labels', label: 'Labels', description: 'Custom stickers & product labels', icon: 'Tag' },
-  { href: '/products?division=laser', label: 'Laser', description: 'Laser cutting & engraving', icon: 'Zap' },
-  { href: '/products?division=mtb-boards', label: 'MTB Boards', description: 'Durable cycling number boards', icon: 'Bike' },
-  { href: '/products?division=race-numbers', label: 'Race Numbers', description: 'Professional race bibs & timing', icon: 'Hash' },
-  { href: '/products?division=print', label: 'Stamps', description: 'Self-inking & custom stamps', icon: 'Stamp' },
+  { href: '/products?division=labels', label: 'Labels', description: 'Custom labels, stickers, wristbands & car magnets', icon: 'Tag' },
+  { href: '/products?division=race-numbers', label: 'Race Numbers', description: 'Professional race numbers & event tags', icon: 'Hash' },
+  { href: '/products?division=mtb-boards', label: 'MTB & Boards', description: 'MTB boards, bike flaps & Correx boards', icon: 'Bike' },
+  { href: '/products?division=print', label: 'Print', description: 'Flyers, business cards, stamps, brochures & more', icon: 'Printer' },
+  { href: '/products?division=laser', label: 'Laser & NFC', description: 'Laser-cut signs, acrylic & NFC stands', icon: 'Zap' },
   { href: '/products?division=trophies', label: 'Trophies', description: 'Awards, medals & recognition', icon: 'Trophy' },
 ]
 
@@ -43,7 +43,7 @@ export const SA_PROVINCES = [
 export const ORDER_STATUS_LABELS: Record<string, { label: string; color: string }> = {
   draft: { label: 'Draft', color: 'bg-gray-100 text-gray-700' },
   pending_payment: { label: 'Pending Payment', color: 'bg-yellow-100 text-yellow-700' },
-  paid: { label: 'Paid', color: 'bg-blue-100 text-blue-700' },
+  paid: { label: 'Paid', color: 'bg-green-100 text-green-700' },
   pending_design: { label: 'Pending Design', color: 'bg-orange-100 text-orange-700' },
   proof_pending_review: { label: 'Proof: Pending Review', color: 'bg-amber-100 text-amber-700' },
   in_production: { label: 'In Production', color: 'bg-purple-100 text-purple-700' },
@@ -90,37 +90,46 @@ export const PRODUCT_FAMILIES = [
   {
     key: 'labels-stickers',
     name: 'Labels & Stickers',
-    description: 'Professional custom products for every surface, industry and application.',
+    description: 'Custom labels, stickers, wristbands, and car magnets for any surface or application.',
     imageUrl: '/images/products/custom-labels.png',
     icon: 'Tag',
-    products: ['Custom Stickers', 'Product Labels', 'Die-Cut Stickers'],
+    products: ['Custom Labels', 'Vinyl Stickers', 'Wristbands', 'Car Magnets'],
     divisionKey: 'labels',
   },
   {
     key: 'event-products',
-    name: 'Event Products',
-    description: 'Race bibs, event numbers, and MTB boards built for performance days.',
+    name: 'Race & Event',
+    description: 'Race numbers, event tags, and MTB boards built for performance days.',
     imageUrl: '/images/products/race-bibs.png',
     icon: 'Hash',
-    products: ['Race Numbers', 'MTB Boards', 'Event Tags'],
+    products: ['Race Numbers', 'Event Tags'],
     divisionKey: 'race-numbers',
   },
   {
-    key: 'stamps-office',
-    name: 'Stamps & Office',
-    description: 'Self-inking and pre-inked stamps for businesses and offices.',
+    key: 'mtb-boards',
+    name: 'MTB & Boards',
+    description: 'MTB number boards, bike flaps, and Correx signage boards.',
+    imageUrl: '/images/products/mtb-number-boards.png',
+    icon: 'Bike',
+    products: ['MTB Number Boards', 'Bike Flaps', 'Correx Boards'],
+    divisionKey: 'mtb-boards',
+  },
+  {
+    key: 'print-stationery',
+    name: 'Print & Stationery',
+    description: 'Flyers, business cards, brochures, certificates, note pads, stamps, and event printing.',
     imageUrl: '/images/products/self-inking-stamps.png',
-    icon: 'Stamp',
-    products: ['Self-Inking Stamps', 'Pre-Inked Stamps', 'Custom Stamps'],
+    icon: 'Printer',
+    products: ['Flyers', 'Business Cards', 'Brochures & Catalogues', 'Certificates', 'Note Pads', 'Self-Inking Stamps', 'Envelopes', 'Event Printing'],
     divisionKey: 'print',
   },
   {
     key: 'laser-fabrication',
-    name: 'Laser & Custom Fabrication',
-    description: 'Precision laser-cut signs, engraved gifts, and acrylic plaques.',
+    name: 'Laser & NFC',
+    description: 'Precision laser-cut acrylic signs, engraved gifts, and smart NFC stands.',
     imageUrl: '/images/products/acrylic-signs.png',
     icon: 'Zap',
-    products: ['Laser-Cut Signs', 'Engraved Gifts', 'Acrylic Plaques'],
+    products: ['Acrylic Signs', 'Wooden Plaques', 'NFC Stands'],
     divisionKey: 'laser',
   },
   {
@@ -129,14 +138,14 @@ export const PRODUCT_FAMILIES = [
     description: 'Coffee cup sleeves, branded packaging, and award trophies.',
     imageUrl: '/images/products/coffee-cup-sleeves.png',
     icon: 'Layout',
-    products: ['Coffee Cup Sleeves', 'Award Trophies', 'Branded Packaging'],
+    products: ['Coffee Cup Sleeves', 'Award Trophies'],
     divisionKey: 'trophies',
   },
 ]
 
 // Pricing Constants
-export const BASE_PRICE_PER_UNIT = 5.0 // R5.00 for 100x100mm on white vinyl
-export const DOMING_SURCHARGE = 3.5 // R3.50 per unit
+export const BASE_PRICE_PER_UNIT = 25.0 // R25.00 for 100x100mm on white vinyl
+export const DOMING_SURCHARGE = 15.0 // R15.00 per unit
 export const BASE_SIZE_MM = { width: 100, height: 100 }
 
 export const MATERIALS = [

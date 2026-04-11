@@ -10,6 +10,7 @@ import {
   FabricObject,
   Pattern,
   Gradient,
+  Group,
   loadSVGFromString,
   util,
 } from 'fabric'
@@ -282,6 +283,28 @@ export function deleteSelected(canvas: FabricCanvas) {
   })
   canvas.discardActiveObject()
   canvas.renderAll()
+}
+
+/** Group multiple selected objects into one permanent group */
+export function groupSelected(canvas: FabricCanvas) {
+  const active = canvas.getActiveObject()
+  if (!active || active.type !== 'activeSelection') return
+  
+  const group = (active as any).toGroup()
+  canvas.setActiveObject(group)
+  canvas.renderAll()
+  return group
+}
+
+/** Take a Group and break it back into individual objects */
+export function ungroupSelected(canvas: FabricCanvas) {
+  const active = canvas.getActiveObject()
+  if (!active || active.type !== 'group') return
+  
+  const selection = (active as any).toActiveSelection()
+  canvas.setActiveObject(selection)
+  canvas.renderAll()
+  return selection
 }
 
 /* ──────────────────────── Clipboard ──────────────────────── */

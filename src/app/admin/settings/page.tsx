@@ -1,12 +1,59 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Save, Loader2, MessageCircle } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Save, Loader2, MessageCircle, Globe, Truck, Palette, DollarSign, Building2 } from 'lucide-react'
 import { toast } from 'sonner'
+import { ImageUploader } from '@/components/admin/ImageUploader'
+import { PageHeader, SectionCard } from '@/components/admin/AdminUI'
+
+function SettingField({
+  label,
+  hint,
+  children,
+}: {
+  label: string
+  hint?: string
+  children: React.ReactNode
+}) {
+  return (
+    <div className="space-y-1.5">
+      <label className="block text-xs font-semibold text-gray-700">{label}</label>
+      {children}
+      {hint && <p className="text-[11px] text-gray-400">{hint}</p>}
+    </div>
+  )
+}
+
+function SettingInput({
+  id,
+  value,
+  onChange,
+  placeholder,
+  type = 'text',
+  step,
+  readOnly,
+}: {
+  id?: string
+  value: string
+  onChange?: (v: string) => void
+  placeholder?: string
+  type?: string
+  step?: string
+  readOnly?: boolean
+}) {
+  return (
+    <input
+      id={id}
+      type={type}
+      step={step}
+      value={value}
+      onChange={onChange ? (e) => onChange(e.target.value) : undefined}
+      placeholder={placeholder}
+      readOnly={readOnly}
+      className="h-9 w-full rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-800 outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-100 placeholder:text-gray-400 read-only:bg-gray-50 read-only:text-gray-500"
+    />
+  )
+}
 
 export default function AdminSettingsPage() {
   const [loading, setLoading] = useState(true)
@@ -14,29 +61,18 @@ export default function AdminSettingsPage() {
   const [settings, setSettings] = useState<Record<string, string>>({})
 
   useEffect(() => {
-    fetchSettings()
+    fetch('/api/admin/settings')
+      .then(r => { if (!r.ok) throw new Error(); return r.json() })
+      .then(data => setSettings(data.settings || {}))
+      .catch(() => toast.error('Failed to load settings'))
+      .finally(() => setLoading(false))
   }, [])
 
-  async function fetchSettings() {
-    try {
-      const res = await fetch('/api/admin/settings')
-      if (!res.ok) throw new Error('Failed to fetch')
-      const data = await res.json()
-      setSettings(data.settings || {})
-    } catch (err) {
-      console.error('Settings fetch error:', err)
-      toast.error('Failed to load settings')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  function updateSetting(key: string, value: string) {
+  function set(key: string, value: string) {
     setSettings((prev) => ({ ...prev, [key]: value }))
   }
 
   async function handleSave() {
-    // Validate pricing fields before saving
     const vatRate = parseFloat(settings.vat_rate || '0')
     if (settings.vat_rate !== undefined && (isNaN(vatRate) || vatRate < 0 || vatRate > 1)) {
       toast.error('VAT rate must be between 0 and 1 (e.g. 0.15 for 15%)')
@@ -52,7 +88,6 @@ export default function AdminSettingsPage() {
       toast.error('Flat shipping rate must be 0 or greater')
       return
     }
-
     setSaving(true)
     try {
       const res = await fetch('/api/admin/settings', {
@@ -60,7 +95,7 @@ export default function AdminSettingsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ settings }),
       })
-      if (!res.ok) throw new Error('Save failed')
+      if (!res.ok) throw new Error()
       toast.success('Settings saved successfully')
     } catch {
       toast.error('Failed to save settings')
@@ -69,22 +104,18 @@ export default function AdminSettingsPage() {
     }
   }
 
+  const whatsappUrl = settings.whatsapp_number ? `https://wa.me/${settings.whatsapp_number}` : ''
+
   if (loading) {
     return (
-      <div className="mx-auto max-w-3xl space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="space-y-2">
-            <div className="h-7 w-40 animate-pulse rounded bg-gray-200" />
-            <div className="h-4 w-64 animate-pulse rounded bg-gray-200" />
-          </div>
-          <div className="h-9 w-24 animate-pulse rounded bg-gray-200" />
-        </div>
+      <div className="mx-auto max-w-2xl space-y-6">
+        <div className="h-8 w-48 animate-pulse rounded bg-gray-100" />
         {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="rounded-xl border border-[#E7E5E4] bg-white p-6 space-y-4">
-            <div className="h-5 w-40 animate-pulse rounded bg-gray-200" />
+          <div key={i} className="rounded-xl border border-gray-100 bg-white p-5 space-y-4 shadow-sm">
+            <div className="h-4 w-32 animate-pulse rounded bg-gray-100" />
             <div className="grid grid-cols-2 gap-4">
-              <div className="h-9 animate-pulse rounded bg-gray-200" />
-              <div className="h-9 animate-pulse rounded bg-gray-200" />
+              <div className="h-9 animate-pulse rounded-lg bg-gray-100" />
+              <div className="h-9 animate-pulse rounded-lg bg-gray-100" />
             </div>
           </div>
         ))}
@@ -92,256 +123,130 @@ export default function AdminSettingsPage() {
     )
   }
 
-  const whatsappUrl = settings.whatsapp_number
-    ? `https://wa.me/${settings.whatsapp_number}`
-    : ''
-
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-brand-text">Site Settings</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Manage your business information, shipping, and branding
-          </p>
-        </div>
-        <Button onClick={handleSave} disabled={saving}>
-          {saving ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          ) : (
-            <Save className="mr-2 h-4 w-4" />
-          )}
-          {saving ? 'Saving...' : 'Save All'}
-        </Button>
-      </div>
+    <div className="mx-auto max-w-2xl space-y-6">
+      <PageHeader
+        title="Site Settings"
+        description="Manage business information, shipping rates, and branding"
+        actions={
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="flex items-center gap-2 rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700 disabled:opacity-60 transition-colors"
+          >
+            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+            {saving ? 'Saving…' : 'Save All'}
+          </button>
+        }
+      />
 
       {/* Business Information */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Business Information</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
+      <SectionCard
+        title="Business Information"
+        actions={<Building2 className="h-4 w-4 text-gray-400" />}
+      >
+        <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="site_name">Site Name</Label>
-              <Input
-                id="site_name"
-                value={settings.site_name || ''}
-                onChange={(e) => updateSetting('site_name', e.target.value)}
-                placeholder="Speedy Print Suite"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="site_tagline">Tagline</Label>
-              <Input
-                id="site_tagline"
-                value={settings.site_tagline || ''}
-                onChange={(e) => updateSetting('site_tagline', e.target.value)}
-                placeholder="Custom Stickers & Labels"
-              />
-            </div>
+            <SettingField label="Site Name">
+              <SettingInput value={settings.site_name || ''} onChange={(v) => set('site_name', v)} placeholder="Speedy Print Suite" />
+            </SettingField>
+            <SettingField label="Tagline">
+              <SettingInput value={settings.site_tagline || ''} onChange={(v) => set('site_tagline', v)} placeholder="Custom Stickers & Labels" />
+            </SettingField>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="company_address">Address</Label>
-            <Input
-              id="company_address"
-              value={settings.company_address || ''}
-              onChange={(e) => updateSetting('company_address', e.target.value)}
-              placeholder="Cape Town, South Africa"
-            />
-          </div>
+          <SettingField label="Address">
+            <SettingInput value={settings.company_address || ''} onChange={(v) => set('company_address', v)} placeholder="13 Langwa Street, Strydompark, Randburg" />
+          </SettingField>
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="company_phone">Phone</Label>
-              <Input
-                id="company_phone"
-                value={settings.company_phone || ''}
-                onChange={(e) => updateSetting('company_phone', e.target.value)}
-                placeholder="+27 12 345 6789"
-                type="tel"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="company_email">Email</Label>
-              <Input
-                id="company_email"
-                value={settings.company_email || ''}
-                onChange={(e) => updateSetting('company_email', e.target.value)}
-                placeholder="info@speedylabels.co.za"
-                type="email"
-              />
-            </div>
+            <SettingField label="Phone">
+              <SettingInput value={settings.company_phone || ''} onChange={(v) => set('company_phone', v)} placeholder="011 027 1811" type="tel" />
+            </SettingField>
+            <SettingField label="Email">
+              <SettingInput value={settings.company_email || ''} onChange={(v) => set('company_email', v)} placeholder="info@speedylabels.co.za" type="email" />
+            </SettingField>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </SectionCard>
 
       {/* WhatsApp */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
-            <MessageCircle className="h-4 w-4 text-green-600" />
-            WhatsApp
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="whatsapp_number">
-              WhatsApp Number (international format, no + sign)
-            </Label>
-            <Input
-              id="whatsapp_number"
-              value={settings.whatsapp_number || ''}
-              onChange={(e) => updateSetting('whatsapp_number', e.target.value)}
-              placeholder="27123456789"
-            />
-            {whatsappUrl && (
-              <p className="text-xs text-muted-foreground">
-                Preview:{' '}
-                <a
-                  href={whatsappUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-green-600 underline"
-                >
-                  {whatsappUrl}
-                </a>
-              </p>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+      <SectionCard
+        title="WhatsApp"
+        actions={<MessageCircle className="h-4 w-4 text-green-500" />}
+      >
+        <SettingField label="Number (international format, no + sign)" hint={whatsappUrl ? `Preview: wa.me/${settings.whatsapp_number}` : undefined}>
+          <SettingInput value={settings.whatsapp_number || ''} onChange={(v) => set('whatsapp_number', v)} placeholder="27123456789" />
+        </SettingField>
+        {whatsappUrl && (
+          <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="mt-2 inline-block text-xs text-green-600 underline underline-offset-2">
+            Test link →
+          </a>
+        )}
+      </SectionCard>
 
       {/* Tax & Shipping */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Tax & Shipping</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="vat_rate">VAT Rate</Label>
-              <Input
-                id="vat_rate"
-                value={settings.vat_rate || ''}
-                onChange={(e) => updateSetting('vat_rate', e.target.value)}
-                placeholder="0.15"
-                type="number"
-                step="0.01"
-              />
-              <p className="text-xs text-muted-foreground">
-                As decimal (e.g., 0.15 = 15%)
-              </p>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="free_delivery_threshold">
-                Free Delivery Over (R)
-              </Label>
-              <Input
-                id="free_delivery_threshold"
-                value={settings.free_delivery_threshold || ''}
-                onChange={(e) =>
-                  updateSetting('free_delivery_threshold', e.target.value)
-                }
-                placeholder="500"
-                type="number"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="flat_shipping_rate">Flat Shipping (R)</Label>
-              <Input
-                id="flat_shipping_rate"
-                value={settings.flat_shipping_rate || ''}
-                onChange={(e) =>
-                  updateSetting('flat_shipping_rate', e.target.value)
-                }
-                placeholder="85"
-                type="number"
-              />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <SectionCard
+        title="Tax & Shipping"
+        actions={<Truck className="h-4 w-4 text-gray-400" />}
+      >
+        <div className="grid grid-cols-3 gap-4">
+          <SettingField label="VAT Rate" hint="Decimal — e.g. 0.15 = 15%">
+            <SettingInput value={settings.vat_rate || ''} onChange={(v) => set('vat_rate', v)} placeholder="0.15" type="number" step="0.01" />
+          </SettingField>
+          <SettingField label="Free Delivery Over (R)" hint="0 to disable">
+            <SettingInput value={settings.free_delivery_threshold || ''} onChange={(v) => set('free_delivery_threshold', v)} placeholder="500" type="number" />
+          </SettingField>
+          <SettingField label="Flat Shipping Rate (R)">
+            <SettingInput value={settings.flat_shipping_rate || ''} onChange={(v) => set('flat_shipping_rate', v)} placeholder="85" type="number" />
+          </SettingField>
+        </div>
+      </SectionCard>
 
       {/* Social Media */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Social Media</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="social_facebook">Facebook URL</Label>
-            <Input
-              id="social_facebook"
-              value={settings.social_facebook || ''}
-              onChange={(e) =>
-                updateSetting('social_facebook', e.target.value)
-              }
-              placeholder="https://facebook.com/speedylabels"
-              type="url"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="social_instagram">Instagram URL</Label>
-            <Input
-              id="social_instagram"
-              value={settings.social_instagram || ''}
-              onChange={(e) =>
-                updateSetting('social_instagram', e.target.value)
-              }
-              placeholder="https://instagram.com/speedylabels"
-              type="url"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="social_twitter">Twitter / X URL</Label>
-            <Input
-              id="social_twitter"
-              value={settings.social_twitter || ''}
-              onChange={(e) =>
-                updateSetting('social_twitter', e.target.value)
-              }
-              placeholder="https://x.com/speedylabels"
-              type="url"
-            />
-          </div>
-        </CardContent>
-      </Card>
+      <SectionCard
+        title="Social Media"
+        actions={<Globe className="h-4 w-4 text-gray-400" />}
+      >
+        <div className="space-y-4">
+          <SettingField label="Facebook URL">
+            <SettingInput value={settings.social_facebook || ''} onChange={(v) => set('social_facebook', v)} placeholder="https://facebook.com/speedylabels" type="url" />
+          </SettingField>
+          <SettingField label="Instagram URL">
+            <SettingInput value={settings.social_instagram || ''} onChange={(v) => set('social_instagram', v)} placeholder="https://instagram.com/speedylabels" type="url" />
+          </SettingField>
+          <SettingField label="Twitter / X URL">
+            <SettingInput value={settings.social_twitter || ''} onChange={(v) => set('social_twitter', v)} placeholder="https://x.com/speedylabels" type="url" />
+          </SettingField>
+        </div>
+      </SectionCard>
 
       {/* Branding */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Branding</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="logo_url">Logo URL</Label>
-            <Input
-              id="logo_url"
-              value={settings.logo_url || ''}
-              onChange={(e) => updateSetting('logo_url', e.target.value)}
-              placeholder="/images/logo.png"
-            />
-          </div>
-        </CardContent>
-      </Card>
+      <SectionCard
+        title="Branding"
+        actions={<Palette className="h-4 w-4 text-gray-400" />}
+      >
+        <SettingField label="Logo">
+          <ImageUploader
+            value={settings.logo_url ? [settings.logo_url] : []}
+            onChange={(urls) => set('logo_url', urls[0] || '')}
+            maxImages={1}
+            folder="branding"
+          />
+        </SettingField>
+      </SectionCard>
 
-      {/* Currency Info (read-only) */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Currency</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-between rounded-lg border p-4">
-            <div>
-              <p className="text-sm font-medium">Default Currency</p>
-              <p className="text-xs text-muted-foreground">
-                South African Rand (ZAR)
-              </p>
-            </div>
-            <span className="text-lg font-bold">R (ZAR)</span>
+      {/* Currency (read-only) */}
+      <SectionCard
+        title="Currency"
+        actions={<DollarSign className="h-4 w-4 text-gray-400" />}
+      >
+        <div className="flex items-center justify-between rounded-lg border border-gray-100 bg-gray-50 px-4 py-3">
+          <div>
+            <p className="text-sm font-medium text-gray-800">Default Currency</p>
+            <p className="text-xs text-gray-400">South African Rand — cannot be changed</p>
           </div>
-        </CardContent>
-      </Card>
+          <span className="rounded-full bg-green-100 px-3 py-1 text-sm font-bold text-green-700">R (ZAR)</span>
+        </div>
+      </SectionCard>
     </div>
   )
 }

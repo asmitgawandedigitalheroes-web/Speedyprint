@@ -82,28 +82,23 @@ export async function POST(
     const { zipBytes, fileName, fileCount } = await buildOrderZip(id)
 
     if (fileCount === 0) {
+      console.warn(`[CustomerFiles] ZIP requested for ${id} but 0 files found/bundled.`)
       return NextResponse.json(
         { error: 'Production files are not ready yet. Please check back shortly.' },
         { status: 404 }
       )
     }
 
-    return new NextResponse(
-      new ReadableStream({
-        start(controller) {
-          controller.enqueue(zipBytes)
-          controller.close()
-        },
-      }),
-      {
-        status: 200,
-        headers: {
-          'Content-Type': 'application/zip',
-          'Content-Disposition': `attachment; filename="${fileName}"`,
-          'Content-Length': String(zipBytes.length),
-        },
-      }
-    )
+    console.log(`[CustomerFiles] Sending ZIP for ${id}. Size: ${zipBytes.length} bytes. Filename: ${fileName}`)
+
+    return new NextResponse(zipBytes as any, {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/zip',
+        'Content-Disposition': `attachment; filename="${fileName}"`,
+        'Content-Length': String(zipBytes.length),
+      },
+    })
   } catch (err) {
     console.error('[CustomerFiles] ZIP error:', err)
     return NextResponse.json({ error: String(err) }, { status: 500 })

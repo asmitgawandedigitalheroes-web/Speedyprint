@@ -1,13 +1,16 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import { Upload, CheckCircle2, AlertCircle, Play } from 'lucide-react'
+import { Upload, CheckCircle2, AlertCircle, Play, ArrowRight } from 'lucide-react'
 import { useEditorStore } from '@/lib/editor/useEditorStore'
+import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
 import Papa from 'papaparse'
 
 export default function BulkCreatePanel() {
-  const { bulkData, setBulkData, canvas } = useEditorStore()
+  const { bulkData, setBulkData, canvas, template, designId, saveStatus } = useEditorStore()
   const [isParsing, setIsParsing] = useState(false)
+  const router = useRouter()
   const [error, setError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -161,6 +164,28 @@ export default function BulkCreatePanel() {
                   </div>
                 )}
               </div>
+            </div>
+
+            <div className="pt-2">
+              <button
+                onClick={() => {
+                  if (!template) return
+                  if (saveStatus === 'unsaved' || !designId) {
+                    toast.error('Please save your design first before proceeding to batch order.', {
+                      description: 'We need a saved design ID to link with your CSV data.'
+                    })
+                    return
+                  }
+                  router.push(`/designer/${template.id}/csv?design=${designId}`)
+                }}
+                className="w-full py-3 bg-gradient-to-r from-ed-accent to-ed-accent-hover text-white text-xs font-bold rounded-lg shadow-lg hover:shadow-ed-accent/20 active:scale-95 transition-all flex items-center justify-center gap-2 group"
+              >
+                Proceed to Batch Order
+                <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+              </button>
+              <p className="text-[9px] text-ed-text-dim mt-2 text-center">
+                This will take you to the CSV processing page to generate all {bulkData.rows.length} files.
+              </p>
             </div>
           </div>
         )}

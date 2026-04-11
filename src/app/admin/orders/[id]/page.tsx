@@ -48,6 +48,7 @@ import { formatCurrency, formatDateTime } from '@/lib/utils/format'
 import {
   ORDER_STATUS_LABELS,
   ORDER_ITEM_STATUS_LABELS,
+  SITE_URL,
 } from '@/lib/utils/constants'
 import type {
   Order,
@@ -151,8 +152,10 @@ export default function AdminOrderDetailPage({
       const a = document.createElement('a')
       a.href = url
       a.download = `${order?.order_number || id}_production_files.zip`
+      document.body.appendChild(a)
       a.click()
-      URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+      setTimeout(() => URL.revokeObjectURL(url), 100)
     } catch (err) {
       console.error('ZIP download error:', err)
       alert('Failed to download ZIP')
@@ -310,11 +313,37 @@ export default function AdminOrderDetailPage({
     setSendingEmail(type)
     setEmailSuccess(null)
     try {
+      let proofUrl: string | undefined
+
+      if (type === 'proof') {
+        // Find the latest proof across all items
+        let latestProofDate = 0
+        let targetItemId: string | undefined
+
+        order?.items?.forEach((item) => {
+          item.proofs?.forEach((p) => {
+            const date = new Date(p.created_at).getTime()
+            if (date > latestProofDate) {
+              latestProofDate = date
+              targetItemId = item.id
+            }
+          })
+        })
+
+        if (!targetItemId) {
+          alert('No proof found to send. Please generate a proof first.')
+          return
+        }
+
+        proofUrl = `${SITE_URL}/account/orders/${id}/proof/${targetItemId}`
+      }
+
       const res = await fetch(`/api/admin/orders/${id}/email`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           type,
+          proofUrl,
           trackingNumber: trackingNumber || order?.tracking_number || 'N/A',
         }),
       })
@@ -681,7 +710,7 @@ export default function AdminOrderDetailPage({
           </CardContent>
         </Card>
 
-        {/* Tracking Number */}
+        {/* Tracking Information */}
         <Card>
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
@@ -689,9 +718,33 @@ export default function AdminOrderDetailPage({
               Tracking Information
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-4">
+            {/* GoBob shipment info (auto-populated) */}
+            {order.gobob_shipment_id && (
+              <div className="rounded-lg bg-green-50 border border-green-100 p-3 space-y-1.5">
+                <p className="text-[10px] font-black uppercase tracking-widest text-green-600">GoBob Shipment Booked</p>
+                <p className="text-xs text-muted-foreground">
+                  Waybill:{' '}
+                  {order.gobob_tracking_url ? (
+                    <a
+                      href={order.gobob_tracking_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-mono font-semibold text-green-700 hover:underline"
+                    >
+                      {order.gobob_waybill_number || order.gobob_shipment_id}
+                    </a>
+                  ) : (
+                    <span className="font-mono font-semibold">{order.gobob_waybill_number || order.gobob_shipment_id}</span>
+                  )}
+                </p>
+                <p className="text-[10px] text-muted-foreground">ID: {order.gobob_shipment_id}</p>
+              </div>
+            )}
+
+            {/* Manual tracking number (fallback) */}
             <div className="space-y-2">
-              <Label>Tracking Number</Label>
+              <Label>Tracking Number {order.gobob_shipment_id && <span className="text-[10px] text-muted-foreground font-normal">(auto-filled from GoBob)</span>}</Label>
               <Input
                 placeholder="Enter tracking number..."
                 value={trackingNumber}
@@ -909,7 +962,7 @@ export default function AdminOrderDetailPage({
                         </td>
                         <td className="px-4 py-3 text-right">
                           <div className="flex items-center justify-end gap-1">
-                            {item.design && (
+                            {item.design && item.product_template_id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(item.product_template_id) && (
                               <Button
                                 size="sm"
                                 variant="ghost"
@@ -917,7 +970,7 @@ export default function AdminOrderDetailPage({
                                 asChild
                               >
                                 <a
-                                  href={`/designer/${item.product_template_id}?designId=${item.design_id}`}
+                                  href={item.design.thumbnail_url || '#'}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                 >

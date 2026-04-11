@@ -73,45 +73,49 @@ export default function DesignerCsvPage({ params }: DesignerCsvPageProps) {
 
   // Cart state
   const addItem = useCart((s) => s.addItem)
+  const [quantity, setQuantity] = useState(1)
   const [addingToCart, setAddingToCart] = useState(false)
   const [cartAdded, setCartAdded] = useState(false)
 
   // Fetch template & optional design
   useEffect(() => {
-    const supabase = createClient()
-    
-    // Fetch Template
-    supabase
-      .from('product_templates')
-      .select('*, product_group:product_groups(*), parameters:template_parameters(*)')
-      .eq('id', templateId)
-      .single()
-      .then(({ data, error: err }) => {
-        if (err || !data) {
-          setError('Template not found')
-        } else {
-          setTemplate(data as unknown as ProductTemplate)
-          setTemplateParams(
-            ((data as unknown as ProductTemplate).parameters || []).sort(
-              (a, b) => a.display_order - b.display_order
-            )
-          )
-        }
-        if (!designIdParam) setLoading(false)
-      })
-
-    // Fetch Design if provided
-    if (designIdParam) {
-      supabase
-        .from('designs')
-        .select('*')
-        .eq('id', designIdParam)
+    const fetchInitialData = async () => {
+      const supabase = createClient()
+      
+      // Fetch Template
+      const { data: templateData, error: templateErr } = await supabase
+        .from('product_templates')
+        .select('*, product_group:product_groups(*), parameters:template_parameters(*)')
+        .eq('id', templateId)
         .single()
-        .then(({ data }) => {
-          if (data) setDesign(data)
-          setLoading(false)
-        })
+
+      if (templateErr || !templateData) {
+        setError('Template not found')
+      } else {
+        const pt = templateData as unknown as ProductTemplate
+        setTemplate(pt)
+        setTemplateParams(
+          (pt.parameters || []).sort(
+            (a, b) => a.display_order - b.display_order
+          )
+        )
+      }
+
+      // Fetch Design if provided
+      if (designIdParam) {
+        const { data: designData } = await supabase
+          .from('designs')
+          .select('*')
+          .eq('id', designIdParam)
+          .single()
+        
+        if (designData) setDesign(designData)
+      }
+
+      setLoading(false)
     }
+
+    fetchInitialData()
   }, [templateId, designIdParam])
 
   // Parse CSV client-side
@@ -167,6 +171,7 @@ export default function DesignerCsvPage({ params }: DesignerCsvPageProps) {
 
             setParsedData(data)
             setHeaders(csvHeaders)
+            setQuantity(data.length)
 
             // Auto-map columns by matching names
             const mapping: Record<string, string> = {}
@@ -386,7 +391,6 @@ export default function DesignerCsvPage({ params }: DesignerCsvPageProps) {
     setAddingToCart(true)
 
     try {
-      const quantity = parsedData.length
       const unitPrice = getUnitPrice(quantity)
 
       addItem({
@@ -781,6 +785,49 @@ export default function DesignerCsvPage({ params }: DesignerCsvPageProps) {
                     </p>
                   </div>
                 )}
+              </div>
+            </div>
+
+            {/* Quantity Summary & Adjustment */}
+            <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-900">Total Order Quantity</h3>
+                  <p className="text-xs text-gray-500">
+                    Automatically set from your CSV ({parsedData.length} rows). You can adjust this if needed.
+                  </p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                    className="w-8 h-8 flex items-center justify-center rounded border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors"
+                  >
+                    -
+                  </button>
+                  <input
+                    type="number"
+                    value={quantity}
+                    onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                    className="w-16 text-center text-sm border border-gray-200 rounded py-1 px-2 font-semibold focus:ring-2 focus:ring-red-100 focus:border-red-300 outline-none transition-all"
+                  />
+                  <button
+                    onClick={() => setQuantity(quantity + 1)}
+                    className="w-8 h-8 flex items-center justify-center rounded border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors"
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+              <div className="mt-4 pt-4 border-t border-gray-100 flex justify-between items-end">
+                <div className="text-xs text-gray-400">
+                  Unit Price: <span className="text-gray-600 font-medium">R{getUnitPrice(quantity).toFixed(2)}</span>
+                </div>
+                <div className="text-right">
+                  <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Subtotal</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    R{(getUnitPrice(quantity) * quantity).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                  </p>
+                </div>
               </div>
             </div>
 

@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { logProofAudit } from '@/lib/proofAudit'
 import { generateOrderProductionFiles } from '@/lib/production/generator'
+import { logActivity } from '@/lib/audit'
 
 // ── POST /api/proofs/:id/approve – Customer approves a proof ─────────────────
 export async function POST(
@@ -50,6 +51,13 @@ export async function POST(
       responded_at: respondedAt,
       approved_by: user.id,
       approved_ip: clientIp,
+      approval_log: {
+        timestamp: respondedAt,
+        ip: clientIp,
+        user_id: user.id,
+        role: actorRole,
+        notes: sanitizedNotes,
+      },
     })
     .eq('id', id)
     .select()
@@ -85,6 +93,31 @@ export async function POST(
       responded_at: respondedAt,
       ...(isStaff ? { on_behalf_of_customer: true } : {}),
     },
+  })
+
+  // Global Audit Log
+  const { data: itemWithOrder } = await admin
+    .from('order_items')
+    .select('order:orders!order_id(order_number)')
+    .eq('id', proof!.order_item_id)
+    .single()
+
+  const orderNumber = Array.isArray(itemWithOrder?.order)
+    ? itemWithOrder?.order[0]?.order_number
+    : (itemWithOrder?.order as any)?.order_number
+
+  await logActivity({
+    user_id: user.id,
+    action: 'proof_approved',
+    entity_type: 'proof',
+    entity_id: id,
+    metadata: {
+      order_item_id: proof!.order_item_id,
+      version: proof!.version,
+      notes: sanitizedNotes,
+      order_number: orderNumber
+    },
+    is_admin_action: isStaff,
   })
 
   // ── Auto-generate production files in the background ──────────────────────

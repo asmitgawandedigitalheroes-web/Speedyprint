@@ -123,14 +123,32 @@ async function processCSVJob(jobId: string): Promise<void> {
       }
 
       const mergedCanvas = mergeVariables(baseCanvas, variables, { warnOnMissing: i === 0 })
-      const pdfBytes = await generatePDF(mergedCanvas, printSpecs, { isProof: false, includeBleed: true })
 
-      // Filename: {OrderID}_{ProductType}_{RowNum}_{Name}_{Date}.pdf
+      // ── Special layer detection ─────────────────────────────────────────────
+      const isClearVinyl = template.name.toLowerCase().includes('clear') || 
+                          (template.product_group_id === '11111111-1111-1111-1111-111111111102' && template.name.toLowerCase().includes('clear'))
+      
+      const hasGlossElements = (mergedCanvas.objects ?? []).some((o: any) => o.specialLayer === 'gloss')
+
+      const pdfBytes = await generatePDF(mergedCanvas, printSpecs, { 
+        isProof: false, 
+        includeBleed: true,
+        useCMYK: true,
+        specialLayers: {
+          whiteBase: isClearVinyl,
+          spotGloss: hasGlossElements
+        }
+      })
+
+      // ── Refined Naming Logic ────────────────────────────────────────────────
+      // Priority: bib/number/no > name/rider/team > first available column
+      const nameKeys = ['bib', 'number', 'no', 'name', 'rider', 'team', 'first_name', 'last_name']
+      const bestKey = Object.keys(variables).find(k => nameKeys.includes(k.toLowerCase()))
+      const namingVal = (bestKey ? variables[bestKey] : Object.values(variables)[0]) || 'item'
+      
       const rowNum = String(i + 1).padStart(3, '0')
-      const firstVal = (Object.values(variables)[0] ?? 'item')
-        .replace(/[^a-zA-Z0-9]/g, '')
-        .slice(0, 20) || 'item'
-      const fileName = `${orderRef}_${productType}_${rowNum}_${firstVal}_${dateStr}.pdf`
+      const sanitizedVal = namingVal.toString().replace(/[^a-zA-Z0-9]/g, '').slice(0, 20) || 'item'
+      const fileName = `${orderRef}_${productType}_${rowNum}_${sanitizedVal}_${dateStr}.pdf`
 
       // Storage path: /production/{order_id}/{product_type}/ or /csv/{job_id}/
       const storagePath = orderId
@@ -154,9 +172,9 @@ async function processCSVJob(jobId: string): Promise<void> {
             file_url: publicUrl,
             file_type: 'pdf',
             file_name: fileName,
-            resolution_dpi: 300,
+            resolution_dpi: template.dpi ?? 600,
             has_bleed: true,
-            metadata: { csv_job_id: jobId, row_index: i, variables },
+            metadata: { csv_job_id: jobId, row_index: i, variables, layers: { whiteBase: isClearVinyl, spotGloss: hasGlossElements } },
           })
         }
       }

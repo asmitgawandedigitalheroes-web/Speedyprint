@@ -214,8 +214,13 @@ export function OrderPipeline({
       if (!res.ok) { const d = await res.json(); toast.error(d.error || 'Download failed'); return }
       const blob = await res.blob()
       const url = URL.createObjectURL(blob)
-      const a = document.createElement('a'); a.href = url
-      a.download = `${orderNum}_production.zip`; a.click(); URL.revokeObjectURL(url)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${orderNum}_production.zip`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      setTimeout(() => URL.revokeObjectURL(url), 100)
       toast.success(`Downloaded ${orderNum}_production.zip`)
     } catch { toast.error('Download failed') }
     finally { setDownloadingId(null) }

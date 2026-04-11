@@ -23,7 +23,12 @@ export const useAuth = create<AuthState>()(
   persist(
     (set, get) => ({
       user: null,
-      isLoading: false,
+      // BUG-001/002 FIX: Start as true so admin/account layouts wait for AuthProvider's
+      // refreshProfile() call before deciding to redirect. Without this, child component
+      // effects (setHydrated) fire before the parent AuthProvider effect, so the layout
+      // sees isLoading=false+isAuthenticated=false and immediately redirects to /login
+      // even when the user IS authenticated — causing session-drop loops.
+      isLoading: true,
       isAuthenticated: false,
 
       setUser: (user) => set({ user, isAuthenticated: !!user }),
@@ -32,17 +37,19 @@ export const useAuth = create<AuthState>()(
         set({ isLoading: true })
         const supabase = createClient()
 
+        const trimmedEmail = email.trim()
         const { data, error } = await supabase.auth.signInWithPassword({
-          email,
+          email: trimmedEmail,
           password,
         })
 
         if (error) {
           set({ isLoading: false })
+          console.error('[useAuth] Login error:', error.message)
           if (error.message.toLowerCase().includes('email not confirmed')) {
             return { error: 'Please confirm your email address before signing in.', emailNotConfirmed: true }
           }
-          return { error: 'Sign in failed. Please check your email and password.' }
+          return { error: error.message }
         }
 
         if (data.user) {
@@ -66,8 +73,9 @@ export const useAuth = create<AuthState>()(
         set({ isLoading: true })
         const supabase = createClient()
 
+        const trimmedEmail = email.trim()
         const { data, error } = await supabase.auth.signUp({
-          email,
+          email: trimmedEmail,
           password,
           options: {
             data: { full_name: fullName },
@@ -121,26 +129,42 @@ export const useAuth = create<AuthState>()(
       },
 
       logout: async () => {
-        const supabase = createClient()
-        await supabase.auth.signOut()
-        // BUG-029 FIX: Clear the cart on logout so the next user (or role) sees a fresh cart.
-        // Without this, persisted cart items from a customer session were visible to admin/staff
-        // logins and to different customers sharing the same browser.
-        useCart.getState().clearCart()
-        set({ user: null, isAuthenticated: false })
+        try {
+          const supabase = createClient()
+          // BUG-015 FIX: Set isLoading to false immediately so the next state
+          // isn't stuck in a "waiting" mode.
+          set({ isLoading: false })
+          
+          await supabase.auth.signOut()
+          
+          // BUG-029 FIX: Clear the cart on logout so the next user (or role) sees a fresh cart.
+          // Without this, persisted cart items from a customer session were visible to admin/staff
+          // logins and to different customers sharing the same browser.
+          useCart.getState().clearCart()
+          set({ user: null, isAuthenticated: false, isLoading: false })
+        } catch (err) {
+          console.error('[useAuth] Logout error:', err)
+          set({ user: null, isAuthenticated: false, isLoading: false })
+        }
       },
 
       resetPassword: async (email) => {
-        const res = await fetch('/api/auth/reset-password', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email }),
-        })
-        if (!res.ok) {
-          const data = await res.json().catch(() => ({}))
-          return { error: data.error || 'Failed to send reset email' }
+        const trimmedEmail = email.trim()
+        try {
+          const res = await fetch('/api/auth/reset-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: trimmedEmail }),
+          })
+          const data = await res.json()
+          if (!res.ok) {
+            return { error: data.error || 'Failed to send reset email.' }
+          }
+          return { error: null }
+        } catch (err) {
+          console.error('[useAuth] Reset password error:', err)
+          return { error: 'Failed to send reset email. Please try again.' }
         }
-        return { error: null }
       },
 
       updatePassword: async (newPassword) => {

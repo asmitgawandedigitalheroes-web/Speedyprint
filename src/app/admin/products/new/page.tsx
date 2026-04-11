@@ -17,6 +17,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { DIVISIONS } from '@/lib/utils/constants'
 import { slugify } from '@/lib/utils/format'
+import { ImageUploader } from '@/components/admin/ImageUploader'
 
 export default function AdminProductNewPage() {
   const router = useRouter()
@@ -27,7 +28,7 @@ export default function AdminProductNewPage() {
   const [slug, setSlug] = useState('')
   const [description, setDescription] = useState('')
   const [division, setDivision] = useState('')
-  const [imageUrl, setImageUrl] = useState('')
+  const [images, setImages] = useState<string[]>([])
   const [displayOrder, setDisplayOrder] = useState(0)
   const [isActive, setIsActive] = useState(true)
 
@@ -55,7 +56,7 @@ export default function AdminProductNewPage() {
           slug: slug || slugify(name),
           description: description || null,
           division,
-          image_url: imageUrl || null,
+          image_url: images[0] || null,
           display_order: displayOrder,
           is_active: isActive,
         }),
@@ -160,15 +161,13 @@ export default function AdminProductNewPage() {
               </Select>
             </div>
 
-            {/* Image URL */}
+            {/* Images */}
             <div className="space-y-2">
-              <Label htmlFor="imageUrl">Image URL</Label>
-              <Input
-                id="imageUrl"
-                value={imageUrl}
-                onChange={(e) => setImageUrl(e.target.value)}
-                placeholder="https://..."
-                type="url"
+              <Label>Product Images (Up to 3)</Label>
+              <ImageUploader 
+                value={images} 
+                onChange={setImages} 
+                maxImages={3} 
               />
             </div>
 

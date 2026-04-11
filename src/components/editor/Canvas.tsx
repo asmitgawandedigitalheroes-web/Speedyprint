@@ -1,10 +1,18 @@
 'use client'
 
 import { useEffect, useRef, useCallback, useState } from 'react'
-import { Canvas as FabricCanvas, Rect, Shadow, Point, Line as FabricLine } from 'fabric'
+import { Canvas as FabricCanvas, Rect, Shadow, Point, Line as FabricLine, PencilBrush } from 'fabric'
 import { useEditorStore } from '@/lib/editor/useEditorStore'
 import { HistoryManager } from '@/lib/editor/history'
-import { applyRotationCursor } from '@/lib/editor/fabricUtils'
+import { 
+  applyRotationCursor,
+  bringForward,
+  sendBackward,
+  bringToFront,
+  sendToBack,
+  groupSelected,
+  ungroupSelected
+} from '@/lib/editor/fabricUtils'
 import FloatingToolbar from './FloatingToolbar'
 import ContextMenu from './ContextMenu'
 
@@ -138,6 +146,12 @@ export default function EditorCanvas() {
     // Customize rotation control cursor (~45 degree arrow) for all objects
     applyRotationCursor(canvas)
 
+    // Initialize Drawing Brush
+    const pencil = new PencilBrush(canvas)
+    pencil.color = useEditorStore.getState().brushColor
+    pencil.width = useEditorStore.getState().brushWidth
+    canvas.freeDrawingBrush = pencil
+
     // Use store's setZoom which handles centering via setCenterFromObject
     setZoom(initialZoom)
 
@@ -194,6 +208,8 @@ export default function EditorCanvas() {
     canvas.on('object:moving', (e) => {
       const obj = e.target
       if (!obj) return
+      const meta = obj as unknown as Record<string, unknown>
+      if (meta.isArtboard || meta.isGuide) return
       const { artboardWidth, artboardHeight } = useEditorStore.getState()
       if (!artboardWidth || !artboardHeight) return
 
@@ -228,7 +244,14 @@ export default function EditorCanvas() {
       refreshObjects()
     })
     canvas.on('object:added', () => {
-      if (!useEditorStore.getState().isRestoring) history.capture(canvas)
+      const state = useEditorStore.getState()
+      if (!state.isRestoring) {
+        history.capture(canvas)
+        // Mobile UX: Auto-close sidebar when element is added
+        if (window.innerWidth < 768) {
+          state.setLeftPanel(null)
+        }
+      }
       refreshObjects()
     })
     canvas.on('object:removed', () => {
@@ -279,6 +302,35 @@ export default function EditorCanvas() {
           canvas.setActiveObject(sel)
           canvas.renderAll()
         }
+      }
+
+      // Layering shortcuts
+      if (ctrl && (e.key === ']' || e.key === '[')) {
+        e.preventDefault()
+        const isForward = e.key === ']'
+        const isToEdge = e.altKey
+
+        if (isForward) {
+          if (isToEdge) bringToFront(canvas)
+          else bringForward(canvas)
+        } else {
+          if (isToEdge) sendToBack(canvas)
+          else sendBackward(canvas)
+        }
+        refreshObjects()
+        canvas.renderAll()
+      }
+
+      // Grouping shortcuts
+      if (ctrl && e.key.toLowerCase() === 'g') {
+        e.preventDefault()
+        if (e.shiftKey) {
+          ungroupSelected(canvas)
+        } else {
+          groupSelected(canvas)
+        }
+        refreshObjects()
+        canvas.renderAll()
       }
     }
     keydownRef.current = handleKeyDown
@@ -539,8 +591,30 @@ export default function EditorCanvas() {
         {templateInfo}
       </div>
       <canvas ref={canvasElRef} />
+      <DrawingModeSync />
       <FloatingToolbar />
       <ContextMenu />
     </div>
   )
+}
+
+/** 
+ * Separate component to sync store drawing state with canvas object without re-rendering the whole Canvas component 
+ */
+function DrawingModeSync() {
+  const canvas = useEditorStore((s) => s.canvas)
+  const isDrawingMode = useEditorStore((s) => s.isDrawingMode)
+  const brushColor = useEditorStore((s) => s.brushColor)
+  const brushWidth = useEditorStore((s) => s.brushWidth)
+
+  useEffect(() => {
+    if (!canvas) return
+    canvas.isDrawingMode = isDrawingMode
+    if (isDrawingMode && canvas.freeDrawingBrush) {
+      canvas.freeDrawingBrush.color = brushColor
+      canvas.freeDrawingBrush.width = brushWidth
+    }
+  }, [canvas, isDrawingMode, brushColor, brushWidth])
+
+  return null
 }

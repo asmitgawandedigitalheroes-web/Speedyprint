@@ -8,6 +8,7 @@ import {
   orderShippedTemplate,
   welcomeTemplate,
   contactFormTemplate,
+  enquiryReplyTemplate,
   adminProofApprovedTemplate,
   adminRevisionRequestedTemplate,
   passwordResetTemplate,
@@ -20,8 +21,8 @@ function getResend() {
   }
   return _resend
 }
-const FROM = process.env.EMAIL_FROM || 'Speedy Print Suite <noreply@speedylabels.co.za>'
-const ADMIN_EMAIL = 'info@speedylabels.co.za'
+const FROM = process.env.EMAIL_FROM!
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL!
 
 export async function sendPasswordResetEmail(email: string, resetLink: string) {
   const result = await getResend().emails.send({
@@ -106,6 +107,21 @@ export async function sendContactFormEmail(
     replyTo: email,
     subject: `Contact Form: ${subject}`,
     html: contactFormTemplate(name, email, subject, message),
+  })
+}
+
+export async function sendEnquiryReply(
+  customerName: string,
+  customerEmail: string,
+  originalSubject: string,
+  replyMessage: string
+) {
+  return getResend().emails.send({
+    from: FROM,
+    to: customerEmail,
+    replyTo: ADMIN_EMAIL,
+    subject: `Re: ${originalSubject}`,
+    html: enquiryReplyTemplate(customerName, originalSubject, replyMessage),
   })
 }
 

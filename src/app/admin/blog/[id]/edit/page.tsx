@@ -3,11 +3,13 @@
 import { useEffect, useState } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Loader2 } from 'lucide-react'
+import { ArrowLeft, Loader2, X, Upload } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { RichTextEditor } from '@/components/ui/rich-text-editor'
+import { ImageUploader } from '@/components/admin/ImageUploader'
 import type { BlogPost } from '@/types'
 
 export default function AdminBlogEditPage() {
@@ -27,6 +29,7 @@ export default function AdminBlogEditPage() {
   const [featuredImage, setFeaturedImage] = useState('')
   const [author, setAuthor] = useState('')
   const [published, setPublished] = useState(false)
+  const [uploading, setUploading] = useState(false)
 
   useEffect(() => {
     async function fetchPost() {
@@ -53,6 +56,7 @@ export default function AdminBlogEditPage() {
 
     fetchPost()
   }, [id])
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -176,12 +180,13 @@ export default function AdminBlogEditPage() {
 
             {/* Featured Image */}
             <div className="space-y-2">
-              <Label htmlFor="featuredImage">Featured Image URL</Label>
-              <Input
-                id="featuredImage"
-                value={featuredImage}
-                onChange={(e) => setFeaturedImage(e.target.value)}
-                type="url"
+              <Label>Featured Image</Label>
+              <ImageUploader 
+                value={featuredImage ? [featuredImage] : []}
+                onChange={(urls) => setFeaturedImage(urls[0] || '')}
+                maxImages={1}
+                bucket="blog"
+                folder="featured"
               />
             </div>
 
@@ -200,12 +205,10 @@ export default function AdminBlogEditPage() {
             {/* Content */}
             <div className="space-y-2">
               <Label htmlFor="content">Content</Label>
-              <textarea
-                id="content"
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                rows={12}
-                className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs placeholder:text-muted-foreground focus-visible:border-ring focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 font-mono"
+              <RichTextEditor
+                content={content}
+                onChange={setContent}
+                placeholder="Write your blog post content here..."
               />
             </div>
 

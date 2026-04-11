@@ -41,7 +41,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const { name, slug, description, division, image_url, display_order, is_active } = body
+    const { name, slug, description, division, images, image_url, display_order, is_active } = body
 
     if (!name || !division) {
       return NextResponse.json(
@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
         slug: slug || name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
         description: description || null,
         division,
-        image_url: image_url || null,
+        image_url: image_url || (images && images.length > 0 ? images[0] : null),
         display_order: display_order ?? 0,
         is_active: is_active ?? true,
       })

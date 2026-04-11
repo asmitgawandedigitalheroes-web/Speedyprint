@@ -1,16 +1,35 @@
 'use client'
 
 import { useState } from 'react'
-import { Mail, Phone, MapPin, Clock, Send, ArrowRight } from 'lucide-react'
+import { Mail, Phone, MapPin, Clock, Send, ArrowRight, Loader2 } from 'lucide-react'
+import { toast } from 'sonner'
 import { SITE_NAME } from '@/lib/utils/constants'
 
 export default function ContactPage() {
   const [form, setForm] = useState({ name: '', email: '', subject: '', message: '' })
   const [submitted, setSubmitted] = useState(false)
+  const [loading, setLoading] = useState(false)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setSubmitted(true)
+    setLoading(true)
+    try {
+      const res = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        toast.error(data.error || 'Could not send your message. Please try again.')
+        return
+      }
+      setSubmitted(true)
+    } catch {
+      toast.error('Could not send your message. Please try again.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -34,22 +53,17 @@ export default function ContactPage() {
               {
                 icon: Mail,
                 title: 'Email',
-                // BUG-032 FIX: Updated email to match canonical brand (speedyprint not speedylabels)
-                // TODO: Read from site_settings DB row like the footer does
                 lines: ['info@speedyprint.co.za', 'orders@speedyprint.co.za'],
               },
               {
                 icon: Phone,
                 title: 'Phone',
-                // BUG-032 FIX: Removed placeholder '+27 (0) 21 123 4567' — replaced with
-                // the same number shown in all other pages (+27 12 345 6789).
-                // TODO: Read from site_settings DB row (site_phone key) for single source of truth
-                lines: ['+27 12 345 6789', 'Mon–Fri, 8am – 5pm SAST'],
+                lines: ['011 027 1811', 'Mon–Fri, 08:00–16:30'],
               },
               {
                 icon: MapPin,
                 title: 'Address',
-                lines: ['Cape Town, Western Cape', 'South Africa'],
+                lines: ['13 Langwa Street, Strydompark', 'Randburg'],
               },
             ].map((item) => (
               <div key={item.title} className="flex gap-4">
@@ -73,13 +87,13 @@ export default function ContactPage() {
               </div>
               <div className="space-y-1.5 text-sm text-brand-text-muted">
                 <div className="flex justify-between">
-                  <span>Monday – Friday</span><span className="font-medium text-brand-text">08:00 – 17:00</span>
+                  <span>Monday – Friday</span><span className="font-medium text-brand-text">08:00 – 16:30</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Saturday</span><span className="font-medium text-brand-text">09:00 – 13:00</span>
+                  <span>Saturday</span><span className="text-brand-text-muted">Closed</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Sunday</span><span className="text-brand-text-muted">Closed</span>
+                  <span>Sunday & Public Holidays</span><span className="text-brand-text-muted">Closed</span>
                 </div>
               </div>
             </div>
@@ -121,7 +135,8 @@ export default function ContactPage() {
                         placeholder={field.placeholder}
                         value={form[field.key as keyof typeof form]}
                         onChange={(e) => setForm((f) => ({ ...f, [field.key]: e.target.value }))}
-                        className="w-full rounded-md border border-gray-200 px-4 py-2.5 text-sm focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary"
+                        disabled={loading}
+                        className="w-full rounded-md border border-gray-200 px-4 py-2.5 text-sm focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary disabled:opacity-50"
                       />
                     </div>
                   ))}
@@ -135,7 +150,8 @@ export default function ContactPage() {
                     required
                     value={form.subject}
                     onChange={(e) => setForm((f) => ({ ...f, subject: e.target.value }))}
-                    className="w-full rounded-md border border-gray-200 px-4 py-2.5 text-sm focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary"
+                    disabled={loading}
+                    className="w-full rounded-md border border-gray-200 px-4 py-2.5 text-sm focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary disabled:opacity-50"
                   />
                 </div>
 
@@ -147,15 +163,21 @@ export default function ContactPage() {
                     required
                     value={form.message}
                     onChange={(e) => setForm((f) => ({ ...f, message: e.target.value }))}
-                    className="w-full rounded-md border border-gray-200 px-4 py-2.5 text-sm focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary"
+                    disabled={loading}
+                    className="w-full rounded-md border border-gray-200 px-4 py-2.5 text-sm focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary disabled:opacity-50"
                   />
                 </div>
 
                 <button
                   type="submit"
-                  className="inline-flex items-center gap-2 rounded-md bg-brand-primary px-7 py-3 text-sm font-semibold text-white transition hover:bg-brand-primary-dark"
+                  disabled={loading}
+                  className="inline-flex items-center gap-2 rounded-md bg-brand-primary px-7 py-3 text-sm font-semibold text-white transition hover:bg-brand-primary-dark disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  Send message <ArrowRight className="h-4 w-4" />
+                  {loading ? (
+                    <><Loader2 className="h-4 w-4 animate-spin" /> Sending…</>
+                  ) : (
+                    <>Send message <ArrowRight className="h-4 w-4" /></>
+                  )}
                 </button>
               </form>
             )}

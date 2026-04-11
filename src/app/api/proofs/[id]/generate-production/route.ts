@@ -129,7 +129,7 @@ export async function POST(
   try {
     const { data: item } = await admin
       .from('order_items')
-      .select('order:orders(order_number), product_group:product_groups(name)')
+      .select('order:orders!order_id(order_number), product_group:product_groups!product_group_id(name)')
       .eq('id', proof.order_item_id)
       .single()
 

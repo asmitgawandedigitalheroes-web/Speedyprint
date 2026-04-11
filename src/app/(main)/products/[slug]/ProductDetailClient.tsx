@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Image from 'next/image'
 import { cn } from '@/lib/utils'
 import { ProductConfigurator } from './ProductConfigurator'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import type {
   ProductGroup,
   ProductTemplate,
@@ -22,7 +23,9 @@ interface ProductDetailClientProps {
   pricingRules: PricingRule[]
   divisionName: string | null
   division: Division
+  designId?: string
 }
+
 
 export function ProductDetailClient({
   product,
@@ -30,17 +33,9 @@ export function ProductDetailClient({
   pricingRules,
   divisionName,
   division,
+  designId,
 }: ProductDetailClientProps) {
-  const [activeImageUrl, setActiveImageUrl] = useState<string | null>(
-    templates[0]?.image_url || product.image_url
-  )
-
-  const handleTemplateChange = (templateId: string) => {
-    const template = templates.find((t) => t.id === templateId)
-    setActiveImageUrl(template?.image_url || product.image_url)
-  }
-
-  // Collect all unique images for thumbnail gallery
+  // Collect all unique images
   const allImages: { url: string; label: string }[] = []
   if (product.image_url) {
     allImages.push({ url: product.image_url, label: product.name })
@@ -51,82 +46,123 @@ export function ProductDetailClient({
     }
   }
 
+  const [activeIndex, setActiveIndex] = useState(0)
+  const activeImage = allImages[activeIndex] ?? null
+
+  const handleTemplateChange = (templateId: string) => {
+    const template = templates.find((t) => t.id === templateId)
+    if (template?.image_url) {
+      const idx = allImages.findIndex((img) => img.url === template.image_url)
+      if (idx !== -1) setActiveIndex(idx)
+    }
+  }
+
+  const prev = () => setActiveIndex((i) => (i - 1 + allImages.length) % allImages.length)
+  const next = () => setActiveIndex((i) => (i + 1) % allImages.length)
+
   return (
-    <div className="grid grid-cols-1 gap-12 lg:grid-cols-2">
-      {/* Left: Product image */}
+    <div className="grid grid-cols-1 gap-0 lg:grid-cols-[1fr_480px] xl:grid-cols-[1fr_520px]">
+
+      {/* ── LEFT: Image panel ─────────────────────────────────────────── */}
       <div>
-        <div
-          className="relative flex h-80 items-center justify-center overflow-hidden rounded-xl bg-brand-bg lg:h-[480px]"
-        >
-          {activeImageUrl ? (
-            <div className="absolute inset-x-0 top-0 bottom-[-15%]">
-              <Image
-                src={activeImageUrl}
-                alt={product.name}
-                fill
-                sizes="(max-width: 1024px) 100vw, 50vw"
-                className="object-cover object-top"
-                priority
-              />
-            </div>
+
+        {/* Main image */}
+        <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-gray-50 ring-1 ring-gray-200">
+          {activeImage ? (
+            <Image
+              src={activeImage.url}
+              alt={activeImage.label}
+              fill
+              sizes="(max-width: 1024px) 100vw, 55vw"
+              className="object-cover object-center"
+              priority
+            />
           ) : (
-            <span className="text-8xl font-bold text-white/20 select-none">
-              {product.name.charAt(0)}
-            </span>
+            <div className="flex h-full w-full items-center justify-center">
+              <span className="text-[120px] font-bold text-gray-100 select-none">
+                {product.name.charAt(0)}
+              </span>
+            </div>
           )}
 
-          {/* Branding Bar */}
-          <div className="absolute bottom-0 left-0 right-0 z-10 bg-brand-secondary/90 px-4 py-2 backdrop-blur-sm">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-wider text-white">
-                  SPEEDY <span className="text-brand-primary">LABELS</span>
-                </p>
-                {divisionName && (
-                  <p className="text-[10px] text-white/70">{divisionName}</p>
-                )}
-              </div>
+          {/* Division badge */}
+          {divisionName && (
+            <div className="absolute left-4 top-4 rounded-full bg-white/90 backdrop-blur-sm px-3 py-1 text-xs font-semibold text-gray-700 ring-1 ring-gray-200">
+              {divisionName}
             </div>
-          </div>
+          )}
+
+          {/* Navigation arrows (only if multiple images) */}
+          {allImages.length > 1 && (
+            <>
+              <button
+                onClick={prev}
+                className="absolute left-3 top-1/2 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 shadow-md backdrop-blur-sm ring-1 ring-gray-200 hover:bg-white transition-colors"
+              >
+                <ChevronLeft className="h-5 w-5 text-gray-700" />
+              </button>
+              <button
+                onClick={next}
+                className="absolute right-3 top-1/2 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 shadow-md backdrop-blur-sm ring-1 ring-gray-200 hover:bg-white transition-colors"
+              >
+                <ChevronRight className="h-5 w-5 text-gray-700" />
+              </button>
+            </>
+          )}
+
+          {/* Dot indicators */}
+          {allImages.length > 1 && (
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5">
+              {allImages.map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => setActiveIndex(i)}
+                  className={cn(
+                    'h-1.5 rounded-full transition-all',
+                    i === activeIndex ? 'w-5 bg-brand-primary' : 'w-1.5 bg-white/70'
+                  )}
+                />
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* Thumbnail Gallery */}
+        {/* Thumbnail strip */}
         {allImages.length > 1 && (
           <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
-            {allImages.map((img) => (
+            {allImages.map((img, i) => (
               <button
                 key={img.url}
-                onClick={() => setActiveImageUrl(img.url)}
+                onClick={() => setActiveIndex(i)}
                 className={cn(
-                  'relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border-2 transition-all',
-                  activeImageUrl === img.url
-                    ? 'border-brand-primary ring-2 ring-brand-primary/30'
+                  'relative h-14 w-20 shrink-0 overflow-hidden rounded-lg border-2 transition-all',
+                  i === activeIndex
+                    ? 'border-brand-primary ring-2 ring-brand-primary/20'
                     : 'border-gray-200 hover:border-gray-400'
                 )}
               >
-                <Image
-                  src={img.url}
-                  alt={img.label}
-                  fill
-                  sizes="64px"
-                  className="object-cover"
-                />
+                <Image src={img.url} alt={img.label} fill sizes="64px" className="object-cover" />
               </button>
             ))}
           </div>
         )}
+
       </div>
 
-      {/* Right: Configurator */}
-      <div>
-        <ProductConfigurator
-          productGroupId={product.id}
-          division={division}
-          templates={templates}
-          pricingRules={pricingRules}
-          onTemplateChange={handleTemplateChange}
-        />
+      {/* ── RIGHT: Configurator panel ─────────────────────────────────── */}
+      <div className="lg:border-l lg:border-gray-100 lg:pl-10 xl:pl-14">
+        <div>
+          <ProductConfigurator
+            productGroupId={product.id}
+            division={division}
+            templates={templates}
+            pricingRules={pricingRules}
+            onTemplateChange={handleTemplateChange}
+            designId={designId}
+          />
+        </div>
       </div>
+
     </div>
   )
 }

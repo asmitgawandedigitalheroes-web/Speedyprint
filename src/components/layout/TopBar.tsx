@@ -19,10 +19,10 @@ export function TopBar() {
           </Link>
           <span className="text-white/40">|</span>
           <Link
-            href="tel:+27123456789"
+            href="tel:0110271811"
             className="text-xs text-white/80 transition-colors hover:text-white"
           >
-            +27 (0) 12 345 6789
+            011 027 1811
           </Link>
         </div>
       </div>

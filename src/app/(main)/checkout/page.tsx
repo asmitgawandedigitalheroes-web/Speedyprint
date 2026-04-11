@@ -1,26 +1,48 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
+import { z } from 'zod'
 import { useAuth } from '@/hooks/useAuth'
 import { useCart } from '@/hooks/useCart'
 import { createClient } from '@/lib/supabase/client'
 import { formatCurrency } from '@/lib/utils/format'
 import { SA_PROVINCES } from '@/lib/utils/constants'
-import { livePricing } from '@/hooks/useSiteSettings'
 import { toast } from 'sonner'
-import { ArrowRight, Check } from 'lucide-react'
+import { Check, ChevronDown, ShieldCheck, Truck, AlertCircle, CreditCard, ArrowRight, ChevronLeft } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
-const INPUT_CLASS = 'w-full rounded-md border border-gray-200 px-3 py-2.5 text-sm focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary'
-const LABEL_CLASS = 'mb-1.5 block text-xs font-medium uppercase tracking-widest text-brand-text-muted'
+const shippingSchema = z.object({
+  full_name: z.string().min(3, 'Full name is required (min 3 chars)'),
+  address_line1: z.string().min(5, 'Address is required (min 5 chars)'),
+  address_line2: z.string().optional(),
+  city: z.string().min(2, 'City is required'),
+  province: z.string().min(1, 'Please select a province'),
+  postal_code: z.string().regex(/^[0-9A-Za-z\s\-]{3,10}$/, 'Invalid postal code'),
+  phone: z.string().regex(/^[0-9+\-\s()]{10,15}$/, 'Invalid phone number (10-15 digits)'),
+  country: z.string().default('ZA'),
+})
+
+type ShippingData = z.infer<typeof shippingSchema>
+
+const INPUT = "w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-gray-800 outline-none focus:border-gray-400 focus:ring-2 focus:ring-gray-100 transition-colors placeholder:text-gray-300 bg-white"
+const LABEL = "block text-xs font-medium text-gray-500 mb-1"
+const ERROR = "mt-1 flex items-center gap-1 text-xs text-red-500"
 
 export default function CheckoutPage() {
   const router = useRouter()
   const { user } = useAuth()
-  const { items, getSubtotal, getTax, getTotal, getShippingCost, clearCart } = useCart()
+  const { items, getSubtotal, getTax, getTotal, getShippingCost } = useCart()
+
+  const selectedItems = useMemo(() => items.filter(i => i.selected !== false), [items])
+
   const [loading, setLoading] = useState(false)
   const [step, setStep] = useState(1)
-  const [shipping, setShipping] = useState({
+  const [errors, setErrors] = useState<Partial<Record<keyof ShippingData, string>>>({})
+  const [paymentMethod, setPaymentMethod] = useState<'switch' | 'stripe' | 'pay_later'>('switch')
+
+  const [shipping, setShipping] = useState<ShippingData>({
     full_name: '',
     address_line1: '',
     address_line2: '',
@@ -31,67 +53,113 @@ export default function CheckoutPage() {
     phone: '',
   })
 
+  const [savedAddresses, setSavedAddresses] = useState<any[]>([])
+  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null)
+
   useEffect(() => {
     if (user) {
-      setShipping((prev) => ({
+      setShipping(prev => ({
         ...prev,
         full_name: user.full_name || '',
-        address_line1: user.address_line1 || '',
-        address_line2: user.address_line2 || '',
-        city: user.city || '',
-        province: user.province || '',
-        postal_code: user.postal_code || '',
         phone: user.phone || '',
       }))
+      const fetchAddresses = async () => {
+        const supabase = createClient()
+        const { data } = await supabase
+          .from('user_addresses')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('is_default', { ascending: false })
+        if (data && data.length > 0) {
+          setSavedAddresses(data)
+          const def = data.find((a: any) => a.is_default) || data[0]
+          setSelectedAddressId(def.id)
+          setShipping(prev => ({
+            ...prev,
+            address_line1: def.address_line1,
+            address_line2: def.address_line2 || '',
+            city: def.city,
+            province: def.province,
+            postal_code: def.postal_code,
+          }))
+        }
+      }
+      fetchAddresses()
     }
   }, [user])
 
-  const handleShippingChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setShipping((prev) => ({ ...prev, [e.target.name]: e.target.value }))
+  const handleSelectSavedAddress = (addr: any) => {
+    setSelectedAddressId(addr.id)
+    setErrors({})
+    setShipping(prev => ({
+      ...prev,
+      full_name: addr.full_name || prev.full_name,
+      phone: addr.phone || prev.phone,
+      address_line1: addr.address_line1,
+      address_line2: addr.address_line2 || '',
+      city: addr.city,
+      province: addr.province,
+      postal_code: addr.postal_code,
+    }))
   }
 
-  const validateShipping = (): boolean => {
-    const required: Array<[keyof typeof shipping, string]> = [
-      ['full_name', 'Full name'],
-      ['address_line1', 'Address line 1'],
-      ['city', 'City'],
-      ['province', 'Province'],
-      ['postal_code', 'Postal code'],
-    ]
-    for (const [field, label] of required) {
-      if (!shipping[field]?.trim()) {
-        toast.error(`${label} is required`)
-        return false
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name } = e.target
+    let value = e.target.value
+    // Phone: only digits, +, spaces, dashes, parentheses
+    if (name === 'phone') value = value.replace(/[^0-9+\-\s()]/g, '')
+    // Postal code: only digits
+    if (name === 'postal_code') value = value.replace(/[^0-9]/g, '')
+    setShipping(prev => ({ ...prev, [name]: value }))
+    if (errors[name as keyof ShippingData]) {
+      setErrors(prev => ({ ...prev, [name]: undefined }))
+    }
+  }
+
+  const handleBlur = (e: React.FocusEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target
+    const fieldSchema = (shippingSchema as any).shape[name]
+    if (fieldSchema) {
+      const result = fieldSchema.safeParse(value)
+      if (!result.success) {
+        setErrors(prev => ({ ...prev, [name]: result.error.issues[0].message }))
+      } else {
+        setErrors(prev => ({ ...prev, [name]: undefined }))
       }
     }
+  }
+
+  const validateStep1 = () => {
+    const result = shippingSchema.safeParse(shipping)
+    if (!result.success) {
+      const fieldErrors: any = {}
+      result.error.issues.forEach(issue => { fieldErrors[issue.path[0]] = issue.message })
+      setErrors(fieldErrors)
+      toast.error(Object.values(fieldErrors)[0] as string || 'Please fix the errors')
+      return false
+    }
+    setErrors({})
     return true
   }
 
   const handlePlaceOrder = async () => {
     if (!user) {
-      toast.error('Please log in to place an order')
+      toast.error('Please log in to complete your purchase')
       return
     }
-
     setLoading(true)
-
     try {
       const supabase = createClient()
-      const subtotal = getSubtotal()
-      const tax = subtotal * livePricing.vatRate
-      const shippingCost = getShippingCost()
-      const total = subtotal + tax + shippingCost
-
       const { data: order, error: orderError } = await supabase
         .from('orders')
         .insert({
           user_id: user.id,
-          order_number: '',
+          order_number: `ORD-${Math.random().toString(36).substring(2, 9).toUpperCase()}`,
           status: 'pending_payment',
-          subtotal,
-          tax,
-          shipping_cost: shippingCost,
-          total,
+          subtotal: getSubtotal(),
+          tax: getTax(),
+          shipping_cost: getShippingCost(),
+          total: getTotal(),
           shipping_address: shipping,
           billing_address: shipping,
         })
@@ -100,10 +168,13 @@ export default function CheckoutPage() {
 
       if (orderError) throw orderError
 
-      const orderItems = items.map((item) => ({
+      const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+      const toUUIDOrNull = (v: string | undefined | null) => v && UUID_RE.test(v) ? v : null
+
+      const orderItems = selectedItems.map(item => ({
         order_id: order.id,
-        product_group_id: item.product_group_id,
-        product_template_id: item.product_template_id,
+        product_group_id: toUUIDOrNull(item.product_group_id),
+        product_template_id: toUUIDOrNull(item.product_template_id),
         quantity: item.quantity,
         unit_price: item.unit_price,
         line_total: item.line_total,
@@ -113,237 +184,330 @@ export default function CheckoutPage() {
         status: item.csv_job_id ? ('proof_sent' as const) : ('pending_design' as const),
       }))
 
-      const { data: createdItems, error: itemsError } = await supabase
-        .from('order_items')
-        .insert(orderItems)
-        .select()
-
+      const { error: itemsError } = await supabase.from('order_items').insert(orderItems)
       if (itemsError) throw itemsError
 
-      // Automated Proofing for CSV items
-      for (const item of createdItems || []) {
-        if (item.csv_job_id) {
-          // Fetch CSV job to get the combined proof URL
-          const { data: job } = await supabase
-            .from('csv_jobs')
-            .select('column_mapping')
-            .eq('id', item.csv_job_id)
-            .single()
-
-          const combinedProofUrl = job?.column_mapping?._combined_proof_url
-          if (combinedProofUrl) {
-            await supabase.from('proofs').insert({
-              order_item_id: item.id,
-              design_id: item.design_id,
-              version: 1,
-              proof_file_url: combinedProofUrl,
-              status: 'pending',
-            })
-          }
-        }
+      if (paymentMethod === 'pay_later') {
+        router.push(`/checkout/success?order_id=${order.id}`)
+        return
       }
 
-      // Redirect to Stripe Checkout — clear cart ONLY after URL is confirmed
-      const response = await fetch('/api/checkout/stripe', {
+      const endpoint = paymentMethod === 'switch' ? '/api/checkout/switch' : '/api/checkout/stripe'
+      const response = await fetch(endpoint, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ orderId: order.id }),
       })
 
-      const { url, error } = await response.json()
+      const result = await response.json()
 
-      if (url) {
-        // BUG-009 FIX: Do NOT clear the cart here.
-        // clearCart() was being called before the user even completed payment on Stripe.
-        // If they abandon Stripe or their card declines, their cart is permanently gone.
-        // Cart is now cleared on the /checkout/success page (after Stripe confirms payment).
-        window.location.href = url
+      if (paymentMethod === 'switch' && result.formData) {
+        const form = document.createElement('form')
+        form.method = 'POST'
+        form.action = result.paymentUrl
+        Object.entries(result.formData).forEach(([key, value]) => {
+          const input = document.createElement('input')
+          input.type = 'hidden'
+          input.name = key
+          input.value = value as string
+          form.appendChild(input)
+        })
+        document.body.appendChild(form)
+        form.submit()
+      } else if (result.url) {
+        window.location.href = result.url
       } else {
-        throw new Error(error || 'Failed to initialize payment')
+        throw new Error(result.error || 'Payment initialization failed')
       }
-    } catch (error) {
-      toast.error('Failed to place order. Please try again.')
-      console.error(error)
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to place order. Please try again.')
     } finally {
       setLoading(false)
     }
   }
 
   useEffect(() => {
-    if (items.length === 0 && !loading) router.push('/cart')
-  }, [items.length, loading, router])
+    if ((items.length === 0 || selectedItems.length === 0) && !loading) {
+      router.push('/cart')
+    }
+  }, [items.length, selectedItems.length, loading, router])
 
-  if (items.length === 0) return null
-
-  const steps = ['Shipping', 'Review & pay']
+  if (items.length === 0 || selectedItems.length === 0) return null
 
   return (
-    <div className="bg-brand-bg min-h-screen">
-      <div className="border-b border-gray-200 bg-white">
-        <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
-          <div className="h-1 w-8 bg-brand-primary mb-3" />
-          <h1 className="font-heading text-2xl font-bold text-brand-text">Checkout</h1>
-        </div>
-      </div>
+    <div className="min-h-screen bg-gray-50">
+      <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
 
-      <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
-        {/* Steps indicator */}
-        <div className="mb-6 flex items-center gap-3">
-          {steps.map((label, i) => {
-            const isActive = step === i + 1
-            const isDone = step > i + 1
-            return (
-              <button
-                key={label}
-                onClick={() => isDone && setStep(i + 1)}
-                className={`flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition ${
-                  isActive ? 'bg-brand-primary text-white' : isDone ? 'bg-brand-primary/10 text-brand-primary cursor-pointer' : 'bg-white border border-gray-200 text-brand-text-muted cursor-default'
-                }`}
-              >
-                <span className={`flex h-5 w-5 items-center justify-center rounded-full text-xs ${isActive ? 'bg-white/20 text-white' : isDone ? 'bg-brand-primary text-white' : 'bg-gray-100 text-brand-text-muted'}`}>
-                  {isDone ? <Check className="h-3 w-3" /> : i + 1}
-                </span>
-                {label}
-              </button>
-            )
-          })}
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-2xl font-semibold text-gray-900">Checkout</h1>
+          {/* Steps */}
+          <div className="mt-4 flex items-center gap-2 text-sm">
+            {['Shipping', 'Review & Pay'].map((label, i) => {
+              const num = i + 1
+              const active = step === num
+              const done = step > num
+              return (
+                <div key={label} className="flex items-center gap-2">
+                  {i > 0 && <div className="h-px w-8 bg-gray-200" />}
+                  <div className={cn(
+                    'flex items-center gap-1.5',
+                    active ? 'text-red-600 font-medium' : done ? 'text-green-600' : 'text-gray-400'
+                  )}>
+                    <div className={cn(
+                      'flex h-5 w-5 items-center justify-center rounded-full text-xs font-semibold',
+                      active ? 'bg-red-600 text-white' : done ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-400'
+                    )}>
+                      {done ? <Check className="h-3 w-3" /> : num}
+                    </div>
+                    {label}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
         </div>
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-          <div className="lg:col-span-2">
-            {step === 1 && (
-              <div className="rounded-md border border-gray-100 bg-white p-6">
-                <h2 className="font-heading text-base font-semibold text-brand-text mb-1">Shipping address</h2>
-                <div className="h-px bg-gray-100 my-4" />
-                <div className="space-y-4">
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <div>
-                      <label className={LABEL_CLASS}>Full name *</label>
-                      <input name="full_name" value={shipping.full_name} onChange={handleShippingChange} required className={INPUT_CLASS} />
+
+          {/* Main column */}
+          <div className="lg:col-span-2 space-y-6">
+
+            {step === 1 ? (
+              <>
+                {/* Saved addresses */}
+                {savedAddresses.length > 0 && (
+                  <div className="rounded-xl border border-gray-200 bg-white p-6">
+                    <h2 className="mb-4 text-sm font-semibold text-gray-700">Saved Addresses</h2>
+                    <div className="space-y-2">
+                      {savedAddresses.map(addr => (
+                        <button
+                          key={addr.id}
+                          onClick={() => handleSelectSavedAddress(addr)}
+                          className={cn(
+                            'w-full flex items-start gap-3 rounded-lg border p-3 text-left text-sm transition-colors',
+                            selectedAddressId === addr.id
+                              ? 'border-red-600 bg-red-50'
+                              : 'border-gray-200 hover:border-gray-300'
+                          )}
+                        >
+                          <div className={cn(
+                            'mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border',
+                            selectedAddressId === addr.id ? 'border-red-600 bg-red-600' : 'border-gray-300'
+                          )}>
+                            {selectedAddressId === addr.id && <div className="h-1.5 w-1.5 rounded-full bg-white" />}
+                          </div>
+                          <div>
+                            <p className="font-medium text-gray-800">{addr.address_line1}</p>
+                            <p className="text-gray-500">{addr.city}, {addr.province} {addr.postal_code}</p>
+                          </div>
+                        </button>
+                      ))}
                     </div>
-                    <div>
-                      <label className={LABEL_CLASS}>Phone</label>
-                      <input name="phone" value={shipping.phone} onChange={handleShippingChange} className={INPUT_CLASS} />
+                    <button
+                      onClick={() => setSelectedAddressId(null)}
+                      className="mt-3 text-xs text-gray-500 underline hover:text-gray-700"
+                    >
+                      + Enter a different address
+                    </button>
+                  </div>
+                )}
+
+                {/* Shipping form */}
+                {(savedAddresses.length === 0 || selectedAddressId === null) && (
+                  <div className="rounded-xl border border-gray-200 bg-white p-6">
+                    <h2 className="mb-5 text-sm font-semibold text-gray-700 flex items-center gap-2">
+                      <Truck className="h-4 w-4 text-gray-400" /> Shipping Address
+                    </h2>
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                      <div>
+                        <label className={LABEL}>Full Name *</label>
+                        <input name="full_name" placeholder="John Doe" value={shipping.full_name} onChange={handleInputChange} onBlur={handleBlur} className={cn(INPUT, errors.full_name && 'border-red-300')} />
+                        {errors.full_name && <p className={ERROR}><AlertCircle className="h-3 w-3" /> {errors.full_name}</p>}
+                      </div>
+                      <div>
+                        <label className={LABEL}>Phone *</label>
+                        <input name="phone" type="tel" inputMode="tel" placeholder="+27 82 123 4567" value={shipping.phone} onChange={handleInputChange} onBlur={handleBlur} className={cn(INPUT, errors.phone && 'border-red-300')} />
+                        {errors.phone && <p className={ERROR}><AlertCircle className="h-3 w-3" /> {errors.phone}</p>}
+                      </div>
+                      <div className="sm:col-span-2">
+                        <label className={LABEL}>Street Address *</label>
+                        <input name="address_line1" placeholder="123 Main Street" value={shipping.address_line1} onChange={handleInputChange} onBlur={handleBlur} className={cn(INPUT, errors.address_line1 && 'border-red-300')} />
+                        {errors.address_line1 && <p className={ERROR}><AlertCircle className="h-3 w-3" /> {errors.address_line1}</p>}
+                      </div>
+                      <div className="sm:col-span-2">
+                        <label className={LABEL}>Apartment / Suite (optional)</label>
+                        <input name="address_line2" placeholder="Unit 4" value={shipping.address_line2} onChange={handleInputChange} className={INPUT} />
+                      </div>
+                      <div>
+                        <label className={LABEL}>City *</label>
+                        <input name="city" placeholder="Cape Town" value={shipping.city} onChange={handleInputChange} onBlur={handleBlur} className={cn(INPUT, errors.city && 'border-red-300')} />
+                        {errors.city && <p className={ERROR}><AlertCircle className="h-3 w-3" /> {errors.city}</p>}
+                      </div>
+                      <div>
+                        <label className={LABEL}>Province *</label>
+                        <div className="relative">
+                          <select name="province" value={shipping.province} onChange={handleInputChange} onBlur={handleBlur} className={cn(INPUT, 'appearance-none pr-8', errors.province && 'border-red-300')}>
+                            <option value="">Select province</option>
+                            {SA_PROVINCES.map(p => <option key={p} value={p}>{p}</option>)}
+                          </select>
+                          <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                        </div>
+                        {errors.province && <p className={ERROR}><AlertCircle className="h-3 w-3" /> {errors.province}</p>}
+                      </div>
+                      <div>
+                        <label className={LABEL}>Postal Code *</label>
+                        <input name="postal_code" inputMode="numeric" placeholder="8001" value={shipping.postal_code} onChange={handleInputChange} onBlur={handleBlur} className={cn(INPUT, errors.postal_code && 'border-red-300')} />
+                        {errors.postal_code && <p className={ERROR}><AlertCircle className="h-3 w-3" /> {errors.postal_code}</p>}
+                      </div>
                     </div>
                   </div>
-                  <div>
-                    <label className={LABEL_CLASS}>Address line 1 *</label>
-                    <input name="address_line1" value={shipping.address_line1} onChange={handleShippingChange} required className={INPUT_CLASS} />
-                  </div>
-                  <div>
-                    <label className={LABEL_CLASS}>Address line 2</label>
-                    <input name="address_line2" value={shipping.address_line2} onChange={handleShippingChange} className={INPUT_CLASS} />
-                  </div>
-                  <div className="grid grid-cols-3 gap-4">
-                    <div>
-                      <label className={LABEL_CLASS}>City *</label>
-                      <input name="city" value={shipping.city} onChange={handleShippingChange} required className={INPUT_CLASS} />
-                    </div>
-                    <div>
-                      <label className={LABEL_CLASS}>Province *</label>
-                      <select name="province" value={shipping.province} onChange={handleShippingChange} required className={INPUT_CLASS}>
-                        <option value="">Select…</option>
-                        {SA_PROVINCES.map((p) => <option key={p} value={p}>{p}</option>)}
-                      </select>
-                    </div>
-                    <div>
-                      <label className={LABEL_CLASS}>Postal code *</label>
-                      <input name="postal_code" value={shipping.postal_code} onChange={handleShippingChange} required className={INPUT_CLASS} />
-                    </div>
-                  </div>
+                )}
+
+                <div className="flex items-center justify-between">
+                  <p className="flex items-center gap-1.5 text-xs text-gray-400">
+                    <ShieldCheck className="h-4 w-4 text-green-500" /> SSL encrypted checkout
+                  </p>
                   <button
-                    onClick={() => { if (validateShipping()) setStep(2) }}
-                    className="inline-flex items-center gap-2 rounded-md bg-brand-primary px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-primary-dark"
+                    onClick={() => { if (validateStep1()) { window.scrollTo({ top: 0 }); setStep(2) } }}
+                    className="flex items-center gap-2 rounded-lg bg-red-600 px-6 py-2.5 text-sm font-medium text-white hover:bg-red-700 transition-colors"
                   >
-                    Continue to review <ArrowRight className="h-4 w-4" />
+                    Continue <ArrowRight className="h-4 w-4" />
                   </button>
                 </div>
-              </div>
-            )}
-
-            {step === 2 && (
-              <div className="space-y-4">
-                <div className="rounded-md border border-gray-100 bg-white p-6">
-                  <h2 className="font-heading text-base font-semibold text-brand-text mb-1">Order items</h2>
-                  <div className="h-px bg-gray-100 my-4" />
-                  <div className="space-y-3">
-                    {items.map((item) => (
-                      <div key={item.id} className="flex justify-between py-2 border-b border-gray-50 last:border-0">
-                        <div>
-                          <p className="text-sm font-medium text-brand-text">{item.product_name}</p>
-                          <p className="text-xs text-brand-text-muted">Qty: {item.quantity}</p>
+              </>
+            ) : (
+              <>
+                {/* Order items */}
+                <div className="rounded-xl border border-gray-200 bg-white p-6">
+                  <h2 className="mb-4 text-sm font-semibold text-gray-700">Your Items</h2>
+                  <div className="divide-y divide-gray-100">
+                    {selectedItems.map(item => (
+                      <div key={item.id} className="flex items-center gap-4 py-4 first:pt-0 last:pb-0">
+                        <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-gray-100 bg-gray-50">
+                          {item.thumbnail_url ? (
+                            <Image src={item.thumbnail_url} alt={item.product_name} fill className="object-contain p-1" />
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center text-[10px] text-gray-300">No image</div>
+                          )}
+                          <div className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-gray-800 text-[10px] font-semibold text-white">
+                            {item.quantity}
+                          </div>
                         </div>
-                        <p className="text-sm font-semibold text-brand-text">{formatCurrency(item.line_total)}</p>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900 truncate">{item.product_name}</p>
+                          <p className="text-xs text-gray-400">{item.template_name}</p>
+                          <p className="text-xs text-gray-400">{formatCurrency(item.unit_price)} / unit</p>
+                        </div>
+                        <p className="text-sm font-semibold text-gray-900">{formatCurrency(item.line_total)}</p>
                       </div>
                     ))}
                   </div>
                 </div>
 
-                <div className="rounded-md border border-gray-100 bg-white p-6">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <h2 className="font-heading text-base font-semibold text-brand-text mb-1">Shipping to</h2>
-                      <p className="mt-2 text-sm text-brand-text-muted leading-relaxed">
-                        {shipping.full_name}<br />
-                        {shipping.address_line1}<br />
-                        {shipping.address_line2 && <>{shipping.address_line2}<br /></>}
-                        {shipping.city}, {shipping.province} {shipping.postal_code}
-                      </p>
-                    </div>
-                    <button onClick={() => setStep(1)} className="text-xs font-medium text-brand-primary hover:text-brand-primary-dark transition">
-                      Edit
+                {/* Shipping summary */}
+                <div className="rounded-xl border border-gray-200 bg-white p-6">
+                  <div className="flex items-center justify-between mb-3">
+                    <h2 className="text-sm font-semibold text-gray-700">Shipping To</h2>
+                    <button onClick={() => setStep(1)} className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 underline">
+                      <ChevronLeft className="h-3 w-3" /> Edit
                     </button>
                   </div>
+                  <p className="text-sm text-gray-800">{shipping.full_name} &middot; {shipping.phone}</p>
+                  <p className="text-sm text-gray-500 mt-0.5">
+                    {shipping.address_line1}{shipping.address_line2 ? `, ${shipping.address_line2}` : ''}, {shipping.city}, {shipping.province} {shipping.postal_code}
+                  </p>
                 </div>
 
-                <div className="rounded-md border border-gray-100 bg-brand-primary/5 p-4">
-                  <p className="text-sm text-brand-text-muted text-center italic">
-                    You will be redirected to <span className="font-bold text-brand-primary">Stripe</span> to complete your payment securely.
-                  </p>
+                {/* Payment method */}
+                <div className="rounded-xl border border-gray-200 bg-white p-6">
+                  <h2 className="mb-4 text-sm font-semibold text-gray-700">Payment Method</h2>
+                  <div className="space-y-2">
+                    {([
+                      { id: 'switch', label: 'Switch', description: 'South African payment gateway' },
+                      { id: 'stripe', label: 'Card (Stripe)', description: 'Credit or debit card' },
+                      { id: 'pay_later', label: 'Pay Later / Proforma Invoice', description: 'We will send you an invoice — pay before production starts' },
+                    ] as const).map(method => (
+                      <button
+                        key={method.id}
+                        type="button"
+                        onClick={() => setPaymentMethod(method.id)}
+                        className={cn(
+                          'w-full flex items-center gap-3 rounded-lg border p-3 text-left text-sm transition-colors',
+                          paymentMethod === method.id ? 'border-red-600 bg-red-50' : 'border-gray-200 hover:border-gray-300'
+                        )}
+                      >
+                        <div className={cn(
+                          'flex h-4 w-4 shrink-0 items-center justify-center rounded-full border',
+                          paymentMethod === method.id ? 'border-red-600 bg-red-600' : 'border-gray-300'
+                        )}>
+                          {paymentMethod === method.id && <div className="h-1.5 w-1.5 rounded-full bg-white" />}
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-800">{method.label}</p>
+                          <p className="text-xs text-gray-400">{method.description}</p>
+                        </div>
+                        {paymentMethod === method.id && <Check className="ml-auto h-4 w-4 text-red-600" />}
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
                 <button
                   onClick={handlePlaceOrder}
                   disabled={loading}
-                  className="flex w-full items-center justify-center gap-2 rounded-md bg-brand-primary py-3 text-sm font-semibold text-white transition hover:bg-brand-primary-dark disabled:opacity-50"
+                  className="w-full flex items-center justify-center gap-2 rounded-lg bg-red-600 py-3 text-sm font-medium text-white hover:bg-red-700 transition-colors disabled:opacity-50"
                 >
-                  {loading ? 'Placing order…' : <>Place order <ArrowRight className="h-4 w-4" /></>}
+                  {loading ? (
+                    <><div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" /> Processing...</>
+                  ) : paymentMethod === 'pay_later' ? (
+                    <><ArrowRight className="h-4 w-4" /> Place Order (Pay Later)</>
+                  ) : (
+                    <><CreditCard className="h-4 w-4" /> Pay {formatCurrency(getTotal())}</>
+                  )}
                 </button>
-              </div>
+
+                <p className="text-center text-xs text-gray-400 flex items-center justify-center gap-1">
+                  <ShieldCheck className="h-3.5 w-3.5 text-green-500" /> Secure SSL encrypted payment
+                </p>
+              </>
             )}
           </div>
 
-          {/* Summary sidebar */}
-          <div>
-            <div className="sticky top-24 rounded-md border border-gray-100 bg-white p-6">
-              <h2 className="font-heading text-base font-semibold text-brand-text mb-4">Summary</h2>
-              <div className="h-px bg-gray-100 mb-4" />
-              <div className="space-y-3 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-brand-text-muted">Subtotal</span>
-                  <span className="text-brand-text">{formatCurrency(getSubtotal())}</span>
+          {/* Order summary sidebar */}
+          <aside className="lg:sticky lg:top-6 h-fit">
+            <div className="rounded-xl border border-gray-200 bg-white p-6">
+              <h2 className="mb-4 text-sm font-semibold text-gray-700">Order Summary</h2>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between text-gray-600">
+                  <span>Subtotal ({selectedItems.length} item{selectedItems.length !== 1 ? 's' : ''})</span>
+                  <span>{formatCurrency(getSubtotal())}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-brand-text-muted">VAT (15%)</span>
-                  <span className="text-brand-text">{formatCurrency(getTax())}</span>
+                <div className="flex justify-between text-gray-600">
+                  <span>VAT (15%)</span>
+                  <span>{formatCurrency(getTax())}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-brand-text-muted">Shipping</span>
+                <div className="flex justify-between text-gray-600">
+                  <span>Shipping</span>
                   {getShippingCost() === 0
                     ? <span className="text-green-600 font-medium">Free</span>
-                    : <span className="text-brand-text">{formatCurrency(getShippingCost())}</span>
+                    : <span>{formatCurrency(getShippingCost())}</span>
                   }
                 </div>
+                <div className="mt-3 border-t border-gray-100 pt-3 flex justify-between font-semibold text-gray-900">
+                  <span>Total</span>
+                  <span>{formatCurrency(getTotal())}</span>
+                </div>
               </div>
-              <div className="my-4 h-px bg-gray-100" />
-              <div className="flex justify-between">
-                <span className="font-semibold text-brand-text">Total</span>
-                <span className="font-heading text-xl font-bold text-brand-primary">{formatCurrency(getTotal())}</span>
-              </div>
+
+              {getShippingCost() === 0 && (
+                <p className="mt-4 rounded-md bg-green-50 border border-green-100 px-3 py-2 text-xs text-green-700">
+                  🎉 You qualify for free delivery!
+                </p>
+              )}
             </div>
-          </div>
+          </aside>
+
         </div>
       </div>
     </div>

@@ -16,6 +16,7 @@ import {
   Save,
   Send,
   UserCheck,
+  Image as ImageIcon,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -23,6 +24,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
 import { formatDateTime } from '@/lib/utils/format'
+import { SITE_URL } from '@/lib/utils/constants'
 import type { Proof, OrderItem } from '@/types'
 
 interface ProofPanelProps {
@@ -51,8 +53,67 @@ function ProofVersionCard({
   const [adminNotes, setAdminNotes] = useState(proof.admin_notes ?? '')
   const [saving, setSaving] = useState(false)
   const [approving, setApproving] = useState(false)
+  const [viewMode, setViewMode] = useState<'pdf' | 'image'>('pdf')
+
+  // Hybrid Proxy-Blob State
+  const [blobUrl, setBlobUrl] = useState<string | null>(null)
+  const [previewLoading, setPreviewLoading] = useState(false)
+  const [previewError, setPreviewError] = useState<string | null>(null)
+
   const cfg = STATUS_CONFIG[proof.status] ?? STATUS_CONFIG['pending']
   const Icon = cfg.icon
+
+  // Fetch PDF as blob via our proxy to bypass CORS, security blocks, and IDM
+  useEffect(() => {
+    let active = true
+    const proxyUrl = `/api/proofs/${proof.id}/file`
+
+    if (expanded && proof.id && !blobUrl) {
+      setPreviewLoading(true)
+      setPreviewError(null)
+      fetch(`/api/proof-data/${proof.id}`)
+        .then(async (res) => {
+          if (!res.ok) throw new Error(`HTTP ${res.status}`)
+          const json = await res.json()
+          if (!json.data) throw new Error('Missing data in response')
+          
+          // Convert Base64 back to Blob
+          const binaryString = atob(json.data)
+          const bytes = new Uint8Array(binaryString.length)
+          for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i)
+          }
+          const pdfBlob = new Blob([bytes], { type: 'application/pdf' })
+          
+          if (active) {
+            const url = URL.createObjectURL(pdfBlob)
+            setBlobUrl(url)
+          }
+        })
+        .catch((err) => {
+          if (active) {
+            console.error('[ProofPreview] Proxy fetch failed:', err)
+            setPreviewError('Failed to load preview. Please use the external link button.')
+          }
+        })
+        .finally(() => {
+          if (active) setPreviewLoading(false)
+        })
+    }
+
+    return () => {
+      active = false
+    }
+  }, [expanded, proof.id, blobUrl])
+
+  // Cleanup blob URL on unmount
+  useEffect(() => {
+    return () => {
+      if (blobUrl && blobUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(blobUrl)
+      }
+    }
+  }, [blobUrl])
 
   const handleApprove = async () => {
     if (!confirm('Approve this proof on behalf of the customer? This will trigger production file generation.')) return
@@ -122,6 +183,7 @@ function ProofVersionCard({
               variant="ghost"
               asChild
               onClick={(e) => e.stopPropagation()}
+              title="Open in new tab"
             >
               <a href={proof.proof_file_url} target="_blank" rel="noopener noreferrer">
                 <ExternalLink className="h-3.5 w-3.5" />
@@ -136,15 +198,78 @@ function ProofVersionCard({
       {expanded && (
         <div className="border-t px-4 pb-4 pt-3 space-y-4">
           {/* Proof preview */}
-          {proof.proof_file_url && (
-            <div className="overflow-hidden rounded-lg border bg-gray-50">
-              <iframe
-                src={proof.proof_file_url}
-                className="h-64 w-full"
-                title={`Proof v${proof.version}`}
-              />
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1 rounded-md border bg-muted/50 p-0.5">
+                <button
+                  onClick={() => setViewMode('pdf')}
+                  className={cn(
+                    "flex items-center gap-1.5 rounded-[calc(var(--radius)-4px)] px-3 py-1 text-xs font-medium transition",
+                    viewMode === 'pdf' ? "bg-white text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  <FileText className="h-3.5 w-3.5" />
+                  PDF View
+                </button>
+                <button
+                  onClick={() => setViewMode('image')}
+                  className={cn(
+                    "flex items-center gap-1.5 rounded-[calc(var(--radius)-4px)] px-3 py-1 text-xs font-medium transition",
+                    viewMode === 'image' ? "bg-white text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  <ImageIcon className="h-3.5 w-3.5" />
+                  Image View
+                </button>
+              </div>
             </div>
-          )}
+
+            <div className="relative min-h-[400px] overflow-hidden rounded-lg border bg-gray-50 flex flex-col items-center justify-center">
+              {previewLoading ? (
+                <div className="flex flex-col items-center gap-2 py-12">
+                  <RefreshCw className="h-8 w-8 animate-spin text-blue-500" />
+                  <p className="text-xs text-muted-foreground animate-pulse">Loading proof PDF...</p>
+                </div>
+              ) : previewError ? (
+                <div className="flex flex-col items-center gap-2 px-6 py-12 text-center">
+                  <XCircle className="h-8 w-8 text-red-400" />
+                  <p className="text-sm font-medium text-gray-700">{previewError}</p>
+                  <Button variant="outline" size="sm" asChild className="mt-2">
+                    <a href={proof.proof_file_url || '#'} target="_blank" rel="noopener noreferrer">
+                      Open Proof Manually
+                    </a>
+                  </Button>
+                </div>
+              ) : viewMode === 'image' ? (
+                <div className="flex flex-col items-center justify-center p-4 w-full">
+                  {proof.proof_thumbnail_url && !proof.proof_thumbnail_url.toLowerCase().endsWith('.pdf') ? (
+                    <img
+                      src={proof.proof_thumbnail_url}
+                      alt={`Proof v${proof.version}`}
+                      className="max-h-[600px] w-auto rounded-lg shadow-sm object-contain"
+                    />
+                  ) : (
+                    <div className="flex flex-col items-center gap-2 py-12">
+                      <ImageIcon className="h-8 w-8 text-gray-300" />
+                      <p className="text-xs text-muted-foreground">No image version available</p>
+                      <p className="max-w-[200px] text-[10px] text-muted-foreground/60 text-center px-4">This version only has a PDF proof. Please use "PDF View".</p>
+                    </div>
+                  )}
+                </div>
+              ) : blobUrl ? (
+                <iframe
+                  src={blobUrl}
+                  className="h-[600px] w-full border-0"
+                  title={`Proof v${proof.version}`}
+                />
+              ) : (
+                <div className="flex flex-col items-center gap-2 py-12">
+                  <FileText className="h-8 w-8 text-gray-300" />
+                  <p className="text-xs text-muted-foreground">No preview available</p>
+                </div>
+              )}
+            </div>
+          </div>
 
           {/* Customer notes */}
           {proof.customer_notes && (
@@ -252,10 +377,11 @@ function OrderItemProofSection({
   const handleResendEmail = async () => {
     setSendingEmail(true)
     try {
+      const proofUrl = `${SITE_URL}/account/orders/${orderId}/proof/${item.id}`
       const res = await fetch(`/api/admin/orders/${orderId}/email`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'proof' }),
+        body: JSON.stringify({ type: 'proof', proofUrl }),
       })
       if (res.ok) {
         toast.success('Proof ready email sent to customer')
@@ -315,7 +441,16 @@ function OrderItemProofSection({
   )
 
   return (
-    <div className="space-y-3">
+    <div className="relative space-y-3">
+      {/* Loading Overlay */}
+      {generating && (
+        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center rounded-xl bg-white/70 backdrop-blur-[1px]">
+          <RefreshCw className="h-8 w-8 animate-spin text-brand-primary" />
+          <p className="mt-2 text-sm font-medium text-brand-text">Generating Proof...</p>
+          <p className="text-xs text-muted-foreground">This may take a few seconds</p>
+        </div>
+      )}
+
       {/* Item header */}
       <div className="flex items-center justify-between">
         <div>
@@ -335,7 +470,7 @@ function OrderItemProofSection({
               size="sm"
               variant="ghost"
               onClick={handleResendEmail}
-              disabled={sendingEmail}
+              disabled={sendingEmail || generating}
               className="gap-1.5 text-xs"
             >
               <Send className="h-3.5 w-3.5" />
@@ -348,14 +483,19 @@ function OrderItemProofSection({
               variant="default"
               onClick={handleGenerateProof}
               disabled={generating}
-              className="gap-2"
+              className="gap-2 min-w-[140px]"
             >
               {generating ? (
-                <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                <>
+                  <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                  Generating...
+                </>
               ) : (
-                <Plus className="h-3.5 w-3.5" />
+                <>
+                  <Plus className="h-3.5 w-3.5" />
+                  {proofs.length === 0 ? 'Generate Proof' : 'New Proof Version'}
+                </>
               )}
-              {proofs.length === 0 ? 'Generate Proof' : 'New Proof Version'}
             </Button>
           )}
         </div>

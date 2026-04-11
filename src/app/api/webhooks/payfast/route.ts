@@ -67,6 +67,20 @@ export async function POST(req: NextRequest) {
         notes: `Payment received via PayFast (${pfPaymentId})`,
       })
 
+      // Auto-book GoBob shipment
+      try {
+        await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/courier/gobob/book`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-internal-secret': process.env.INTERNAL_WEBHOOK_SECRET ?? '',
+          },
+          body: JSON.stringify({ orderId: paymentId }),
+        })
+      } catch (gobobErr) {
+        console.error('PayFast webhook: GoBob auto-book failed:', gobobErr)
+      }
+
       // Send payment received email to customer
       try {
         const { data: orderWithProfile } = await supabase

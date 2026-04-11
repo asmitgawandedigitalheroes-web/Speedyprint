@@ -25,6 +25,8 @@ import {
   FlipVertical,
   MoreHorizontal,
   Unlock,
+  Boxes,
+  Ungroup,
 } from 'lucide-react'
 import { useEditorStore } from '@/lib/editor/useEditorStore'
 import {
@@ -47,6 +49,8 @@ import {
   alignCenterVertical,
   flipHorizontal,
   flipVertical,
+  groupSelected,
+  ungroupSelected,
 } from '@/lib/editor/fabricUtils'
 
 interface ToolbarPos {
@@ -60,6 +64,7 @@ export default function FloatingToolbar() {
   const canvas = useEditorStore((s) => s.canvas)
   const activeObject = useEditorStore((s) => s.activeObject)
   const setLeftPanel = useEditorStore((s) => s.setLeftPanel)
+  const refreshObjects = useEditorStore((s) => s.refreshObjects)
   const [pos, setPos] = useState<ToolbarPos | null>(null)
   const [subMenu, setSubMenu] = useState<SubMenuType>(null)
   const [isExpanded, setIsExpanded] = useState(false)
@@ -139,9 +144,9 @@ export default function FloatingToolbar() {
     activeObject.type === 'textbox'
 
   const itemClass =
-    'flex items-center justify-between w-full px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 transition-colors rounded-md group'
+    'flex items-center justify-between w-full px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 transition-colors rounded-md group whitespace-nowrap'
   const subItemClass =
-    'flex items-center justify-between w-full px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 transition-colors rounded-md'
+    'flex items-center justify-between w-full px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 transition-colors rounded-md whitespace-nowrap'
   const shortcutClass = 'text-[9px] text-gray-400 font-semibold bg-gray-50 border border-gray-100 px-1.5 py-0.5 rounded uppercase tracking-tighter'
   const iconClass = 'text-gray-400 group-hover:text-gray-600 transition-colors'
   
@@ -227,7 +232,7 @@ export default function FloatingToolbar() {
             <span className={shortcutClass}>Ctrl+V</span>
           </button>
 
-          <button onClick={() => duplicateSelected(canvas)} className={itemClass}>
+          <button onClick={() => { duplicateSelected(canvas); refreshObjects() }} className={itemClass}>
             <span className="flex items-center gap-3 font-medium">
               <CopyPlus size={16} className={iconClass} />
               Duplicate
@@ -235,7 +240,27 @@ export default function FloatingToolbar() {
             <span className={shortcutClass}>Ctrl+D</span>
           </button>
 
-          <button onClick={() => deleteSelected(canvas)} className={itemClass}>
+          {activeObject.type === 'activeSelection' && (
+            <button onClick={() => { groupSelected(canvas); refreshObjects() }} className={itemClass}>
+              <span className="flex items-center gap-3 font-medium">
+                <Boxes size={16} className={iconClass} />
+                Group
+              </span>
+              <span className={shortcutClass}>Ctrl+G</span>
+            </button>
+          )}
+
+          {activeObject.type === 'group' && (
+            <button onClick={() => { ungroupSelected(canvas); refreshObjects() }} className={itemClass}>
+              <span className="flex items-center gap-3 font-medium">
+                <Ungroup size={16} className={iconClass} />
+                Ungroup
+              </span>
+              <span className={shortcutClass}>Ctrl+Shift+G</span>
+            </button>
+          )}
+
+          <button onClick={() => { deleteSelected(canvas); refreshObjects() }} className={itemClass}>
             <span className="flex items-center gap-3 font-medium">
               <Trash2 size={16} className={iconClass} />
               Delete
@@ -259,32 +284,44 @@ export default function FloatingToolbar() {
             </button>
             {subMenu === 'layers' && (
               <div 
-                className="absolute left-[calc(100%-8px)] top-[-8px] bg-white border border-gray-200 rounded-xl shadow-2xl py-1.5 px-1.5 min-w-[200px] animate-in fade-in slide-in-from-left-1 duration-150"
+                className="absolute left-[calc(100%-8px)] top-[-8px] bg-white border border-gray-200 rounded-xl shadow-2xl py-1.5 px-1.5 min-w-[240px] animate-in fade-in slide-in-from-left-1 duration-150"
                 onMouseLeave={() => setSubMenu(null)}
               >
-                <button onClick={() => bringForward(canvas)} className={subItemClass}>
-                  <span className="flex items-center gap-3 font-medium">
+                <button 
+                  onClick={() => { bringForward(canvas); refreshObjects() }} 
+                  className={subItemClass}
+                >
+                  <span className="flex items-center gap-3 font-medium text-xs lg:text-sm">
                     <ArrowUp size={16} className={iconClass} />
                     Bring forward
                   </span>
                   <span className={shortcutClass}>Ctrl+]</span>
                 </button>
-                <button onClick={() => bringToFront(canvas)} className={subItemClass}>
-                  <span className="flex items-center gap-3 font-medium">
+                <button 
+                  onClick={() => { bringToFront(canvas); refreshObjects() }} 
+                  className={subItemClass}
+                >
+                  <span className="flex items-center gap-3 font-medium text-xs lg:text-sm">
                     <ChevronsUp size={16} className={iconClass} />
                     Bring to front
                   </span>
                   <span className={shortcutClass}>Ctrl+Alt+]</span>
                 </button>
-                <button onClick={() => sendBackward(canvas)} className={subItemClass}>
-                  <span className="flex items-center gap-3 font-medium">
+                <button 
+                  onClick={() => { sendBackward(canvas); refreshObjects() }} 
+                  className={subItemClass}
+                >
+                  <span className="flex items-center gap-3 font-medium text-xs lg:text-sm">
                     <ArrowDown size={16} className={iconClass} />
                     Send backward
                   </span>
                   <span className={shortcutClass}>Ctrl+[</span>
                 </button>
-                <button onClick={() => sendToBack(canvas)} className={subItemClass}>
-                  <span className="flex items-center gap-3 font-medium">
+                <button 
+                  onClick={() => { sendToBack(canvas); refreshObjects() }} 
+                  className={subItemClass}
+                >
+                  <span className="flex items-center gap-3 font-medium text-xs lg:text-sm">
                     <ChevronsDown size={16} className={iconClass} />
                     Send to back
                   </span>
@@ -292,7 +329,7 @@ export default function FloatingToolbar() {
                 </button>
                 <div className="h-px bg-gray-100/80 my-1.5 mx-2" />
                 <button onClick={() => setLeftPanel('layers')} className={subItemClass}>
-                  <span className="flex items-center gap-3 font-medium">
+                  <span className="flex items-center gap-3 font-medium text-xs lg:text-sm">
                     <Layers size={16} className={iconClass} />
                     Show layers
                   </span>

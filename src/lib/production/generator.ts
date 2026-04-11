@@ -75,9 +75,14 @@ export interface ProductionResult {
  */
 export async function generateOrderProductionFiles(
   orderId: string,
-  options: { formats?: ('pdf' | 'png')[]; force?: boolean; cmyk?: boolean } = {}
+  options: { 
+    formats?: ('pdf' | 'png')[]; 
+    force?: boolean; 
+    cmyk?: boolean;
+    sampleLimit?: number;
+  } = {}
 ): Promise<ProductionResult> {
-  const { formats = ['pdf'], cmyk = false } = options
+  const { formats = ['pdf'], cmyk = false, sampleLimit } = options
   const admin = createAdminClient()
   const errors: string[] = []
   const skipped: string[] = []
@@ -153,8 +158,12 @@ export async function generateOrderProductionFiles(
         continue
       }
 
-      for (let rowIdx = 0; rowIdx < rows.length; rowIdx++) {
-        const row = rows[rowIdx]
+      // Limit rows if sampling
+      const limit = sampleLimit ?? rows.length
+      const rowsToProcess = rows.slice(0, Math.min(limit, rows.length))
+
+      for (let rowIdx = 0; rowIdx < rowsToProcess.length; rowIdx++) {
+        const row = rowsToProcess[rowIdx]
 
         // Build variable substitution map from column mapping
         const variables: Record<string, string> = {}

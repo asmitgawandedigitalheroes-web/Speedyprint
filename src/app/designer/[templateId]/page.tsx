@@ -5,7 +5,7 @@ import EditorShell from '@/components/editor/EditorShell'
 
 interface DesignerPageProps {
   params: Promise<{ templateId: string }>
-  searchParams: Promise<{ design?: string }>
+  searchParams: Promise<{ design?: string; mode?: string }>
 }
 
 /**
@@ -16,7 +16,7 @@ interface DesignerPageProps {
  */
 export default function DesignerPage({ params, searchParams }: DesignerPageProps) {
   const { templateId } = use(params)
-  const { design: designId } = use(searchParams)
+  const { design: designId, mode } = use(searchParams)
 
-  return <EditorShell templateId={templateId} designId={designId} />
+  return <EditorShell templateId={templateId} designId={designId} mode={mode as 'upload'} />
 }

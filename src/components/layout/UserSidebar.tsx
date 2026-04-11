@@ -14,8 +14,8 @@ import {
   LogOut,
   Printer,
   ArrowUpLeft,
-  Plus,
   FileImage,
+  Bell,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/hooks/useAuth'
@@ -42,7 +42,7 @@ export function UserSidebar() {
       const { count } = await supabase
         .from('order_items')
         .select('id', { count: 'exact', head: true })
-        .in('order_id', orders.map((o) => o.id))
+        .in('order_id', orders.map((o: { id: string }) => o.id))
         .eq('status', 'proof_sent')
       setProofCount(count ?? 0)
     }
@@ -61,8 +61,16 @@ export function UserSidebar() {
       .toUpperCase() ?? '?'
 
   const handleLogout = async () => {
-    await logout()
-    router.replace('/login')
+    // BUG-015 FIX: Use window.location.href for logout to ensure a clean break.
+    // Standard router navigation can fail if the component unmounts during the transition
+    // (which happens when the parent layout sees the auth state change to null).
+    // Hard-loading the homepage is the most reliable way to clear all session state.
+    try {
+      await logout()
+      window.location.href = '/'
+    } catch {
+      window.location.href = '/'
+    }
   }
 
   /* ─── Reusable nav link ─── */
@@ -140,17 +148,6 @@ export function UserSidebar() {
         </div>
       </div>
 
-      {/* ── New Order CTA ── */}
-      <div className="px-3 pt-4">
-        <Link
-          href="/order-now"
-          onClick={() => setMobileOpen(false)}
-          className="flex items-center gap-2 rounded-lg bg-brand-primary px-3 py-2.5 text-sm font-semibold text-white transition hover:opacity-90"
-        >
-          <Plus className="h-4 w-4 shrink-0" />
-          New Order
-        </Link>
-      </div>
 
       {/* ── Navigation ── */}
       <nav className="flex-1 overflow-y-auto px-3 pb-5">
@@ -158,7 +155,7 @@ export function UserSidebar() {
         <div className="flex flex-col gap-0.5">
           <NavLink href="/account" label="Dashboard" icon={LayoutDashboard} exact />
           <NavLink href="/account/orders" label="My Orders" icon={ShoppingBag} />
-          <NavLink href="/account/proofs" label="Proof Approvals" icon={ShieldCheck} badge={proofCount} />
+          <NavLink href="/account/proofs" label="Proof Approvals" icon={Bell} badge={proofCount} />
         </div>
 
         <SectionLabel label="Designs" />

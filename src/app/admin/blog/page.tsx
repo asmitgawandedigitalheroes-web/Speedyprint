@@ -3,20 +3,26 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Plus, Pencil, Trash2, Eye, EyeOff } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
+import { Plus, Pencil, Trash2, Eye, EyeOff, FileText } from 'lucide-react'
+import { toast } from 'sonner'
+import {
+  PageHeader, SectionCard, EmptyState, StatusBadge, SkeletonRows, ActionBtn,
+} from '@/components/admin/AdminUI'
 import type { BlogPost } from '@/types'
+
+function formatDate(dateStr: string | null) {
+  if (!dateStr) return '—'
+  return new Date(dateStr).toLocaleDateString('en-ZA', { year: 'numeric', month: 'short', day: 'numeric' })
+}
 
 export default function AdminBlogPage() {
   const router = useRouter()
   const [posts, setPosts] = useState<BlogPost[]>([])
   const [loading, setLoading] = useState(true)
   const [deleting, setDeleting] = useState<string | null>(null)
+  const [toggling, setToggling] = useState<string | null>(null)
 
-  useEffect(() => {
-    fetchPosts()
-  }, [])
+  useEffect(() => { fetchPosts() }, [])
 
   async function fetchPosts() {
     setLoading(true)
@@ -24,172 +30,151 @@ export default function AdminBlogPage() {
       const res = await fetch('/api/admin/blog')
       const data = await res.json()
       setPosts(data.posts || [])
-    } catch (err) {
-      console.error('Blog fetch error:', err)
+    } catch {
+      toast.error('Failed to load posts')
     } finally {
       setLoading(false)
     }
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this blog post?')) return
+    if (!confirm('Delete this blog post? This cannot be undone.')) return
     setDeleting(id)
     try {
       const res = await fetch(`/api/admin/blog/${id}`, { method: 'DELETE' })
-      if (!res.ok) throw new Error('Delete failed')
+      if (!res.ok) throw new Error()
       setPosts((prev) => prev.filter((p) => p.id !== id))
-    } catch (err) {
-      console.error('Delete error:', err)
-      alert('Failed to delete blog post.')
+      toast.success('Post deleted')
+    } catch {
+      toast.error('Failed to delete post')
     } finally {
       setDeleting(null)
     }
   }
 
   const handleTogglePublish = async (post: BlogPost) => {
+    setToggling(post.id)
     try {
       const res = await fetch(`/api/admin/blog/${post.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ published: !post.published }),
       })
-      if (!res.ok) throw new Error('Update failed')
-      setPosts((prev) =>
-        prev.map((p) =>
-          p.id === post.id ? { ...p, published: !p.published } : p
-        )
-      )
-    } catch (err) {
-      console.error('Toggle publish error:', err)
+      if (!res.ok) throw new Error()
+      setPosts((prev) => prev.map((p) => p.id === post.id ? { ...p, published: !p.published } : p))
+      toast.success(post.published ? 'Post unpublished' : 'Post published')
+    } catch {
+      toast.error('Failed to update post')
+    } finally {
+      setToggling(null)
     }
   }
 
-  const formatDate = (dateStr: string | null) => {
-    if (!dateStr) return '—'
-    return new Date(dateStr).toLocaleDateString('en-ZA', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    })
-  }
+  const published = posts.filter(p => p.published).length
+  const drafts = posts.filter(p => !p.published).length
 
   return (
     <div className="space-y-6">
-      {/* Page Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-brand-text">Blog Posts</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Manage blog posts and articles
-          </p>
-        </div>
-        <Button asChild>
-          <Link href="/admin/blog/new">
-            <Plus className="mr-2 h-4 w-4" />
-            New Post
-          </Link>
-        </Button>
-      </div>
-
-      {/* Posts Table */}
-      <div className="overflow-x-auto rounded-lg border">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b bg-muted/50">
-              <th className="px-4 py-3 text-left font-medium">Title</th>
-              <th className="px-4 py-3 text-left font-medium">Author</th>
-              <th className="px-4 py-3 text-center font-medium">Status</th>
-              <th className="px-4 py-3 text-left font-medium">Date</th>
-              <th className="px-4 py-3 text-right font-medium">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              Array.from({ length: 4 }).map((_, i) => (
-                <tr key={i} className="border-b">
-                  <td colSpan={5} className="px-4 py-4">
-                    <div className="h-5 w-full animate-pulse rounded bg-gray-200" />
-                  </td>
-                </tr>
-              ))
-            ) : posts.length === 0 ? (
-              <tr>
-                <td
-                  colSpan={5}
-                  className="px-4 py-12 text-center text-muted-foreground"
-                >
-                  No blog posts yet. Create your first post!
-                </td>
-              </tr>
-            ) : (
-              posts.map((post) => (
-                <tr key={post.id} className="border-b hover:bg-muted/50">
-                  <td className="px-4 py-3">
-                    <div>
-                      <p className="font-medium">{post.title}</p>
-                      <p className="text-xs text-muted-foreground">
-                        /{post.slug}
-                      </p>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground">
-                    {post.author || '—'}
-                  </td>
-                  <td className="px-4 py-3 text-center">
-                    <Badge
-                      variant="secondary"
-                      className={
-                        post.published
-                          ? 'bg-green-100 text-green-700'
-                          : 'bg-amber-100 text-amber-700'
-                      }
-                    >
-                      {post.published ? 'Published' : 'Draft'}
-                    </Badge>
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground">
-                    {formatDate(post.published_at || post.created_at)}
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => handleTogglePublish(post)}
-                        title={post.published ? 'Unpublish' : 'Publish'}
-                      >
-                        {post.published ? (
-                          <EyeOff className="h-3.5 w-3.5" />
-                        ) : (
-                          <Eye className="h-3.5 w-3.5" />
-                        )}
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() =>
-                          router.push(`/admin/blog/${post.id}/edit`)
-                        }
-                      >
-                        <Pencil className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="text-red-500 hover:text-red-700"
-                        onClick={() => handleDelete(post.id)}
-                        disabled={deleting === post.id}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              ))
+      <PageHeader
+        title="Blog Posts"
+        description="Manage articles and content for your website"
+        actions={
+          <div className="flex items-center gap-2">
+            {!loading && posts.length > 0 && (
+              <>
+                <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">{published} published</span>
+                {drafts > 0 && <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">{drafts} draft{drafts > 1 ? 's' : ''}</span>}
+              </>
             )}
-          </tbody>
-        </table>
-      </div>
+            <Link
+              href="/admin/blog/new"
+              className="flex items-center gap-1.5 rounded-lg bg-gray-900 px-3.5 py-2 text-sm font-medium text-white hover:bg-gray-700 transition-colors"
+            >
+              <Plus className="h-4 w-4" />
+              New Post
+            </Link>
+          </div>
+        }
+      />
+
+      <SectionCard noPad>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-gray-100">
+                <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Title</th>
+                <th className="hidden px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-400 md:table-cell">Author</th>
+                <th className="px-5 py-3.5 text-center text-xs font-semibold uppercase tracking-wide text-gray-400">Status</th>
+                <th className="hidden px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-400 sm:table-cell">Date</th>
+                <th className="px-5 py-3.5 text-right text-xs font-semibold uppercase tracking-wide text-gray-400">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <SkeletonRows rows={5} cols={5} />
+              ) : posts.length === 0 ? (
+                <tr>
+                  <td colSpan={5}>
+                    <EmptyState
+                      icon={FileText}
+                      title="No blog posts yet"
+                      description="Create your first post to start engaging your audience"
+                      action={
+                        <Link href="/admin/blog/new" className="flex items-center gap-1.5 rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700">
+                          <Plus className="h-4 w-4" /> Create Post
+                        </Link>
+                      }
+                    />
+                  </td>
+                </tr>
+              ) : (
+                posts.map((post) => (
+                  <tr key={post.id} className="border-b border-gray-50 transition-colors last:border-0 hover:bg-gray-50">
+                    <td className="px-5 py-3.5">
+                      <p className="font-medium text-gray-800 truncate max-w-[260px]">{post.title}</p>
+                      <p className="text-[11px] text-gray-400 font-mono">/{post.slug}</p>
+                    </td>
+                    <td className="hidden px-5 py-3.5 text-xs text-gray-500 md:table-cell">
+                      {post.author || <span className="text-gray-300">—</span>}
+                    </td>
+                    <td className="px-5 py-3.5 text-center">
+                      <StatusBadge
+                        label={post.published ? 'Published' : 'Draft'}
+                        color={post.published ? 'green' : 'yellow'}
+                      />
+                    </td>
+                    <td className="hidden px-5 py-3.5 text-xs text-gray-400 sm:table-cell">
+                      {formatDate(post.published_at || post.created_at)}
+                    </td>
+                    <td className="px-5 py-3.5">
+                      <div className="flex items-center justify-end gap-1">
+                        <ActionBtn
+                          onClick={() => handleTogglePublish(post)}
+                          icon={post.published ? EyeOff : Eye}
+                          label={post.published ? 'Unpublish' : 'Publish'}
+                          disabled={toggling === post.id}
+                        />
+                        <ActionBtn
+                          onClick={() => router.push(`/admin/blog/${post.id}/edit`)}
+                          icon={Pencil}
+                          label="Edit"
+                        />
+                        <ActionBtn
+                          onClick={() => handleDelete(post.id)}
+                          icon={Trash2}
+                          label="Delete"
+                          danger
+                          disabled={deleting === post.id}
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </SectionCard>
     </div>
   )
 }

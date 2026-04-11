@@ -130,5 +130,18 @@ export function contactFormTemplate(name: string, email: string, subject: string
       <p style="margin:0;"><strong>Message:</strong></p>
       <p style="margin:8px 0 0;color:#6B7280;">${message}</p>
     </div>
+    <a href="${SITE_URL}/admin/enquiries" style="display:inline-block;background:#E30613;color:#ffffff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;margin-top:16px;">View in Admin</a>
+  `)
+}
+
+export function enquiryReplyTemplate(customerName: string, originalSubject: string, replyMessage: string): string {
+  return emailWrapper(`
+    <h2 style="color:#1A1A1A;margin:0 0 8px;">Re: ${originalSubject}</h2>
+    <p style="color:#6B7280;line-height:1.6;margin:0 0 24px;">Hi ${customerName}, thanks for getting in touch. Here's our response:</p>
+    <div style="background:#f5f5f5;border-left:4px solid #E30613;border-radius:0 8px 8px 0;padding:16px 20px;margin:0 0 24px;">
+      <p style="margin:0;color:#1A1A1A;line-height:1.8;white-space:pre-wrap;">${replyMessage}</p>
+    </div>
+    <p style="color:#6B7280;font-size:14px;line-height:1.6;">If you have any further questions, feel free to reply to this email or visit our website.</p>
+    <a href="${SITE_URL}/contact" style="display:inline-block;background:#E30613;color:#ffffff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:600;margin-top:16px;">Contact Us Again</a>
   `)
 }

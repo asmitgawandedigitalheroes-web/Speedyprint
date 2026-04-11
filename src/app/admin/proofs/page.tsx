@@ -4,7 +4,11 @@ import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
 import { toast } from 'sonner'
 import { formatDateTime } from '@/lib/utils/format'
-import { CheckCircle, Clock, AlertCircle, RefreshCw } from 'lucide-react'
+import { CheckCircle2, Clock, AlertCircle, RefreshCw, FileText, ExternalLink } from 'lucide-react'
+import {
+  PageHeader, SectionCard, FilterTabs, EmptyState,
+  StatusBadge, SkeletonRows, Pagination,
+} from '@/components/admin/AdminUI'
 
 type ProofRow = {
   id: string
@@ -24,25 +28,34 @@ type ProofRow = {
   } | null
 }
 
-const STATUS_BADGE: Record<string, string> = {
-  pending: 'bg-blue-100 text-blue-700',
-  approved: 'bg-green-100 text-green-700',
-  revision_requested: 'bg-yellow-100 text-yellow-700',
-  rejected: 'bg-red-100 text-red-700',
+const STATUS_COLOR: Record<string, 'blue' | 'green' | 'yellow' | 'red' | 'gray'> = {
+  pending: 'blue',
+  approved: 'green',
+  revision_requested: 'yellow',
+  rejected: 'red',
 }
 
-const STATUS_ICON: Record<string, React.FC<{ className?: string }>> = {
+const STATUS_LABEL: Record<string, string> = {
+  pending: 'Awaiting Review',
+  approved: 'Approved',
+  revision_requested: 'Revision Needed',
+  rejected: 'Rejected',
+}
+
+const STATUS_ICON: Record<string, React.ElementType> = {
   pending: Clock,
-  approved: CheckCircle,
+  approved: CheckCircle2,
   revision_requested: AlertCircle,
   rejected: AlertCircle,
 }
+
+type StatusFilter = '' | 'pending' | 'revision_requested' | 'approved' | 'rejected'
 
 export default function AdminProofsPage() {
   const [proofs, setProofs] = useState<ProofRow[]>([])
   const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, pages: 1 })
   const [loading, setLoading] = useState(true)
-  const [statusFilter, setStatusFilter] = useState('')
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('')
   const [page, setPage] = useState(1)
 
   const fetchProofs = useCallback(async () => {
@@ -53,8 +66,7 @@ export default function AdminProofsPage() {
       const res = await fetch(`/api/admin/proofs?${params}`)
       if (!res.ok) throw new Error('Failed')
       const data = await res.json()
-      setProofs(data.proofs)
-      // API returns flat { total, page, limit } — compute pages locally
+      setProofs(data.proofs ?? [])
       const total = data.total ?? 0
       const limit = data.limit ?? 20
       setPagination({ page: data.page ?? 1, limit, total, pages: Math.ceil(total / limit) || 1 })
@@ -67,200 +79,150 @@ export default function AdminProofsPage() {
 
   useEffect(() => { fetchProofs() }, [fetchProofs])
 
-  // Auto-refresh if there are pending proofs
   useEffect(() => {
-    const hasPending = proofs.some((p) => p.status === 'pending')
+    const hasPending = proofs.some(p => p.status === 'pending')
     if (!hasPending) return
     const interval = setInterval(fetchProofs, 30000)
     return () => clearInterval(interval)
   }, [proofs, fetchProofs])
 
-  const pendingCount = proofs.filter((p) => p.status === 'pending').length
-  const revisionCount = proofs.filter((p) => p.status === 'revision_requested').length
+  const pendingCount = proofs.filter(p => p.status === 'pending').length
+  const revisionCount = proofs.filter(p => p.status === 'revision_requested').length
+
+  const filterOptions: { value: StatusFilter; label: string }[] = [
+    { value: '', label: 'All Proofs' },
+    { value: 'pending', label: 'Awaiting Review' },
+    { value: 'revision_requested', label: 'Revision Needed' },
+    { value: 'approved', label: 'Approved' },
+    { value: 'rejected', label: 'Rejected' },
+  ]
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-      {/* Header */}
-      <div className="mb-6 flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-brand-text">Proof Management</h1>
-          <p className="mt-1 text-sm text-brand-text-muted">
-            Review and manage digital proofs across all orders.
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          {pendingCount > 0 && (
-            <span className="rounded-full bg-blue-100 px-3 py-1 text-sm font-medium text-blue-700">
-              {pendingCount} awaiting customer review
-            </span>
-          )}
-          {revisionCount > 0 && (
-            <span className="rounded-full bg-yellow-100 px-3 py-1 text-sm font-medium text-yellow-700">
-              {revisionCount} revision{revisionCount > 1 ? 's' : ''} requested
-            </span>
-          )}
-          <button
-            onClick={fetchProofs}
-            className="flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-2 text-sm hover:border-brand-primary hover:text-brand-primary"
-          >
-            <RefreshCw className="h-3.5 w-3.5" />
-            Refresh
-          </button>
-        </div>
-      </div>
-
-      {/* Filters */}
-      <div className="mb-6 flex flex-wrap gap-3">
-        {['', 'pending', 'revision_requested', 'approved', 'rejected'].map((s) => (
-          <button
-            key={s}
-            onClick={() => { setStatusFilter(s); setPage(1) }}
-            className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
-              statusFilter === s
-                ? 'bg-brand-primary text-white'
-                : 'border border-gray-200 bg-white text-brand-text-muted hover:border-brand-primary hover:text-brand-primary'
-            }`}
-          >
-            {s === '' ? 'All' :
-             s === 'pending' ? 'Awaiting Review' :
-             s === 'revision_requested' ? 'Revision Requested' :
-             s === 'approved' ? 'Approved' : 'Rejected'}
-          </button>
-        ))}
-      </div>
-
-      {/* Table */}
-      <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white shadow-sm">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-50 text-xs font-medium uppercase tracking-wide text-brand-text-muted">
-            <tr>
-              <th className="px-4 py-3 text-left">Order / Product</th>
-              <th className="px-4 py-3 text-center">Version</th>
-              <th className="px-4 py-3 text-center">Status</th>
-              <th className="px-4 py-3 text-left">Customer Notes</th>
-              <th className="px-4 py-3 text-left">Created</th>
-              <th className="px-4 py-3 text-left">Responded</th>
-              <th className="px-4 py-3 text-center">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {loading && (
-              <tr>
-                <td colSpan={7} className="px-4 py-12 text-center text-brand-text-muted">
-                  Loading&hellip;
-                </td>
-              </tr>
+    <div className="space-y-6">
+      <PageHeader
+        title="Proof Management"
+        description="Review and manage digital proofs across all orders"
+        actions={
+          <div className="flex items-center gap-2">
+            {pendingCount > 0 && (
+              <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700">
+                {pendingCount} awaiting review
+              </span>
             )}
-            {!loading && proofs.length === 0 && (
-              <tr>
-                <td colSpan={7} className="px-4 py-12 text-center text-brand-text-muted">
-                  No proofs found.
-                </td>
-              </tr>
+            {revisionCount > 0 && (
+              <span className="rounded-full bg-yellow-100 px-3 py-1 text-xs font-semibold text-yellow-700">
+                {revisionCount} revision{revisionCount > 1 ? 's' : ''}
+              </span>
             )}
-            {!loading && proofs.map((proof) => {
-              const StatusIcon = STATUS_ICON[proof.status] ?? Clock
-              return (
-                <tr key={proof.id} className="transition-colors hover:bg-gray-50">
-                  <td className="px-4 py-3">
-                    {proof.order_item?.order ? (
-                      <>
-                        <Link
-                          href={`/admin/orders/${proof.order_item.order.id}`}
-                          className="font-medium text-brand-text hover:text-brand-primary hover:underline"
-                        >
-                          {proof.order_item.order.order_number}
-                        </Link>
-                        <p className="text-xs text-brand-text-muted">
-                          {proof.order_item.product_group?.name ?? '—'}
-                          {proof.order_item.product_template?.name ? ` — ${proof.order_item.product_template.name}` : ''}
-                        </p>
-                      </>
-                    ) : (
-                      <span className="text-gray-400">—</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-center">
-                    <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-gray-100 text-xs font-bold text-gray-600">
-                      v{proof.version}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-center">
-                    <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ${STATUS_BADGE[proof.status] ?? 'bg-gray-100 text-gray-600'}`}>
-                      <StatusIcon className="h-3 w-3" />
-                      {proof.status === 'pending' ? 'Awaiting Review' :
-                       proof.status === 'revision_requested' ? 'Revision Needed' :
-                       proof.status.charAt(0).toUpperCase() + proof.status.slice(1)}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    {proof.customer_notes ? (
-                      <p className="max-w-[200px] truncate text-xs italic text-brand-text-muted">
-                        &ldquo;{proof.customer_notes}&rdquo;
-                      </p>
-                    ) : (
-                      <span className="text-xs text-gray-400">—</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-xs text-brand-text-muted">
-                    {formatDateTime(proof.created_at)}
-                  </td>
-                  <td className="px-4 py-3 text-xs text-brand-text-muted">
-                    {proof.responded_at ? formatDateTime(proof.responded_at) : '—'}
-                  </td>
-                  <td className="px-4 py-3 text-center">
-                    <div className="flex items-center justify-center gap-2">
-                      {proof.proof_file_url && (
-                        <a
-                          href={proof.proof_file_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="rounded bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-600 hover:bg-gray-200"
-                        >
-                          View PDF
-                        </a>
-                      )}
-                      {proof.order_item?.order && (
-                        <Link
-                          href={`/admin/orders/${proof.order_item.order.id}`}
-                          className="rounded bg-brand-primary px-2.5 py-1 text-xs font-medium text-white hover:bg-brand-primary/90"
-                        >
-                          Order &rarr;
-                        </Link>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Pagination */}
-      {pagination.pages > 1 && (
-        <div className="mt-4 flex items-center justify-between text-sm">
-          <p className="text-brand-text-muted">
-            Showing {((page - 1) * pagination.limit) + 1}&ndash;{Math.min(page * pagination.limit, pagination.total)} of {pagination.total}
-          </p>
-          <div className="flex gap-2">
             <button
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page === 1}
-              className="rounded-lg border border-gray-200 px-3 py-1.5 disabled:opacity-40 hover:border-brand-primary"
+              onClick={fetchProofs}
+              className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-600 shadow-sm transition hover:border-gray-300 hover:text-gray-800"
             >
-              &larr; Prev
-            </button>
-            <button
-              onClick={() => setPage((p) => Math.min(pagination.pages, p + 1))}
-              disabled={page === pagination.pages}
-              className="rounded-lg border border-gray-200 px-3 py-1.5 disabled:opacity-40 hover:border-brand-primary"
-            >
-              Next &rarr;
+              <RefreshCw className="h-3.5 w-3.5" />
+              Refresh
             </button>
           </div>
+        }
+      />
+
+      {/* Filters */}
+      <FilterTabs
+        options={filterOptions}
+        value={statusFilter}
+        onChange={(v) => { setStatusFilter(v); setPage(1) }}
+      />
+
+      {/* Table */}
+      <SectionCard noPad>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-gray-100">
+                <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Order / Product</th>
+                <th className="px-5 py-3.5 text-center text-xs font-semibold uppercase tracking-wide text-gray-400">Ver.</th>
+                <th className="px-5 py-3.5 text-center text-xs font-semibold uppercase tracking-wide text-gray-400">Status</th>
+                <th className="hidden px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-400 md:table-cell">Customer Notes</th>
+                <th className="hidden px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-400 lg:table-cell">Created</th>
+                <th className="px-5 py-3.5 text-right text-xs font-semibold uppercase tracking-wide text-gray-400">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <SkeletonRows rows={6} cols={6} />
+              ) : proofs.length === 0 ? (
+                <tr>
+                  <td colSpan={6}>
+                    <EmptyState icon={FileText} title="No proofs found" description="Proofs will appear here once customers submit orders with designs" />
+                  </td>
+                </tr>
+              ) : (
+                proofs.map((proof) => {
+                  const StatusIcon = STATUS_ICON[proof.status] ?? Clock
+                  const color = STATUS_COLOR[proof.status] ?? 'gray'
+                  return (
+                    <tr key={proof.id} className="border-b border-gray-50 transition-colors last:border-0 hover:bg-gray-50">
+                      <td className="px-5 py-3.5">
+                        {proof.order_item?.order ? (
+                          <>
+                            <Link href={`/admin/orders/${proof.order_item.order.id}`} className="font-mono text-xs font-bold text-brand-primary hover:underline">
+                              {proof.order_item.order.order_number}
+                            </Link>
+                            <p className="mt-0.5 text-xs text-gray-400">
+                              {proof.order_item.product_group?.name ?? '—'}
+                              {proof.order_item.product_template?.name ? ` · ${proof.order_item.product_template.name}` : ''}
+                            </p>
+                          </>
+                        ) : <span className="text-gray-300">—</span>}
+                      </td>
+                      <td className="px-5 py-3.5 text-center">
+                        <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-gray-100 text-[10px] font-bold text-gray-600">
+                          v{proof.version}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3.5 text-center">
+                        <div className="flex items-center justify-center gap-1.5">
+                          <StatusIcon className={`h-3.5 w-3.5 ${color === 'blue' ? 'text-blue-500' : color === 'green' ? 'text-green-500' : color === 'yellow' ? 'text-yellow-500' : 'text-red-500'}`} />
+                          <StatusBadge label={STATUS_LABEL[proof.status] ?? proof.status} color={color} />
+                        </div>
+                      </td>
+                      <td className="hidden px-5 py-3.5 md:table-cell">
+                        {proof.customer_notes
+                          ? <p className="max-w-[180px] truncate text-xs italic text-gray-500">"{proof.customer_notes}"</p>
+                          : <span className="text-xs text-gray-300">—</span>}
+                      </td>
+                      <td className="hidden px-5 py-3.5 text-xs text-gray-400 lg:table-cell">
+                        {formatDateTime(proof.created_at)}
+                      </td>
+                      <td className="px-5 py-3.5">
+                        <div className="flex items-center justify-end gap-2">
+                          {proof.proof_file_url && (
+                            <a href={proof.proof_file_url} target="_blank" rel="noopener noreferrer"
+                              className="rounded-lg border border-gray-200 px-2.5 py-1 text-xs font-medium text-gray-600 hover:border-gray-300 hover:bg-gray-50">
+                              PDF
+                            </a>
+                          )}
+                          {proof.order_item?.order && (
+                            <Link href={`/admin/orders/${proof.order_item.order.id}`}
+                              className="flex items-center gap-1 rounded-lg bg-gray-900 px-2.5 py-1 text-xs font-medium text-white hover:bg-gray-700">
+                              Order <ExternalLink className="h-3 w-3" />
+                            </Link>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })
+              )}
+            </tbody>
+          </table>
         </div>
-      )}
+        <Pagination
+          page={pagination.page}
+          totalPages={pagination.pages}
+          total={pagination.total}
+          onPage={(p) => setPage(p)}
+        />
+      </SectionCard>
     </div>
   )
 }

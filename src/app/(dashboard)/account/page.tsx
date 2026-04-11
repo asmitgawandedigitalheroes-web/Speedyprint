@@ -36,7 +36,7 @@ const PRODUCT_SHORTCUTS = [
 const ORDER_BADGE: Record<string, { label: string; bg: string; text: string }> = {
   draft:           { label: 'Draft',           bg: 'rgba(224,224,224,0.9)', text: '#555555' },
   pending_payment: { label: 'Pending Payment', bg: 'rgba(255,193,7,0.18)',  text: '#7a5c00' },
-  paid:            { label: 'Paid',            bg: 'rgba(30,41,59,0.12)',   text: '#1E293B' },
+  paid:            { label: 'Paid',            bg: 'rgba(34,197,94,0.12)',  text: '#15803d' },
   in_production:   { label: 'In Production',   bg: 'rgba(227,6,19,0.12)',   text: '#c00510' },
   completed:       { label: 'Completed',       bg: 'rgba(30,41,59,0.18)',   text: '#1E293B' },
   cancelled:       { label: 'Cancelled',       bg: 'rgba(227,6,19,0.08)',   text: '#E30613' },
@@ -82,7 +82,7 @@ export default function AccountDashboard() {
 
       /* Items awaiting proof approval */
       if (orderList.length > 0) {
-        const ids = orderList.map((o) => o.id)
+        const ids = orderList.map((o: Order) => o.id)
         const { data: items } = await supabase
           .from('order_items')
           .select('id, order_id, status')
@@ -95,7 +95,7 @@ export default function AccountDashboard() {
           pending.map((i: any) => ({
             itemId:      i.id,
             orderId:     i.order_id,
-            orderNumber: orderList.find((o) => o.id === i.order_id)?.order_number ?? i.order_id,
+            orderNumber: orderList.find((o: Order) => o.id === i.order_id)?.order_number ?? i.order_id,
           }))
         )
       }

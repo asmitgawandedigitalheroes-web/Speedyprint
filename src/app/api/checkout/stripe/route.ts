@@ -41,9 +41,10 @@ export async function POST(req: NextRequest) {
     }
 
     // Prepare line items for Stripe
+    const currency = (process.env.STRIPE_CURRENCY || 'zar').toLowerCase()
     const lineItems = order.items.map((item: any) => ({
       price_data: {
-        currency: 'zar',
+        currency: currency,
         product_data: {
           name: item.product_group?.name || 'Speedyprint Product',
           description: `Quantity: ${item.quantity}`,
@@ -53,17 +54,11 @@ export async function POST(req: NextRequest) {
       quantity: item.quantity,
     }))
 
-    // BUG-007 FIX: Do NOT add VAT as a separate Stripe line item.
-    // order.total already includes VAT (subtotal + tax + shipping_cost).
-    // Adding tax again here was causing customers to be overcharged by 15% on every order.
-
     // BUG-008 FIX: Add shipping as a Stripe line item if applicable.
-    // Previously shipping_cost was stored in the DB but never charged via Stripe.
-    // Customers saw 'Shipping: R85' in the UI but paid R0 for shipping on their card.
     if (order.shipping_cost > 0) {
       lineItems.push({
         price_data: {
-          currency: 'zar',
+          currency: currency,
           product_data: { name: 'Shipping' },
           unit_amount: Math.round(order.shipping_cost * 100),
         },
@@ -88,6 +83,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ url: session.url })
   } catch (error: any) {
     console.error('Stripe Checkout Error:', error)
+    // Map regulation errors to more user-friendly messages if possible
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 }

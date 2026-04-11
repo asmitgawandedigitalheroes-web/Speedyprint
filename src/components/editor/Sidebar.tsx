@@ -20,8 +20,10 @@ import {
   ChevronDown,
   ChevronRight,
   Type,
+  X,
 } from 'lucide-react'
 import { useEditorStore } from '@/lib/editor/useEditorStore'
+import { useIsMobile } from '@/hooks/useIsMobile'
 import { setBackground, getBackgroundColor } from '@/lib/editor/fabricUtils'
 import type { Shadow as FabricShadow } from 'fabric'
 
@@ -111,6 +113,7 @@ function IconBtn({
 export default function Sidebar() {
   const canvas = useEditorStore((s) => s.canvas)
   const activeObject = useEditorStore((s) => s.activeObject)
+  const isMobile = useIsMobile()
 
   const [bgColor, setBgColor] = useState('#ffffff')
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
@@ -431,7 +434,26 @@ export default function Sidebar() {
   const selectClass = 'w-full editor-input appearance-none'
 
   return (
-    <div className="w-72 bg-ed-surface border-l border-ed-border flex flex-col h-full overflow-y-auto editor-scrollbar">
+    <div className={`${isMobile ? 'w-full' : 'w-72'} bg-ed-surface border-l border-ed-border flex flex-col h-full overflow-y-auto editor-scrollbar pb-20 md:pb-0`}>
+      {/* Mobile-only header with Close button */}
+      {isMobile && (
+        <div className="flex items-center justify-between px-4 py-3 border-b border-ed-border bg-white sticky top-0 z-10">
+          <span className="text-sm font-bold uppercase tracking-widest text-ed-text-dim">
+            Properties
+          </span>
+          <button 
+            onClick={() => {
+              if (canvas) {
+                canvas.discardActiveObject()
+                canvas.requestRenderAll()
+              }
+            }}
+            className="p-1.5 hover:bg-ed-surface-hover rounded-full text-ed-text-dim transition-colors"
+          >
+            <X size={20} />
+          </button>
+        </div>
+      )}
 
       {/* Preview */}
       <div className="px-3 pt-3 pb-2 border-b border-ed-border">

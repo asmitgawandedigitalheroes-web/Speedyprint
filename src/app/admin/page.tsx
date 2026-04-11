@@ -4,20 +4,14 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
-  ArrowRight,
-  Printer,
-  Clock,
-  Table,
-  CheckCircle,
-  AlertCircle,
+  ShoppingCart, Clock, Printer, Table, AlertCircle,
+  ArrowRight, TrendingUp, CheckCircle2, Zap, Users,
+  FileText, ArrowUpRight,
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { cn } from '@/lib/utils'
 import { formatCurrency, formatDate } from '@/lib/utils/format'
 import { ORDER_STATUS_LABELS } from '@/lib/utils/constants'
 import { DashboardStats } from '@/components/admin/DashboardStats'
+import { PageHeader, SectionCard, SkeletonRows, StatusBadge } from '@/components/admin/AdminUI'
 import type { Profile } from '@/types'
 
 interface RecentOrder {
@@ -32,6 +26,13 @@ interface RecentOrder {
   profile: Pick<Profile, 'id' | 'full_name' | 'email' | 'company_name'> | null
 }
 
+const STATUS_COLOR: Record<string, 'gray' | 'blue' | 'yellow' | 'orange' | 'green' | 'red' | 'purple'> = {
+  draft: 'gray', pending_payment: 'yellow', paid: 'blue',
+  pending_design: 'blue', proof_sent: 'orange', proof_approved: 'green',
+  in_production: 'purple', shipped: 'blue', delivered: 'green',
+  cancelled: 'red', refunded: 'red',
+}
+
 export default function AdminDashboardPage() {
   const router = useRouter()
   const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([])
@@ -39,177 +40,135 @@ export default function AdminDashboardPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    async function fetchRecent() {
-      try {
-        const res = await fetch('/api/admin/dashboard')
-        if (!res.ok) throw new Error('Failed to fetch dashboard')
-        const data = await res.json()
+    fetch('/api/admin/dashboard')
+      .then(r => r.json())
+      .then(data => {
         setRecentOrders(data.recentOrders ?? [])
         setTriage({
-          pendingProofs:       data.stats?.pendingProofs       ?? 0,
-          readyForProduction:  data.stats?.readyForProduction  ?? 0,
-          processingCsv:       data.stats?.processingCsv       ?? 0,
+          pendingProofs:      data.stats?.pendingProofs      ?? 0,
+          readyForProduction: data.stats?.readyForProduction ?? 0,
+          processingCsv:      data.stats?.processingCsv      ?? 0,
         })
-      } catch (err) {
-        console.error('Dashboard fetch error:', err)
-      } finally {
-        setLoading(false)
-      }
-    }
-    fetchRecent()
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false))
   }, [])
 
-  return (
-    <div className="space-y-8">
-      {/* Page Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-brand-text">Dashboard</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Full visibility from quote through to completion
-        </p>
-      </div>
+  const quickActions = [
+    { href: '/admin/orders',     label: 'Orders',     icon: ShoppingCart, color: 'bg-blue-50 text-blue-600' },
+    { href: '/admin/proofs',     label: 'Proofs',     icon: FileText,     color: 'bg-yellow-50 text-yellow-600' },
+    { href: '/admin/production', label: 'Production', icon: Printer,      color: 'bg-purple-50 text-purple-600' },
+    { href: '/admin/users',      label: 'Users',      icon: Users,        color: 'bg-green-50 text-green-600' },
+  ]
 
-      {/* ── Needs Action triage strip ── */}
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        title="Dashboard"
+        description="Full visibility from order to delivery"
+      />
+
+      {/* ── Attention Banners ── */}
       {!loading && (triage.pendingProofs > 0 || triage.readyForProduction > 0 || triage.processingCsv > 0) && (
         <div className="grid gap-3 sm:grid-cols-3">
           {triage.pendingProofs > 0 && (
-            <Link href="/admin/proofs">
-              <div className="flex items-center gap-3 rounded-xl border border-yellow-200 bg-yellow-50 p-4 transition-shadow hover:shadow-md">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-yellow-100">
-                  <Clock className="h-5 w-5 text-yellow-700" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-bold text-yellow-900">
-                    {triage.pendingProofs} Proof{triage.pendingProofs > 1 ? 's' : ''} Awaiting Review
-                  </p>
-                  <p className="text-xs text-yellow-700">Customer approval needed</p>
-                </div>
-                <ArrowRight className="h-4 w-4 shrink-0 text-yellow-600" />
+            <Link href="/admin/proofs" className="group flex items-center gap-3 rounded-xl border border-yellow-200 bg-yellow-50 p-4 transition-all hover:shadow-md">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-yellow-100">
+                <Clock className="h-5 w-5 text-yellow-700" />
               </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-bold text-yellow-900">{triage.pendingProofs} Proof{triage.pendingProofs > 1 ? 's' : ''} Pending</p>
+                <p className="text-xs text-yellow-700">Customer approval needed</p>
+              </div>
+              <ArrowRight className="h-4 w-4 shrink-0 text-yellow-500 transition-transform group-hover:translate-x-0.5" />
             </Link>
           )}
           {triage.readyForProduction > 0 && (
-            <Link href="/admin/production">
-              <div className="flex items-center gap-3 rounded-xl border border-orange-200 bg-orange-50 p-4 transition-shadow hover:shadow-md">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-orange-100">
-                  <Printer className="h-5 w-5 text-orange-700" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-bold text-orange-900">
-                    {triage.readyForProduction} Order{triage.readyForProduction > 1 ? 's' : ''} Ready to Print
-                  </p>
-                  <p className="text-xs text-orange-700">Proof approved, generate files</p>
-                </div>
-                <ArrowRight className="h-4 w-4 shrink-0 text-orange-600" />
+            <Link href="/admin/production" className="group flex items-center gap-3 rounded-xl border border-orange-200 bg-orange-50 p-4 transition-all hover:shadow-md">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-100">
+                <Printer className="h-5 w-5 text-orange-700" />
               </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-bold text-orange-900">{triage.readyForProduction} Ready to Print</p>
+                <p className="text-xs text-orange-700">Generate print files</p>
+              </div>
+              <ArrowRight className="h-4 w-4 shrink-0 text-orange-500 transition-transform group-hover:translate-x-0.5" />
             </Link>
           )}
           {triage.processingCsv > 0 && (
-            <Link href="/admin/csv">
-              <div className="flex items-center gap-3 rounded-xl border border-blue-200 bg-blue-50 p-4 transition-shadow hover:shadow-md">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-100">
-                  <Table className="h-5 w-5 text-blue-700" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-bold text-blue-900">
-                    {triage.processingCsv} CSV Job{triage.processingCsv > 1 ? 's' : ''} Processing
-                  </p>
-                  <p className="text-xs text-blue-700">Variable data in progress</p>
-                </div>
-                <ArrowRight className="h-4 w-4 shrink-0 text-blue-600" />
+            <Link href="/admin/csv" className="group flex items-center gap-3 rounded-xl border border-blue-200 bg-blue-50 p-4 transition-all hover:shadow-md">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-100">
+                <Table className="h-5 w-5 text-blue-700" />
               </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-bold text-blue-900">{triage.processingCsv} CSV Job{triage.processingCsv > 1 ? 's' : ''} Running</p>
+                <p className="text-xs text-blue-700">Variable data in progress</p>
+              </div>
+              <ArrowRight className="h-4 w-4 shrink-0 text-blue-500 transition-transform group-hover:translate-x-0.5" />
             </Link>
           )}
         </div>
       )}
 
-      {/* Stats + Pipeline Bar + Division Breakdown */}
+      {/* ── Stats ── */}
       <DashboardStats />
 
-      {/* Recent Orders */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-base">Recent Orders</CardTitle>
-            <Button variant="ghost" size="sm" asChild>
-              <Link href="/admin/orders">
-                View all <ArrowRight className="ml-1 h-3.5 w-3.5" />
-              </Link>
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent className="p-0">
+      {/* ── Recent Orders + Quick Actions ── */}
+      <div className="grid gap-6 lg:grid-cols-[1fr_240px]">
+
+        {/* Recent Orders */}
+        <SectionCard
+          title="Recent Orders"
+          noPad
+          actions={
+            <Link href="/admin/orders" className="flex items-center gap-1 text-xs font-medium text-brand-primary hover:underline">
+              View all <ArrowUpRight className="h-3 w-3" />
+            </Link>
+          }
+        >
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b bg-muted/50 text-xs">
-                  <th className="px-4 py-3 text-left font-medium">Order #</th>
-                  <th className="px-4 py-3 text-left font-medium">Customer</th>
-                  <th className="px-4 py-3 text-left font-medium">Date</th>
-                  <th className="px-4 py-3 text-right font-medium">Total</th>
-                  <th className="px-4 py-3 text-center font-medium">Status</th>
-                  <th className="px-4 py-3 text-center font-medium">Flags</th>
-                  <th className="px-4 py-3 text-right font-medium">Action</th>
+                <tr className="border-b border-gray-100">
+                  <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Order</th>
+                  <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Customer</th>
+                  <th className="hidden px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400 sm:table-cell">Date</th>
+                  <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-400">Total</th>
+                  <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-gray-400">Status</th>
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
-                  Array.from({ length: 5 }).map((_, i) => (
-                    <tr key={i} className="border-b">
-                      <td colSpan={7} className="px-4 py-3">
-                        <div className="h-4 w-full animate-pulse rounded bg-gray-200" />
-                      </td>
-                    </tr>
-                  ))
+                  <SkeletonRows rows={5} cols={5} />
                 ) : recentOrders.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-4 py-12 text-center text-muted-foreground">
-                      No orders yet
-                    </td>
+                    <td colSpan={5} className="px-5 py-12 text-center text-sm text-gray-400">No orders yet</td>
                   </tr>
                 ) : (
                   recentOrders.map((order) => {
                     const statusInfo = ORDER_STATUS_LABELS[order.status] ?? ORDER_STATUS_LABELS['draft']
+                    const badgeColor = STATUS_COLOR[order.status] ?? 'gray'
                     return (
                       <tr
                         key={order.id}
-                        className="cursor-pointer border-b transition-colors hover:bg-muted/40"
                         onClick={() => router.push(`/admin/orders/${order.id}`)}
+                        className="cursor-pointer border-b border-gray-50 transition-colors last:border-0 hover:bg-gray-50"
                       >
-                        <td className="px-4 py-3">
-                          <span className="font-mono font-semibold text-brand-primary">{order.order_number}</span>
-                        </td>
-                        <td className="px-4 py-3">
-                          <p className="font-medium">{order.profile?.full_name ?? 'Unknown'}</p>
-                          {order.profile?.company_name && (
-                            <p className="text-xs text-muted-foreground">{order.profile.company_name}</p>
-                          )}
-                        </td>
-                        <td className="px-4 py-3 text-muted-foreground">{formatDate(order.created_at)}</td>
-                        <td className="px-4 py-3 text-right font-semibold">{formatCurrency(order.total)}</td>
-                        <td className="px-4 py-3 text-center">
-                          <Badge variant="secondary" className={cn('text-xs', statusInfo.color)}>
-                            {statusInfo.label}
-                          </Badge>
-                        </td>
-                        <td className="px-4 py-3 text-center">
-                          <div className="flex items-center justify-center gap-1.5">
-                            {order.ready_for_production && (
-                              <span title="Ready for production" className="flex h-5 w-5 items-center justify-center rounded-full bg-orange-100">
-                                <Printer className="h-3 w-3 text-orange-600" />
-                              </span>
-                            )}
-                            {order.has_pending_proof && (
-                              <span title="Awaiting proof review" className="flex h-5 w-5 items-center justify-center rounded-full bg-yellow-100">
-                                <Clock className="h-3 w-3 text-yellow-600" />
-                              </span>
-                            )}
+                        <td className="px-5 py-3.5">
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono text-xs font-bold text-brand-primary">{order.order_number}</span>
+                            {order.has_pending_proof && <span title="Pending proof" className="flex h-4 w-4 items-center justify-center rounded-full bg-yellow-100"><Clock className="h-2.5 w-2.5 text-yellow-600" /></span>}
+                            {order.ready_for_production && <span title="Ready for production" className="flex h-4 w-4 items-center justify-center rounded-full bg-orange-100"><Zap className="h-2.5 w-2.5 text-orange-600" /></span>}
                           </div>
                         </td>
-                        <td className="px-4 py-3 text-right">
-                          <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); router.push(`/admin/orders/${order.id}`) }}>
-                            View
-                          </Button>
+                        <td className="px-5 py-3.5">
+                          <p className="font-medium text-gray-800">{order.profile?.full_name ?? 'Unknown'}</p>
+                          {order.profile?.company_name && <p className="text-xs text-gray-400">{order.profile.company_name}</p>}
+                        </td>
+                        <td className="hidden px-5 py-3.5 text-xs text-gray-400 sm:table-cell">{formatDate(order.created_at)}</td>
+                        <td className="px-5 py-3.5 text-right text-sm font-semibold text-gray-800">{formatCurrency(order.total)}</td>
+                        <td className="px-5 py-3.5 text-center">
+                          <StatusBadge label={statusInfo.label} color={badgeColor} />
                         </td>
                       </tr>
                     )
@@ -218,55 +177,45 @@ export default function AdminDashboardPage() {
               </tbody>
             </table>
           </div>
-        </CardContent>
-      </Card>
+        </SectionCard>
 
-      {/* Attention areas */}
-      <div className="grid gap-4 sm:grid-cols-3">
-        <Link href="/admin/proofs?status=revision_requested">
-          <Card className="cursor-pointer border-yellow-100 transition-shadow hover:shadow-md">
-            <CardContent className="flex items-center gap-3 p-4">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-yellow-50">
-                <AlertCircle className="h-5 w-5 text-yellow-600" />
+        {/* Quick Actions */}
+        <div className="space-y-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Quick Access</p>
+          {quickActions.map(({ href, label, icon: Icon, color }) => (
+            <Link
+              key={href}
+              href={href}
+              className="group flex items-center gap-3 rounded-xl border border-gray-100 bg-white p-3.5 shadow-sm transition-all hover:border-gray-200 hover:shadow-md"
+            >
+              <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${color}`}>
+                <Icon className="h-4.5 w-4.5" />
               </div>
-              <div>
-                <p className="text-sm font-semibold">Revision Requests</p>
-                <p className="text-xs text-muted-foreground">Proofs needing attention</p>
-              </div>
-              <ArrowRight className="ml-auto h-4 w-4 text-muted-foreground" />
-            </CardContent>
-          </Card>
-        </Link>
+              <span className="flex-1 text-sm font-medium text-gray-700 group-hover:text-gray-900">{label}</span>
+              <ArrowRight className="h-4 w-4 text-gray-300 transition-transform group-hover:translate-x-0.5 group-hover:text-gray-500" />
+            </Link>
+          ))}
 
-        <Link href="/admin/production">
-          <Card className="cursor-pointer border-orange-100 transition-shadow hover:shadow-md">
-            <CardContent className="flex items-center gap-3 p-4">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-50">
-                <Printer className="h-5 w-5 text-orange-600" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold">Generate Files</p>
-                <p className="text-xs text-muted-foreground">Approved, awaiting print files</p>
-              </div>
-              <ArrowRight className="ml-auto h-4 w-4 text-muted-foreground" />
-            </CardContent>
-          </Card>
-        </Link>
-
-        <Link href="/admin/csv">
-          <Card className="cursor-pointer border-blue-100 transition-shadow hover:shadow-md">
-            <CardContent className="flex items-center gap-3 p-4">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50">
-                <Table className="h-5 w-5 text-blue-600" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold">CSV Jobs</p>
-                <p className="text-xs text-muted-foreground">Variable data orders</p>
-              </div>
-              <ArrowRight className="ml-auto h-4 w-4 text-muted-foreground" />
-            </CardContent>
-          </Card>
-        </Link>
+          {/* Attention cards */}
+          <div className="mt-4 space-y-2">
+            <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Needs Attention</p>
+            <Link href="/admin/proofs?status=revision_requested" className="group flex items-center gap-3 rounded-xl border border-yellow-100 bg-yellow-50/50 p-3.5 transition-all hover:border-yellow-200">
+              <AlertCircle className="h-4 w-4 text-yellow-500" />
+              <span className="flex-1 text-xs font-medium text-yellow-800">Revision Requests</span>
+              <ArrowRight className="h-3.5 w-3.5 text-yellow-400" />
+            </Link>
+            <Link href="/admin/production" className="group flex items-center gap-3 rounded-xl border border-orange-100 bg-orange-50/50 p-3.5 transition-all hover:border-orange-200">
+              <Printer className="h-4 w-4 text-orange-500" />
+              <span className="flex-1 text-xs font-medium text-orange-800">Generate Files</span>
+              <ArrowRight className="h-3.5 w-3.5 text-orange-400" />
+            </Link>
+            <Link href="/admin/csv" className="group flex items-center gap-3 rounded-xl border border-blue-100 bg-blue-50/50 p-3.5 transition-all hover:border-blue-200">
+              <CheckCircle2 className="h-4 w-4 text-blue-500" />
+              <span className="flex-1 text-xs font-medium text-blue-800">CSV Jobs</span>
+              <ArrowRight className="h-3.5 w-3.5 text-blue-400" />
+            </Link>
+          </div>
+        </div>
       </div>
     </div>
   )

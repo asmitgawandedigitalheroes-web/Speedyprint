@@ -6,7 +6,9 @@ import Link from 'next/link'
 import { UserSidebar } from '@/components/layout/UserSidebar'
 import { useAuth } from '@/hooks/useAuth'
 import { createClient } from '@/lib/supabase/client'
-import { Bell, ChevronRight } from 'lucide-react'
+import { Bell, ChevronRight, ShoppingCart, ArrowRight } from 'lucide-react'
+import { useCart } from '@/hooks/useCart'
+import type { Order } from '@/types'
 
 /* ── Breadcrumb map ── */
 const ROUTE_LABELS: Record<string, string> = {
@@ -21,6 +23,13 @@ function TopBar() {
   const { user }   = useAuth()
   const pathname   = usePathname()
   const [proofCount, setProofCount] = useState(0)
+  const storeItemCount = useCart((s) => s.getItemCount())
+  const [cartCount, setCartCount] = useState(0)
+
+  /* Sync cart count client-side to avoid hydration mismatch */
+  useEffect(() => {
+    setCartCount(storeItemCount)
+  }, [storeItemCount])
 
   /* Fetch pending proof count for bell badge */
   useEffect(() => {
@@ -31,11 +40,14 @@ function TopBar() {
         .from('orders')
         .select('id')
         .eq('user_id', user!.id)
-      if (!orders?.length) return
+      
+      const orderList = orders as Order[] | null
+      if (!orderList?.length) return
+
       const { count } = await supabase
         .from('order_items')
         .select('id', { count: 'exact', head: true })
-        .in('order_id', orders.map((o) => o.id))
+        .in('order_id', orderList.map((o: Order) => o.id))
         .eq('status', 'proof_sent')
       setProofCount(count ?? 0)
     }
@@ -71,6 +83,14 @@ function TopBar() {
 
       {/* Right side */}
       <div className="flex items-center gap-3">
+        {/* Get Quote Now CTA */}
+        <Link
+          href="/order-now"
+          className="hidden sm:flex items-center gap-1.5 rounded-lg bg-brand-primary px-4 py-1.5 text-sm font-bold text-white shadow-sm shadow-brand-primary/20 transition-all duration-200 hover:-translate-y-0.5 hover:opacity-90"
+        >
+          Get Quote Now
+          <ArrowRight className="h-3.5 w-3.5" />
+        </Link>
         {/* Notification bell — links to proofs when there are pending items */}
         <Link
           href="/account/proofs"
@@ -81,6 +101,20 @@ function TopBar() {
           {proofCount > 0 && (
             <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-brand-primary px-0.5 text-[10px] font-bold text-white">
               {proofCount > 9 ? '9+' : proofCount}
+            </span>
+          )}
+        </Link>
+        
+        {/* Cart Icon */}
+        <Link
+          href="/cart"
+          className="relative flex h-8 w-8 items-center justify-center rounded-full text-brand-text-muted transition hover:bg-[#F5F6F7] hover:text-brand-text"
+          title="View Cart"
+        >
+          <ShoppingCart className="h-4 w-4" />
+          {cartCount > 0 && (
+            <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-brand-primary px-0.5 text-[10px] font-bold text-white ring-2 ring-white">
+              {cartCount > 99 ? '99+' : cartCount}
             </span>
           )}
         </Link>

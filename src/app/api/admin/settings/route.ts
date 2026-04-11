@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { logActivity } from '@/lib/audit'
 import { requireAdmin } from '@/lib/supabase/requireAdmin'
 
 // GET /api/admin/settings — fetch all site settings
@@ -32,8 +33,8 @@ export async function GET() {
 export async function PUT(req: NextRequest) {
   // BUG-003 FIX: Require admin authentication before allowing any settings update
   // Only 'admin' role allowed (not production_staff) to prevent privilege escalation
-  const { error: authError, status: authStatus } = await requireAdmin(['admin'])
-  if (authError) return NextResponse.json({ error: authError }, { status: authStatus })
+  const authResult = await requireAdmin(['admin'])
+  if (authResult.error) return NextResponse.json({ error: authResult.error }, { status: authResult.status })
 
   try {
     const body = await req.json()
@@ -79,6 +80,17 @@ export async function PUT(req: NextRequest) {
       )
       if (error) throw error
     }
+
+    const { user } = authResult // requireAdmin result includes user
+
+    // Log activity
+    await logActivity({
+      user_id: (user as any).id,
+      action: 'site_settings_updated',
+      entity_type: 'site_settings',
+      metadata: { keys: Object.keys(settings) },
+      is_admin_action: true,
+    })
 
     return NextResponse.json({ success: true })
   } catch {
