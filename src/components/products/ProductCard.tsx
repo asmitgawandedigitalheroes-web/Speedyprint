@@ -32,9 +32,14 @@ export function ProductCard({ product }: ProductCardProps) {
               />
             </div>
           ) : (
-            <span className="text-5xl font-bold text-gray-300 select-none">
-              {product.name.charAt(0)}
-            </span>
+            // TODO: Replace with real product photography before launch
+            <div className="flex flex-col items-center justify-center gap-2">
+              <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <rect width="48" height="48" rx="10" fill="#E30613" fillOpacity="0.07"/>
+                <path d="M14 34V14h20v20H14zm3-3h14V17H17v14zm3-5h8v-3h-8v3z" fill="#E30613" fillOpacity="0.35"/>
+              </svg>
+              <span className="text-xs font-medium text-gray-400 select-none">{product.name}</span>
+            </div>
           )}
         </div>
 

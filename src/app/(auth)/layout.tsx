@@ -26,9 +26,9 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         {/* Centre: tagline */}
         <div className="space-y-6">
           <div className="h-1 w-10 bg-brand-primary" />
-          <h2 className="font-heading text-4xl font-bold leading-tight text-white">
+          <p className="font-heading text-4xl font-bold leading-tight text-white">
             Quality printing,<br />delivered fast.
-          </h2>
+          </p>
           <p className="text-lg text-white/60 max-w-sm">
             South Africa&apos;s complete online custom print and fabrication platform.
           </p>

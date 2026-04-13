@@ -24,12 +24,12 @@ import type { Order } from '@/types'
 
 /* ── Product category shortcuts ── */
 const PRODUCT_SHORTCUTS = [
-  { label: 'Labels & Stickers', href: '/products?division=labels',       icon: Tag,    color: '#E30613', bg: 'rgba(227,6,19,0.08)'   },
-  { label: 'Race Numbers',      href: '/products?division=race-numbers', icon: Hash,   color: '#1E293B', bg: 'rgba(30,41,59,0.08)'   },
-  { label: 'MTB Boards',        href: '/products?division=mtb-boards',   icon: Bike,   color: '#0284c7', bg: 'rgba(2,132,199,0.08)'  },
-  { label: 'Laser Products',    href: '/products?division=laser',        icon: Zap,    color: '#7c3aed', bg: 'rgba(124,58,237,0.08)' },
-  { label: 'Stamps',            href: '/products?division=print',        icon: Stamp,  color: '#d97706', bg: 'rgba(217,119,6,0.08)'  },
-  { label: 'Trophies',          href: '/products?division=trophies',     icon: Trophy, color: '#16a34a', bg: 'rgba(22,163,74,0.08)'  },
+  { label: 'Labels & Stickers', href: '/labels',        icon: Tag,    color: '#E30613', bg: 'rgba(227,6,19,0.08)'   },
+  { label: 'Race Numbers',      href: '/race-numbers',  icon: Hash,   color: '#1E293B', bg: 'rgba(30,41,59,0.08)'   },
+  { label: 'MTB Boards',        href: '/mtb-boards',    icon: Bike,   color: '#0284c7', bg: 'rgba(2,132,199,0.08)'  },
+  { label: 'Laser Products',    href: '/laser',         icon: Zap,    color: '#7c3aed', bg: 'rgba(124,58,237,0.08)' },
+  { label: 'Stamps',            href: '/stamps',        icon: Stamp,  color: '#d97706', bg: 'rgba(217,119,6,0.08)'  },
+  { label: 'Trophies',          href: '/trophies',      icon: Trophy, color: '#16a34a', bg: 'rgba(22,163,74,0.08)'  },
 ]
 
 /* ─── Brand-safe status badge ─── */

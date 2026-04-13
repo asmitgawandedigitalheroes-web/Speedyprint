@@ -63,7 +63,7 @@ export default function ContactPage() {
               {
                 icon: MapPin,
                 title: 'Address',
-                lines: ['13 Langwa Street, Strydompark', 'Randburg'],
+                lines: ['13 Langwa Street, Strydompark', 'Randburg, 2169'],
               },
             ].map((item) => (
               <div key={item.title} className="flex gap-4">

@@ -4,7 +4,7 @@ import { useState, type FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { toast } from 'sonner'
-import { Loader2, ArrowRight } from 'lucide-react'
+import { Loader2, ArrowRight, CheckCircle2, XCircle } from 'lucide-react'
 
 import { useAuth } from '@/hooks/useAuth'
 import { SITE_NAME } from '@/lib/utils/constants'
@@ -30,17 +30,18 @@ export default function RegisterPage() {
     const e: Record<string, string> = {}
     if (!fullName.trim()) e.fullName = 'Full name is required'
     if (!email.trim()) e.email = 'Email is required'
-    // BUG-035 FIX: Enforce password complexity — not just minimum length.
-    // Previously: only 8 characters required (e.g. 'password' or '12345678' accepted).
-    // Now requires: 8+ chars, 1 uppercase, 1 digit, 1 special character.
     if (password.length < 8) {
       e.password = 'Password must be at least 8 characters'
+    } else if (password.length > 15) {
+      e.password = 'Password must be no more than 15 characters'
+    } else if (/\s/.test(password)) {
+      e.password = 'Password must not contain spaces'
     } else if (!/[A-Z]/.test(password)) {
       e.password = 'Password must contain at least one uppercase letter'
     } else if (!/[0-9]/.test(password)) {
       e.password = 'Password must contain at least one number'
-    } else if (!/[^A-Za-z0-9]/.test(password)) {
-      e.password = 'Password must contain at least one special character (e.g. @, #, !)'
+    } else if (!/[^A-Za-z0-9\s]/.test(password)) {
+      e.password = 'Password must contain at least one symbol (e.g. @, #, !)'
     }
     if (password !== confirmPassword) e.confirmPassword = 'Passwords do not match'
     setErrors(e)
@@ -116,7 +117,25 @@ export default function RegisterPage() {
 
         <div className="space-y-1.5">
           <Label htmlFor="password">Password</Label>
-          <PasswordInput id="password" placeholder="Min 8 chars, uppercase, number & symbol" value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="new-password" disabled={isLoading} />
+          <PasswordInput id="password" placeholder="8–15 chars, uppercase, number & symbol" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={8} maxLength={15} pattern="(?=.*[A-Z])(?=.*[0-9])(?=.*[^A-Za-z0-9\s])[^\s]{8,15}" title="8–15 characters, no spaces, at least 1 uppercase letter, 1 number and 1 symbol" autoComplete="new-password" disabled={isLoading} />
+          {password.length > 0 && (
+            <ul className="mt-2 space-y-1">
+              {[
+                { label: '8–15 characters', valid: password.length >= 8 && password.length <= 15 },
+                { label: 'No spaces', valid: !/\s/.test(password) },
+                { label: 'At least 1 uppercase letter', valid: /[A-Z]/.test(password) },
+                { label: 'At least 1 number', valid: /[0-9]/.test(password) },
+                { label: 'At least 1 symbol (e.g. @, #, !)', valid: /[^A-Za-z0-9\s]/.test(password) },
+              ].map((rule) => (
+                <li key={rule.label} className={`flex items-center gap-1.5 text-xs ${rule.valid ? 'text-green-600' : 'text-red-500'}`}>
+                  {rule.valid
+                    ? <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+                    : <XCircle className="h-3.5 w-3.5 shrink-0" />}
+                  {rule.label}
+                </li>
+              ))}
+            </ul>
+          )}
           {errors.password && <p className="text-xs text-red-500">{errors.password}</p>}
         </div>
 

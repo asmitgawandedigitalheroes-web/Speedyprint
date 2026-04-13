@@ -511,6 +511,26 @@ export function OrderPipeline({
             </Button>
           </div>
 
+          {/* Export CSV */}
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 gap-1.5 px-2 text-xs"
+            onClick={() => {
+              const params = new URLSearchParams()
+              if (statusFilter && statusFilter !== 'all') params.set('status', statusFilter)
+              if (search) params.set('search', search)
+              if (dateFrom) params.set('date_from', dateFrom)
+              if (dateTo) params.set('date_to', dateTo)
+              if (divisionFilter && divisionFilter !== 'all') params.set('division', divisionFilter)
+              if (productTypeFilter) params.set('product_type', productTypeFilter)
+              window.location.href = `/api/admin/orders/export?${params.toString()}`
+            }}
+          >
+            <Download className="h-3.5 w-3.5" />
+            Export CSV
+          </Button>
+
           {/* Refresh */}
           <Button variant="ghost" size="sm" onClick={() => fetchOrders(pagination.page)} className="h-7 px-2">
             <RefreshCw className="h-3.5 w-3.5" />

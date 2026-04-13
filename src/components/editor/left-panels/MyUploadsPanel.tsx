@@ -4,6 +4,7 @@ import { useState, useRef, useCallback } from 'react'
 import { Upload, Image as ImageIcon, Trash2, Plus } from 'lucide-react'
 import { useEditorStore } from '@/lib/editor/useEditorStore'
 import { addImage } from '@/lib/editor/fabricUtils'
+import { toast } from 'sonner'
 import { FabricImage } from 'fabric'
 
 interface UploadEntry {
@@ -24,9 +25,33 @@ export default function MyUploadsPanel() {
       if (!files) return
 
       Array.from(files).forEach((file) => {
+        // Preflight checks
+        const allowedTypes = ['image/png', 'image/jpeg', 'image/svg+xml', 'application/pdf']
+        if (!allowedTypes.includes(file.type)) {
+          toast.error(`"${file.name}" is an unsupported format. Please use PNG, JPG, SVG, or PDF.`)
+          return
+        }
+
+        if (file.size > 50 * 1024 * 1024) {
+          toast.error(`"${file.name}" is too large (>50MB). Please optimise your file.`)
+          return
+        }
+
         const reader = new FileReader()
         reader.onload = (ev) => {
           const dataUrl = ev.target?.result as string
+          
+          // Image resolution check
+          const img = new Image()
+          img.onload = () => {
+             if (img.width < 1000 || img.height < 1000) {
+               toast.warning(`"${file.name}" has low resolution. It may appear blurry when printed.`, {
+                 description: 'For best results, use images at least 2000px wide.',
+               })
+             }
+          }
+          img.src = dataUrl
+
           setUploads((prev) => [
             {
               id: `upload-${Date.now()}-${Math.random().toString(36).slice(2)}`,

@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Speedy Print | MTB Board Artwork Template
+     Final size: 250 × 200 mm  |  Bleed: 3 mm all sides  |  Safe zone: 3 mm inside trim
+     Total artboard (with bleed): 256 × 206 mm
+     Colour mode: CMYK  |  Resolution: 300 DPI minimum  |  Fonts: Outlined/Embedded
+     Note: MTB boards are typically printed on Correx/Corflute — 4mm fluted polypropylene
+-->
+<svg xmlns="http://www.w3.org/2000/svg"
+     width="256mm" height="206mm"
+     viewBox="0 0 256 206"
+     font-family="Arial, Helvetica, sans-serif">
+
+  <!-- ░░░ BLEED AREA ░░░ -->
+  <rect x="0" y="0" width="256" height="206" fill="#FFE8EA"/>
+  <text x="1" y="5" font-size="3" fill="#CC2233" font-weight="bold">BLEED AREA — extend all backgrounds 3mm beyond this edge</text>
+
+  <!-- ░░░ TRIM LINE ░░░ -->
+  <rect x="3" y="3" width="250" height="200" fill="white" stroke="#000000" stroke-width="0.3" stroke-dasharray="4,2"/>
+  <text x="4.5" y="9" font-size="3" fill="#333">TRIM LINE — final cut edge (250 × 200 mm)</text>
+
+  <!-- ░░░ SAFE ZONE ░░░ -->
+  <rect x="6" y="6" width="244" height="194" fill="#F8FAFF" stroke="#2563EB" stroke-width="0.35" stroke-dasharray="3,2"/>
+  <text x="7.5" y="13" font-size="3" fill="#2563EB">SAFE ZONE — keep all critical content (text, logos, numbers) inside this border</text>
+
+  <!-- ░░░ CROP MARKS ░░░ -->
+  <line x1="0" y1="3" x2="2.5" y2="3" stroke="#000" stroke-width="0.2"/>
+  <line x1="3" y1="0" x2="3" y2="2.5" stroke="#000" stroke-width="0.2"/>
+  <line x1="253.5" y1="3" x2="256" y2="3" stroke="#000" stroke-width="0.2"/>
+  <line x1="253" y1="0" x2="253" y2="2.5" stroke="#000" stroke-width="0.2"/>
+  <line x1="0" y1="203" x2="2.5" y2="203" stroke="#000" stroke-width="0.2"/>
+  <line x1="3" y1="203.5" x2="3" y2="206" stroke="#000" stroke-width="0.2"/>
+  <line x1="253.5" y1="203" x2="256" y2="203" stroke="#000" stroke-width="0.2"/>
+  <line x1="253" y1="203.5" x2="253" y2="206" stroke="#000" stroke-width="0.2"/>
+
+  <!-- ░░░ MTB BOARD LAYOUT ZONES ░░░ -->
+  <!-- Board number — large central area -->
+  <rect x="78" y="35" width="100" height="90" fill="#EEEEEE" stroke="#CCCCCC" stroke-width="0.5" stroke-dasharray="2,1"/>
+  <text x="128" y="83" text-anchor="middle" font-size="36" fill="#CCCCCC" font-weight="bold">42</text>
+  <text x="128" y="96" text-anchor="middle" font-size="3.5" fill="#AAAAAA">BOARD NUMBER (variable)</text>
+
+  <!-- Rider name -->
+  <rect x="30" y="135" width="196" height="16" fill="#EEEEEE" stroke="#CCCCCC" stroke-width="0.5" stroke-dasharray="2,1"/>
+  <text x="128" y="145.5" text-anchor="middle" font-size="6" fill="#CCCCCC">RIDER NAME</text>
+
+  <!-- Category bar -->
+  <rect x="30" y="156" width="196" height="11" fill="#EEEEEE" stroke="#CCCCCC" stroke-width="0.5" stroke-dasharray="2,1"/>
+  <text x="128" y="163.5" text-anchor="middle" font-size="4" fill="#AAAAAA">CATEGORY / CLASS</text>
+
+  <!-- Sponsor logo areas (top left & right) -->
+  <rect x="10" y="20" width="56" height="20" fill="#EEEEEE" stroke="#CCCCCC" stroke-width="0.5" stroke-dasharray="2,1"/>
+  <text x="38" y="31.5" text-anchor="middle" font-size="3.5" fill="#AAAAAA">EVENT LOGO</text>
+  <rect x="190" y="20" width="56" height="20" fill="#EEEEEE" stroke="#CCCCCC" stroke-width="0.5" stroke-dasharray="2,1"/>
+  <text x="218" y="31.5" text-anchor="middle" font-size="3.5" fill="#AAAAAA">SPONSOR LOGO</text>
+
+  <!-- Flute direction indicator -->
+  <line x1="245" y1="60" x2="245" y2="170" stroke="#AAAAAA" stroke-width="0.5" stroke-dasharray="1,2"/>
+  <line x1="243" y1="60" x2="243" y2="170" stroke="#AAAAAA" stroke-width="0.5" stroke-dasharray="1,2"/>
+  <line x1="241" y1="60" x2="241" y2="170" stroke="#AAAAAA" stroke-width="0.5" stroke-dasharray="1,2"/>
+  <text x="245" y="115" font-size="2.5" fill="#AAAAAA" transform="rotate(90 245 115)">FLUTE DIRECTION ↕</text>
+
+  <!-- ░░░ NOTES BANNER ░░░ -->
+  <rect x="6" y="175" width="244" height="25" fill="white" stroke="#E5E7EB" stroke-width="0.3"/>
+  <text x="10" y="181" font-size="3.2" fill="#111827" font-weight="bold">SPEEDY PRINT — MTB BOARD TEMPLATE  |  250 × 200 mm  |  Correx / Corflute 4mm</text>
+  <!-- Swatches -->
+  <rect x="10" y="184" width="5" height="3.5" fill="#FFE8EA" stroke="#CC2233" stroke-width="0.3"/>
+  <text x="17" y="187" font-size="2.8" fill="#444">Bleed (3mm)</text>
+  <rect x="65" y="184" width="5" height="3.5" fill="none" stroke="#000" stroke-width="0.4" stroke-dasharray="2,1"/>
+  <text x="72" y="187" font-size="2.8" fill="#444">Trim line</text>
+  <rect x="120" y="184" width="5" height="3.5" fill="none" stroke="#2563EB" stroke-width="0.4" stroke-dasharray="2,1"/>
+  <text x="127" y="187" font-size="2.8" fill="#444">Safe zone (3mm)</text>
+  <text x="195" y="187" font-size="2.5" fill="#888">speedy-print.co.za</text>
+  <text x="10" y="196.5" font-size="2.5" fill="#666">Min. 300 DPI at print size  |  CMYK colour mode  |  All fonts outlined or embedded  |  Dashed lines = guides only (do not print)</text>
+</svg>

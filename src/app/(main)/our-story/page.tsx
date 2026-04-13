@@ -7,7 +7,7 @@ export const metadata: Metadata = {
 }
 
 const MILESTONES = [
-  { year: '2015', title: 'The beginning', description: 'Started as a small printing workshop in Cape Town, focusing on quality and customer service.' },
+  { year: '2015', title: 'The beginning', description: 'Started as a small printing workshop in Randburg, Gauteng, focusing on quality and customer service.' },
   { year: '2017', title: 'Going digital', description: 'Launched our first online ordering system, making it easier for customers across South Africa to order.' },
   { year: '2019', title: 'Expansion', description: 'Expanded our product range to include vehicle decals, window graphics, and 3D domed stickers.' },
   { year: '2021', title: 'Online design tool', description: 'Introduced our online design wizard, allowing customers to create custom designs directly in their browser.' },

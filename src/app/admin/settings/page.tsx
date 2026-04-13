@@ -162,7 +162,7 @@ export default function AdminSettingsPage() {
               <SettingInput value={settings.company_phone || ''} onChange={(v) => set('company_phone', v)} placeholder="011 027 1811" type="tel" />
             </SettingField>
             <SettingField label="Email">
-              <SettingInput value={settings.company_email || ''} onChange={(v) => set('company_email', v)} placeholder="info@speedylabels.co.za" type="email" />
+              <SettingInput value={settings.company_email || ''} onChange={(v) => set('company_email', v)} placeholder="info@speedyprint.co.za" type="email" />
             </SettingField>
           </div>
         </div>

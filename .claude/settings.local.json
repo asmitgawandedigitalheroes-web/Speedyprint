@@ -20,7 +20,13 @@
       "Bash(ls \"/c/Users/Vikram Gondane/OneDrive/Desktop/Asmit/cluade projects/New folder/Speedyprint/src/app/\\(main\\)/checkout/cancel/\")",
       "Bash(ls \"/c/Users/Vikram Gondane/OneDrive/Desktop/Asmit/cluade projects/New folder/Speedyprint/src/app/\\(main\\)/checkout/success/\")",
       "Bash(npx jest:*)",
-      "Bash(python scripts/office/unpack.py \"C:\\\\Users\\\\Vikram Gondane\\\\OneDrive\\\\Desktop\\\\Asmit\\\\Website - corrections.docx\" /tmp/corrections_unpacked/)"
+      "Bash(python scripts/office/unpack.py \"C:\\\\Users\\\\Vikram Gondane\\\\OneDrive\\\\Desktop\\\\Asmit\\\\Website - corrections.docx\" /tmp/corrections_unpacked/)",
+      "Read(//c/Users/Vikram Gondane/AppData/Roaming/Claude/local-agent-mode-sessions/skills-plugin/c0b9108c-788b-4a5b-adbf-e439e26cc799/00a8be9a-b63e-46b9-862c-22a293bda3b2/skills/docx/**)",
+      "Bash(pandoc --track-changes=all \"C:\\\\Users\\\\Vikram Gondane\\\\OneDrive\\\\Desktop\\\\Asmit\\\\SpeedyPrint_Development_Brief.docx\" -o /tmp/brief.md)",
+      "Read(//tmp/**)",
+      "Bash(pip install:*)",
+      "Bash(python -c \"import zipfile, re; z=zipfile.ZipFile\\('C:/Users/Vikram Gondane/OneDrive/Desktop/Asmit/SpeedyPrint_Development_Brief.docx'\\); content=z.read\\('word/document.xml'\\).decode\\('utf-8'\\); text=re.sub\\(r'<[^>]+>','',content\\); lines=[l.strip\\(\\) for l in text.split\\('\\\\n'\\) if l.strip\\(\\)]; print\\('\\\\n'.join\\(lines[:600]\\)\\)\")",
+      "Bash(python -c ':*)"
     ]
   }
 }

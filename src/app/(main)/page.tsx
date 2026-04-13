@@ -153,18 +153,18 @@ export default async function HomePage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-4 pt-12">
                   <div className="relative aspect-[4/5] overflow-hidden rounded-2xl bg-gray-100 shadow-xl ring-1 ring-black/5">
-                    <Image src="/images/products/custom-labels.png" alt="Custom Labels" fill className="object-cover" />
+                    <Image src="/newimages/Pure Bloom Body Oil label 50mm x 100mm.jpg" alt="Custom Labels" fill className="object-cover" />
                   </div>
                   <div className="relative aspect-square overflow-hidden rounded-2xl bg-gray-100 shadow-xl ring-1 ring-black/5">
-                    <Image src="/images/products/race-bibs.png" alt="Race Numbers" fill className="object-cover" />
+                    <Image src="/newimages/CBZ Marathon.jpg" alt="Race Numbers" fill className="object-cover" />
                   </div>
                 </div>
                 <div className="space-y-4">
                   <div className="relative aspect-square overflow-hidden rounded-2xl bg-gray-100 shadow-xl ring-1 ring-black/5">
-                    <Image src="/images/products/award-trophies.png" alt="Trophies" fill className="object-cover" />
+                    <Image src="/newimages/Toricda Elegancia business cards.jpg" alt="Business Cards" fill className="object-cover" />
                   </div>
                   <div className="relative aspect-[4/5] overflow-hidden rounded-2xl bg-gray-100 shadow-xl ring-1 ring-black/5">
-                    <Image src="/images/products/mtb-number-boards.png" alt="MTB Boards" fill className="object-cover" />
+                    <Image src="/newimages/Prego Coffee Sleeves.jpg" alt="Coffee Sleeves" fill className="object-cover" />
                   </div>
                 </div>
               </div>

@@ -33,7 +33,7 @@ const SECTIONS = [
   },
   {
     title: '7. Contact',
-    content: 'For privacy-related inquiries, contact our Information Officer at info@speedylabels.co.za.',
+    content: 'For privacy-related inquiries, contact our Information Officer at info@speedyprint.co.za.',
   },
 ]
 

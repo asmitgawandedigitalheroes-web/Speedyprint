@@ -15,6 +15,7 @@ import {
   ShieldCheck,
   CreditCard,
   Loader2,
+  Printer,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import type { Order, OrderItem } from '@/types'
@@ -269,6 +270,15 @@ export default function OrderDetailPage() {
                 {downloading ? 'Preparing…' : productionFiles.length > 0 ? `Download Files (${productionFiles.length})` : 'Files Not Ready'}
               </button>
             )}
+
+            <Link
+              href={`/account/orders/${order.id}/print`}
+              target="_blank"
+              className="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
+            >
+              <Printer className="h-4 w-4" />
+              Print Invoice
+            </Link>
 
             {canReorder && (
               <button

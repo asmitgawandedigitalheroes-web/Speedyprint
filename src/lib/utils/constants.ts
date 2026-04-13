@@ -2,13 +2,14 @@
 // Three different identities were visible simultaneously on the same page.
 // TODO: Replace this constant with a live DB read from site_settings.site_name
 // so admins can update the brand name without a code deploy.
-export const SITE_NAME = 'Speedy Print Suite'
+export const SITE_NAME = 'Speedy Print'
 export const SITE_DESCRIPTION = 'Premium custom print and fabrication solutions for business, events and brands — South Africa\'s complete print suite.'
 export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://speedyprint.co.za'
 
 export const VAT_RATE = 0.15 // 15% South African VAT
 export const CURRENCY = 'ZAR'
 export const CURRENCY_SYMBOL = 'R'
+export const COMPANY_ADDRESS = '13 Langwa Street, Strydompark, Randburg, 2169'
 
 export const DIVISIONS = [
   { key: 'labels' as const, name: 'Labels', description: 'Custom labels, stickers, and product packaging', icon: 'Tag' },
@@ -20,12 +21,12 @@ export const DIVISIONS = [
 ]
 
 export const HEADER_PRODUCTS = [
-  { href: '/products?division=labels', label: 'Labels', description: 'Custom labels, stickers, wristbands & car magnets', icon: 'Tag' },
-  { href: '/products?division=race-numbers', label: 'Race Numbers', description: 'Professional race numbers & event tags', icon: 'Hash' },
-  { href: '/products?division=mtb-boards', label: 'MTB & Boards', description: 'MTB boards, bike flaps & Correx boards', icon: 'Bike' },
-  { href: '/products?division=print', label: 'Print', description: 'Flyers, business cards, stamps, brochures & more', icon: 'Printer' },
-  { href: '/products?division=laser', label: 'Laser & NFC', description: 'Laser-cut signs, acrylic & NFC stands', icon: 'Zap' },
-  { href: '/products?division=trophies', label: 'Trophies', description: 'Awards, medals & recognition', icon: 'Trophy' },
+  { href: '/labels', label: 'Labels', description: 'Custom labels, stickers, wristbands & car magnets', icon: 'Tag' },
+  { href: '/race-numbers', label: 'Race Numbers', description: 'Professional race numbers & event tags', icon: 'Hash' },
+  { href: '/mtb-boards', label: 'MTB & Boards', description: 'MTB boards, bike flaps & Correx boards', icon: 'Bike' },
+  { href: '/stamps', label: 'Stamps', description: 'Self-inking, pre-inked & traditional stamps', icon: 'Printer' },
+  { href: '/laser', label: 'Laser & NFC', description: 'Laser-cut signs, acrylic, gifts & NFC stands', icon: 'Zap' },
+  { href: '/trophies', label: 'Trophies', description: 'Awards, medals, plaques & recognition', icon: 'Trophy' },
 ]
 
 export const SA_PROVINCES = [

@@ -2,9 +2,12 @@ import type { Metadata } from 'next'
 import { Suspense } from 'react'
 import { SITE_NAME, DIVISIONS } from '@/lib/utils/constants'
 import { QuickOrderForm } from '@/components/order/QuickOrderForm'
+import { ComplexQuoteForm } from '@/components/order/ComplexQuoteForm'
 import { Loader2, Tag, Hash, Bike, Zap, Trophy, Printer } from 'lucide-react'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import Link from 'next/link'
+
+const COMPLEX_DIVISIONS = ['trophies', 'laser']
 
 export const metadata: Metadata = {
   title: `Order now | ${SITE_NAME}`,
@@ -65,14 +68,20 @@ async function OrderFormWrapper({ searchParams }: PageProps) {
         </TabsList>
       </Tabs>
 
-      <QuickOrderForm
-        division={activeDivision}
-        initialWidth={params.w ? Number(params.w) : undefined}
-        initialHeight={params.h ? Number(params.h) : undefined}
-        initialQuantity={params.q ? Number(params.q) : undefined}
-        initialMaterial={params.m || undefined}
-        initialDoming={params.d === '1'}
-      />
+      {COMPLEX_DIVISIONS.includes(activeDivision) ? (
+        <ComplexQuoteForm defaultProductType={
+          activeDivision === 'trophies' ? 'Trophies' : 'Laser Engraving'
+        } />
+      ) : (
+        <QuickOrderForm
+          division={activeDivision}
+          initialWidth={params.w ? Number(params.w) : undefined}
+          initialHeight={params.h ? Number(params.h) : undefined}
+          initialQuantity={params.q ? Number(params.q) : undefined}
+          initialMaterial={params.m || undefined}
+          initialDoming={params.d === '1'}
+        />
+      )}
     </div>
   )
 }

@@ -67,8 +67,8 @@ const NAV_ITEMS: NavItem[] = [
     label: 'Products',
     children: HEADER_PRODUCTS
   },
-  { href: '/#how-it-works', label: 'How It Works' },
-  { href: '/#bulk-orders', label: 'Bulk Orders' },
+  { href: '/how-it-works', label: 'How It Works' },
+  { href: '/bulk-orders', label: 'Bulk Orders' },
   { href: '/about', label: 'About' },
   { href: '/contact', label: 'Contact' },
 ]

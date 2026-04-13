@@ -1,11 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendContactFormEmail } from '@/lib/email/resend'
+import { rateLimit } from '@/lib/rateLimit'
+import { isValidOrigin } from '@/lib/utils/sanitize'
+import { SITE_URL } from '@/lib/utils/constants'
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limit: max 5 submissions per IP per 15 minutes
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+      ?? request.headers.get('x-real-ip')
+      ?? '127.0.0.1'
+    if (!(await rateLimit(`contact:${ip}`, 5, 15 * 60 * 1000))) {
+      return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 })
+    }
+
+    // CSRF: reject requests from other origins
+    const origin = request.headers.get('origin')
+    if (origin && !isValidOrigin(origin, SITE_URL)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
     const { name, email, subject, message } = await request.json()
 
+    // Field length limits
     if (!name?.trim() || !email?.trim() || !subject?.trim() || !message?.trim()) {
       return NextResponse.json({ error: 'All fields are required.' }, { status: 400 })
     }
