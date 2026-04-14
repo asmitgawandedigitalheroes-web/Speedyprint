@@ -1,9 +1,10 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import type { User } from '@supabase/supabase-js'
 
 type RequireAdminResult =
   | { error: string; status: 401 | 403; user: null; profile: null }
-  | { error: null; status: 200; user: NonNullable<unknown>; profile: { role: string } }
+  | { error: null; status: 200; user: User; profile: { role: string } }
 
 export async function requireAdmin(
   allowedRoles: string[] = ['admin', 'production_staff']

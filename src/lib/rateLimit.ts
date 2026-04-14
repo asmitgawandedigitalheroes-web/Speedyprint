@@ -35,7 +35,8 @@ export async function rateLimit(key: string, limit: number, windowMs: number): P
     return success
   } catch (error) {
     console.error('Rate limit error:', error)
-    // Fallback: allow request on error
-    return true
+    // Fallback: deny the request when Redis is unavailable to prevent bypass.
+    // If this causes issues in production, set RATE_LIMIT_FAIL_OPEN=true to revert.
+    return process.env.RATE_LIMIT_FAIL_OPEN === 'true'
   }
 }

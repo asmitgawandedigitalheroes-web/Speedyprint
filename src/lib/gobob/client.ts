@@ -140,8 +140,8 @@ export function getCollectionAddress(): GoBobAddress {
   return {
     name: 'SpeedyPrint',
     address1: process.env.GOBOB_WAREHOUSE_ADDRESS1 ?? '',
-    city: process.env.GOBOB_WAREHOUSE_CITY ?? 'Cape Town',
-    province: process.env.GOBOB_WAREHOUSE_PROVINCE ?? 'Western Cape',
+    city: process.env.GOBOB_WAREHOUSE_CITY ?? 'Randburg',
+    province: process.env.GOBOB_WAREHOUSE_PROVINCE ?? 'Gauteng',
     postal_code: process.env.GOBOB_WAREHOUSE_POSTAL ?? '',
     country: 'ZA',
     phone: process.env.GOBOB_WAREHOUSE_PHONE ?? '',

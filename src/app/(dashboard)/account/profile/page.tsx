@@ -219,8 +219,7 @@ export default function ProfilePage() {
         {/* ── Avatar row ── */}
         <div className="flex items-center gap-4 rounded-xl border border-[#E7E5E4] bg-white p-5 shadow-sm">
           <div
-            className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full text-xl font-bold text-white"
-            style={{ background: '#E30613' }}
+            className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full text-xl font-bold text-white bg-brand-primary"
           >
             {initials}
           </div>
@@ -432,7 +431,7 @@ export default function ProfilePage() {
                   <div
                     key={addr.id}
                     className={`relative rounded-lg border p-4 transition-all ${
-                      addr.is_default ? 'border-brand-primary/30 bg-brand-primary/[0.02]' : 'border-[#E7E5E4] bg-[#F9FAFB]'
+                      addr.is_default ? 'border-brand-primary/30 bg-brand-primary/[0.02]' : 'border-gray-200 bg-gray-50'
                     }`}
                   >
                     <div className="flex justify-between items-start mb-1">
@@ -514,12 +513,7 @@ export default function ProfilePage() {
 
             {passwordError && (
               <p
-                className="rounded-lg border px-3 py-2.5 text-sm"
-                style={{
-                  backgroundColor: 'rgba(227,6,19,0.06)',
-                  borderColor:     'rgba(227,6,19,0.25)',
-                  color:           '#c00510',
-                }}
+                className="rounded-lg border border-brand-primary/25 bg-brand-primary/5 px-3 py-2.5 text-sm text-brand-primary-dark"
               >
                 {passwordError}
               </p>

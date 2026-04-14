@@ -15,7 +15,7 @@ export function JsonLd({ type, data }: JsonLdProps) {
         '@type': 'Organization',
         name: SITE_NAME,
         url: SITE_URL,
-        logo: `${SITE_URL}/images/logo.png`,
+        logo: `${SITE_URL}/images/speedyprint-logo.png`,
         description: SITE_DESCRIPTION,
         contactPoint: {
           '@type': 'ContactPoint',
@@ -34,9 +34,9 @@ export function JsonLd({ type, data }: JsonLdProps) {
         '@id': `${SITE_URL}/#localbusiness`,
         name: SITE_NAME,
         url: SITE_URL,
-        logo: `${SITE_URL}/images/logo.png`,
+        logo: `${SITE_URL}/images/speedyprint-logo.png`,
         description: SITE_DESCRIPTION,
-        image: `${SITE_URL}/images/logo.png`,
+        image: `${SITE_URL}/images/speedyprint-logo.png`,
         address: {
           '@type': 'PostalAddress',
           addressCountry: 'ZA',
@@ -126,7 +126,7 @@ export function ProductJsonLd({ name, description, image, slug, price, currency 
       data={{
         name,
         description,
-        image: image ? `${SITE_URL}${image}` : `${SITE_URL}/images/logo.png`,
+        image: image ? `${SITE_URL}${image}` : `${SITE_URL}/images/speedyprint-logo.png`,
         url: `${SITE_URL}/products/${slug}`,
         brand: {
           '@type': 'Brand',

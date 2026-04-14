@@ -79,8 +79,7 @@ function AdminTopBar() {
         {/* User badge */}
         <div className="hidden items-center gap-2 rounded-lg border border-[#E7E5E4] py-1 pl-2 pr-3 sm:flex">
           <div
-            className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white"
-            style={{ background: '#E30613' }}
+            className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-primary text-[10px] font-bold text-white shadow-sm"
           >
             {initials}
           </div>
@@ -164,7 +163,7 @@ export default function AdminLayout({
           <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
             <Link
               href="/"
-              className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-gray-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-gray-700 sm:w-auto"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-brand-primary px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-primary-dark sm:w-auto"
             >
               <Home className="h-4 w-4" />
               Back to Home

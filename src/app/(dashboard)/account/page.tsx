@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useAuth } from '@/hooks/useAuth'
 import { createClient } from '@/lib/supabase/client'
 import { formatCurrency, formatDate } from '@/lib/utils/format'
+import { cn } from '@/lib/utils'
 import {
   ShoppingBag,
   Printer,
@@ -24,12 +25,12 @@ import type { Order } from '@/types'
 
 /* ── Product category shortcuts ── */
 const PRODUCT_SHORTCUTS = [
-  { label: 'Labels & Stickers', href: '/products?division=labels',       icon: Tag,    color: '#E30613', bg: 'rgba(227,6,19,0.08)'   },
-  { label: 'Race Numbers',      href: '/products?division=race-numbers', icon: Hash,   color: '#1E293B', bg: 'rgba(30,41,59,0.08)'   },
-  { label: 'MTB Boards',        href: '/products?division=mtb-boards',   icon: Bike,   color: '#0284c7', bg: 'rgba(2,132,199,0.08)'  },
-  { label: 'Laser Products',    href: '/products?division=laser',        icon: Zap,    color: '#7c3aed', bg: 'rgba(124,58,237,0.08)' },
-  { label: 'Stamps',            href: '/products?division=print',        icon: Stamp,  color: '#d97706', bg: 'rgba(217,119,6,0.08)'  },
-  { label: 'Trophies',          href: '/products?division=trophies',     icon: Trophy, color: '#16a34a', bg: 'rgba(22,163,74,0.08)'  },
+  { label: 'Labels & Stickers', href: '/labels',        icon: Tag,    color: 'var(--color-brand-primary)', bg: 'rgba(227,6,19,0.08)'   },
+  { label: 'Race Numbers',      href: '/race-numbers',  icon: Hash,   color: '#1E293B', bg: 'rgba(30,41,59,0.08)'   },
+  { label: 'MTB Boards',        href: '/mtb-boards',    icon: Bike,   color: '#0284c7', bg: 'rgba(2,132,199,0.08)'  },
+  { label: 'Laser Products',    href: '/laser',         icon: Zap,    color: '#7c3aed', bg: 'rgba(124,58,237,0.08)' },
+  { label: 'Stamps',            href: '/stamps',        icon: Stamp,  color: '#d97706', bg: 'rgba(217,119,6,0.08)'  },
+  { label: 'Trophies',          href: '/trophies',      icon: Trophy, color: '#16a34a', bg: 'rgba(22,163,74,0.08)'  },
 ]
 
 /* ─── Brand-safe status badge ─── */
@@ -37,9 +38,9 @@ const ORDER_BADGE: Record<string, { label: string; bg: string; text: string }> =
   draft:           { label: 'Draft',           bg: 'rgba(224,224,224,0.9)', text: '#555555' },
   pending_payment: { label: 'Pending Payment', bg: 'rgba(255,193,7,0.18)',  text: '#7a5c00' },
   paid:            { label: 'Paid',            bg: 'rgba(34,197,94,0.12)',  text: '#15803d' },
-  in_production:   { label: 'In Production',   bg: 'rgba(227,6,19,0.12)',   text: '#c00510' },
+  in_production:   { label: 'In Production',   bg: 'rgba(227,6,19,0.12)',   text: 'var(--color-brand-primary-dark)' },
   completed:       { label: 'Completed',       bg: 'rgba(30,41,59,0.18)',   text: '#1E293B' },
-  cancelled:       { label: 'Cancelled',       bg: 'rgba(227,6,19,0.08)',   text: '#E30613' },
+  cancelled:       { label: 'Cancelled',       bg: 'rgba(227,6,19,0.08)',   text: 'var(--color-brand-primary)' },
 }
 
 function OrderBadge({ status }: { status: string }) {
@@ -200,12 +201,15 @@ export default function AccountDashboard() {
               return (
                 <div
                   key={stat.label}
-                  className="relative overflow-hidden rounded-xl border bg-white p-5 shadow-sm"
+                  className={cn(
+                    "relative overflow-hidden rounded-xl border bg-white p-5 shadow-sm transition-all",
+                    stat.accent && "ring-1 ring-brand-primary/20 bg-brand-primary/[0.02]"
+                  )}
                   style={{
                     borderColor: stat.warning
                       ? 'rgba(255,193,7,0.5)'
                       : stat.accent
-                      ? 'rgba(227,6,19,0.2)'
+                      ? 'var(--color-brand-primary)'
                       : '#E7E5E4',
                   }}
                 >
@@ -216,7 +220,7 @@ export default function AccountDashboard() {
                       background: stat.warning
                         ? '#FFC107'
                         : stat.accent
-                        ? '#E30613'
+                        ? 'var(--color-brand-primary)'
                         : '#1E293B',
                     }}
                   />
@@ -236,7 +240,7 @@ export default function AccountDashboard() {
                         color: stat.warning
                           ? '#7a5c00'
                           : stat.accent
-                          ? '#E30613'
+                          ? 'var(--color-brand-primary)'
                           : '#1E293B',
                       }}
                     />

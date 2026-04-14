@@ -16,8 +16,18 @@ export async function GET() {
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (error) {
+    console.error('[Orders] Fetch error:', error)
+    return NextResponse.json({ error: 'Failed to fetch orders.' }, { status: 500 })
+  }
   return NextResponse.json(data)
+}
+
+/** Generates a unique, human-readable order number e.g. ORD-LX1A2B-C3D4 */
+function generateOrderNumber(): string {
+  const ts = Date.now().toString(36).toUpperCase().slice(-5)
+  const rnd = Math.random().toString(36).substring(2, 6).toUpperCase()
+  return `ORD-${ts}-${rnd}`
 }
 
 export async function POST(request: NextRequest) {
@@ -29,7 +39,23 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json()
-  const { items, shipping_address, billing_address, notes } = body
+  const { items, shipping_address, billing_address, notes, shipping_cost: shippingFromBody } = body
+
+  // Input validation
+  if (!Array.isArray(items) || items.length === 0) {
+    return NextResponse.json({ error: 'Order must contain at least one item.' }, { status: 400 })
+  }
+  if (items.length > 500) {
+    return NextResponse.json({ error: 'Too many items in a single order.' }, { status: 400 })
+  }
+  if (typeof notes === 'string' && notes.length > 2000) {
+    return NextResponse.json({ error: 'Notes must be under 2000 characters.' }, { status: 400 })
+  }
+  for (const item of items) {
+    if (!item.product_group_id || typeof item.quantity !== 'number' || item.quantity < 1 || typeof item.unit_price !== 'number' || item.unit_price < 0) {
+      return NextResponse.json({ error: 'Invalid item data.' }, { status: 400 })
+    }
+  }
 
   // Calculate totals
   let subtotal = 0
@@ -37,14 +63,16 @@ export async function POST(request: NextRequest) {
     subtotal += item.quantity * item.unit_price
   }
   const tax = subtotal * 0.15
-  const shipping_cost = 0
+  const shipping_cost = typeof shippingFromBody === 'number' && shippingFromBody >= 0
+    ? shippingFromBody
+    : 0
   const total = subtotal + tax + shipping_cost
 
   const { data: order, error: orderError } = await supabase
     .from('orders')
     .insert({
       user_id: user.id,
-      order_number: '',
+      order_number: generateOrderNumber(),
       status: 'pending_payment',
       subtotal,
       tax,
@@ -57,7 +85,10 @@ export async function POST(request: NextRequest) {
     .select()
     .single()
 
-  if (orderError) return NextResponse.json({ error: orderError.message }, { status: 500 })
+  if (orderError) {
+    console.error('[Orders] Insert error:', orderError)
+    return NextResponse.json({ error: 'Failed to create order.' }, { status: 500 })
+  }
 
   // Create order items
   const orderItems = items.map((item: any) => ({
@@ -73,7 +104,10 @@ export async function POST(request: NextRequest) {
   }))
 
   const { error: itemsError } = await supabase.from('order_items').insert(orderItems)
-  if (itemsError) return NextResponse.json({ error: itemsError.message }, { status: 500 })
+  if (itemsError) {
+    console.error('[Orders] Items insert error:', itemsError)
+    return NextResponse.json({ error: 'Failed to save order items.' }, { status: 500 })
+  }
 
   // Log activity
   await logActivity({

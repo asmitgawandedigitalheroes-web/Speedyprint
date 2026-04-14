@@ -16,6 +16,7 @@ import {
   ArrowUpLeft,
   FileImage,
   Bell,
+  MapPin,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/hooks/useAuth'
@@ -167,6 +168,7 @@ export function UserSidebar() {
         <SectionLabel label="Account" />
         <div className="flex flex-col gap-0.5">
           <NavLink href="/account/profile" label="Profile Settings" icon={User} />
+          <NavLink href="/account/addresses" label="Address Book" icon={MapPin} />
         </div>
       </nav>
 

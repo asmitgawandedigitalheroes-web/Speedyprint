@@ -290,13 +290,37 @@ export default function Toolbar() {
     }
   }, [canvas])
 
-  const handleExport = useCallback(() => {
+  const handleExportPNG = useCallback(() => {
     if (!canvas) return
     const dataUrl = exportPNG(canvas)
     const a = document.createElement('a')
     a.href = dataUrl
     a.download = `${designName || 'design'}.png`
     a.click()
+  }, [canvas, designName])
+
+  const handleExportJPG = useCallback(() => {
+    if (!canvas) return
+    // @ts-ignore – Fabric toDataURL supports jpeg format
+    const dataUrl = canvas.toDataURL({ format: 'jpeg', quality: 1, multiplier: 2 })
+    const a = document.createElement('a')
+    a.href = dataUrl
+    a.download = `${designName || 'design'}.jpg`
+    a.click()
+  }, [canvas, designName])
+
+  const handleExportSVG = useCallback(() => {
+    if (!canvas) return
+    const svgString = exportSVG(canvas)
+    const blob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${designName || 'design'}.svg`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    setTimeout(() => URL.revokeObjectURL(url), 100)
   }, [canvas, designName])
 
   const handlePreview = useCallback(() => {
@@ -687,14 +711,36 @@ export default function Toolbar() {
             <Save size={14} />
             {saving ? 'Saving...' : 'Save'}
           </button>
-          <button onClick={handleExport} disabled={noCanvas} title="Export PNG" className={ghostBtn}>
-            <Download size={14} />
-            Export
-          </button>
-          <button onClick={handleExportPDF} disabled={noCanvas} title="Export PDF" className={ghostBtn}>
-            <Download size={14} />
-            PDF
-          </button>
+
+          {/* Export dropdown — JPG / PNG / SVG / PDF */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button disabled={noCanvas} className={ghostBtn} title="Export design">
+                <Download size={14} />
+                Export
+                <ChevronDown size={12} className="-ml-0.5 opacity-60" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-44">
+              <DropdownMenuItem onClick={handleExportJPG} disabled={noCanvas}>
+                <Download className="mr-2 h-4 w-4 text-amber-500" />
+                <span>Export as JPG</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleExportPNG} disabled={noCanvas}>
+                <Download className="mr-2 h-4 w-4 text-blue-500" />
+                <span>Export as PNG</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleExportSVG} disabled={noCanvas}>
+                <Download className="mr-2 h-4 w-4 text-green-600" />
+                <span>Export as SVG</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleExportPDF} disabled={noCanvas}>
+                <Download className="mr-2 h-4 w-4 text-red-600" />
+                <span>Export as PDF</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
           {useAuth.getState().user?.role === 'admin' && (
             <button 
@@ -737,13 +783,21 @@ export default function Toolbar() {
                 <Save className="mr-2 h-4 w-4" />
                 <span>{saving ? 'Saving...' : 'Save Design'}</span>
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleExport} disabled={noCanvas}>
-                <Download className="mr-2 h-4 w-4" />
-                <span>Export PNG</span>
+              <DropdownMenuItem onClick={handleExportJPG} disabled={noCanvas}>
+                <Download className="mr-2 h-4 w-4 text-amber-500" />
+                <span>Export as JPG</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleExportPNG} disabled={noCanvas}>
+                <Download className="mr-2 h-4 w-4 text-blue-500" />
+                <span>Export as PNG</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleExportSVG} disabled={noCanvas}>
+                <Download className="mr-2 h-4 w-4 text-green-600" />
+                <span>Export as SVG</span>
               </DropdownMenuItem>
               <DropdownMenuItem onClick={handleExportPDF} disabled={noCanvas}>
-                <Download className="mr-2 h-4 w-4" />
-                <span>Export PDF</span>
+                <Download className="mr-2 h-4 w-4 text-red-600" />
+                <span>Export as PDF</span>
               </DropdownMenuItem>
               {template && (
                 <DropdownMenuItem onClick={() => window.open(`/designer/${template.id}/csv${designId ? `?design=${designId}` : ''}`, '_blank')} disabled={noCanvas}>

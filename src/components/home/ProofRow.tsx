@@ -22,8 +22,8 @@ const STATS = [
   {
     icon: Leaf,
     value: '100%',
-    label: 'Eco-Certified Ink',
-    sub: 'Environmentally responsible printing',
+    label: 'SA-Based Production',
+    sub: 'Proudly printed in South Africa',
   },
 ]
 

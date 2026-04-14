@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ArrowLeft, ArrowRight } from 'lucide-react'
 import { SITE_NAME, SITE_URL } from '@/lib/utils/constants'
+import { sanitizeHtml } from '@/lib/utils/sanitize'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { BlogPost } from '@/types'
 
@@ -44,6 +45,8 @@ export const dynamic = 'force-dynamic'
 
 export default async function BlogPostPage({ params }: PageProps) {
   const { slug } = await params
+  // Validate slug: max 200 chars, alphanumeric + hyphens only
+  if (!slug || slug.length > 200 || !/^[a-z0-9-]+$/.test(slug)) notFound()
   const post = await getPost(slug)
 
   if (!post) notFound()
@@ -99,7 +102,7 @@ export default async function BlogPostPage({ params }: PageProps) {
         <div className="rounded-md border border-gray-100 bg-white p-8">
           <div
             className="prose prose-sm max-w-none text-brand-text-muted prose-headings:font-heading prose-headings:text-brand-text prose-a:text-brand-primary prose-strong:text-brand-text"
-            dangerouslySetInnerHTML={{ __html: post.content }}
+            dangerouslySetInnerHTML={{ __html: sanitizeHtml(post.content) }}
           />
         </div>
 

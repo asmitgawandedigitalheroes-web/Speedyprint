@@ -3,6 +3,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import dynamic from 'next/dynamic'
 import { Search, ChevronRight, X, Check, Type, Palette, Download } from 'lucide-react'
+import { sanitizeSvg } from '@/lib/utils/sanitize'
 import { useEditorStore } from '@/lib/editor/useEditorStore'
 import { setBackground, setBackgroundPattern, setBackgroundGradient, addSVGToCanvas, getArtboardCenter } from '@/lib/editor/fabricUtils'
 import { Rect, Pattern } from 'fabric'
@@ -778,7 +779,7 @@ function CustomizePopover({
       >
         <div
           className="w-16 h-16 flex items-center justify-center"
-          dangerouslySetInnerHTML={{ __html: previewSvg }}
+          dangerouslySetInnerHTML={{ __html: sanitizeSvg(previewSvg) }}
         />
       </div>
 
@@ -1055,7 +1056,7 @@ export default function MaterialsPanel() {
                       {item.svg && (
                         <div
                           className="w-[70%] h-[70%] flex items-center justify-center"
-                          dangerouslySetInnerHTML={{ __html: item.svg }}
+                          dangerouslySetInnerHTML={{ __html: sanitizeSvg(item.svg) }}
                         />
                       )}
                     </div>

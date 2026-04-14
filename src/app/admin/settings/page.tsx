@@ -132,7 +132,7 @@ export default function AdminSettingsPage() {
           <button
             onClick={handleSave}
             disabled={saving}
-            className="flex items-center gap-2 rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700 disabled:opacity-60 transition-colors"
+            className="flex items-center gap-2 rounded-lg bg-brand-primary px-4 py-2 text-sm font-semibold text-white hover:bg-brand-primary-dark transition-all shadow-sm shadow-red-100 disabled:opacity-60"
           >
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
             {saving ? 'Saving…' : 'Save All'}
@@ -162,7 +162,7 @@ export default function AdminSettingsPage() {
               <SettingInput value={settings.company_phone || ''} onChange={(v) => set('company_phone', v)} placeholder="011 027 1811" type="tel" />
             </SettingField>
             <SettingField label="Email">
-              <SettingInput value={settings.company_email || ''} onChange={(v) => set('company_email', v)} placeholder="info@speedylabels.co.za" type="email" />
+              <SettingInput value={settings.company_email || ''} onChange={(v) => set('company_email', v)} placeholder="info@speedyprint.co.za" type="email" />
             </SettingField>
           </div>
         </div>

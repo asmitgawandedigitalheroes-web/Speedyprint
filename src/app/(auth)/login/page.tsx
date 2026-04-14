@@ -120,7 +120,7 @@ function LoginForm() {
       )}
 
       {/* Form */}
-      <form onSubmit={handleSubmit} className="space-y-5">
+      <form onSubmit={handleSubmit} method="post" className="space-y-5">
         <div className="space-y-1.5">
           <Label htmlFor="email">Email</Label>
           <Input

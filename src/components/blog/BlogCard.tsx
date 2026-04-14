@@ -32,15 +32,16 @@ export function BlogCard({ post }: BlogCardProps) {
           />
         </div>
       ) : (
-        <div className="flex aspect-[16/9] items-center justify-center bg-brand-bg/50 p-8 transition-opacity">
-          <div className="relative h-full w-full">
-            <Image
-              src="/images/logo.png"
-              alt="Speedy Print Suite"
-              fill
-              className="object-contain"
-            />
-          </div>
+        // TODO: Replace with real blog article cover images before launch
+        <div className="flex aspect-[16/9] items-center justify-center bg-gradient-to-br from-[#1E293B] to-[#2d3f55]">
+          <svg width="56" height="56" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <rect x="8" y="10" width="40" height="5" rx="2.5" fill="white" fillOpacity="0.18" />
+            <rect x="8" y="20" width="32" height="4" rx="2" fill="white" fillOpacity="0.12" />
+            <rect x="8" y="29" width="36" height="4" rx="2" fill="white" fillOpacity="0.12" />
+            <rect x="8" y="38" width="24" height="4" rx="2" fill="white" fillOpacity="0.12" />
+            <circle cx="44" cy="40" r="8" fill="#E30613" fillOpacity="0.85" />
+            <path d="M44 36v8M40 40h8" stroke="white" strokeWidth="2" strokeLinecap="round" />
+          </svg>
         </div>
       )}
 

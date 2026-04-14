@@ -203,7 +203,7 @@ export default function AdminProofsPage() {
                           )}
                           {proof.order_item?.order && (
                             <Link href={`/admin/orders/${proof.order_item.order.id}`}
-                              className="flex items-center gap-1 rounded-lg bg-gray-900 px-2.5 py-1 text-xs font-medium text-white hover:bg-gray-700">
+                              className="flex items-center gap-1 rounded-lg bg-brand-primary px-2.5 py-1 text-xs font-medium text-white hover:bg-brand-primary-dark shadow-sm transition-colors">
                               Order <ExternalLink className="h-3 w-3" />
                             </Link>
                           )}

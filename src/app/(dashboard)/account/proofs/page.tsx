@@ -14,6 +14,7 @@ import {
   RefreshCw,
 } from 'lucide-react'
 import type { Proof } from '@/types'
+import { cn } from '@/lib/utils'
 
 /* ─── Brand-safe proof status config ─── */
 interface StatusCfg {
@@ -27,30 +28,30 @@ interface StatusCfg {
 const PROOF_STATUS: Record<string, StatusCfg> = {
   pending: {
     label:  'Awaiting Review',
-    bg:     'rgba(255,193,7,0.14)',
-    text:   '#7a5c00',
-    border: 'rgba(255,193,7,0.45)',
+    bg:     'bg-amber-50',
+    text:   'text-amber-700',
+    border: 'border-amber-200',
     icon:   Clock,
   },
   approved: {
     label:  'Approved',
-    bg:     'rgba(30,41,59,0.10)',
-    text:   '#1E293B',
-    border: 'rgba(30,41,59,0.20)',
+    bg:     'bg-green-50',
+    text:   'text-green-700',
+    border: 'border-green-200',
     icon:   CheckCircle2,
   },
   revision_requested: {
     label:  'Revision Requested',
-    bg:     'rgba(255,193,7,0.10)',
-    text:   '#7a5c00',
-    border: 'rgba(255,193,7,0.30)',
-    icon:   AlertCircle,
+    bg:     'bg-brand-primary/5',
+    text:   'text-brand-primary-dark',
+    border: 'border-brand-primary/20',
+    icon:   RefreshCw,
   },
   rejected: {
     label:  'Rejected',
-    bg:     'rgba(227,6,19,0.08)',
-    text:   '#c00510',
-    border: 'rgba(227,6,19,0.25)',
+    bg:     'bg-red-50',
+    text:   'text-red-700',
+    border: 'border-red-200',
     icon:   AlertCircle,
   },
 }
@@ -141,12 +142,12 @@ export default function ProofsPage() {
             <button
               key={t.value}
               onClick={() => setTab(t.value)}
-              className="rounded-md px-3 py-1.5 text-xs font-medium transition-all"
-              style={
+              className={cn(
+                "rounded-md px-3 py-1.5 text-xs font-medium transition-all",
                 tab === t.value
-                  ? { backgroundColor: '#E30613', color: '#fff' }
-                  : { color: '#64748B' }
-              }
+                  ? "bg-brand-primary text-white shadow-sm"
+                  : "text-slate-500 hover:text-slate-800"
+              )}
             >
               {t.label}
             </button>

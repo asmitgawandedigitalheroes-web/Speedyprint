@@ -15,9 +15,11 @@ import {
   ShieldCheck,
   CreditCard,
   Loader2,
+  Printer,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import type { Order, OrderItem } from '@/types'
+
 
 /* ─── Brand-safe status helpers ─── */
 const ORDER_BADGE: Record<string, { label: string; bg: string; text: string }> = {
@@ -175,7 +177,8 @@ export default function OrderDetailPage() {
       const res = await fetch(`/api/orders/${order.id}/reorder`, { method: 'POST' })
       if (!res.ok) { const d = await res.json(); alert(`Failed: ${d.error || 'Unknown error'}`); return }
       const { order: newOrder } = await res.json()
-      router.push(`/checkout?order_id=${newOrder.id}`)
+      toast.success('Reorder created — review your new draft order')
+      router.push(`/account/orders/${newOrder.id}`)
     } catch { alert('Failed to reorder. Please try again.') }
     finally { setReordering(false) }
   }
@@ -269,6 +272,16 @@ export default function OrderDetailPage() {
                 {downloading ? 'Preparing…' : productionFiles.length > 0 ? `Download Files (${productionFiles.length})` : 'Files Not Ready'}
               </button>
             )}
+
+            <a
+              href={`/invoice/${order.id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
+            >
+              <Printer className="h-4 w-4" />
+              Download Invoice
+            </a>
 
             {canReorder && (
               <button
@@ -372,7 +385,7 @@ export default function OrderDetailPage() {
                 <span className="text-brand-text">{formatCurrency(order.subtotal)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-brand-text-muted">GST (18%)</span>
+                <span className="text-brand-text-muted">VAT (15%)</span>
                 <span className="text-brand-text">{formatCurrency(order.tax)}</span>
               </div>
               <div className="flex justify-between">

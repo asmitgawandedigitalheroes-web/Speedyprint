@@ -15,7 +15,9 @@ export async function GET(request: NextRequest) {
 
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
-  const next = searchParams.get('next') ?? '/account'
+  const rawNext = searchParams.get('next') ?? '/account'
+  // Prevent open-redirect: must be a relative path, not // or javascript: etc.
+  const next = rawNext.startsWith('/') && !rawNext.startsWith('//') ? rawNext : '/account'
 
   if (code) {
     const supabase = await createClient()

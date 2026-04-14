@@ -138,7 +138,7 @@ export default function AdminTestimonialsPage() {
             )}
             <button
               onClick={openCreate}
-              className="flex items-center gap-1.5 rounded-lg bg-gray-900 px-3.5 py-2 text-sm font-medium text-white hover:bg-gray-700 transition-colors"
+              className="flex items-center gap-1.5 rounded-lg bg-brand-primary px-3.5 py-2 text-sm font-semibold text-white hover:bg-brand-primary-dark transition-all shadow-sm"
             >
               <Plus className="h-4 w-4" />
               Add Testimonial
@@ -170,7 +170,7 @@ export default function AdminTestimonialsPage() {
                       title="No testimonials yet"
                       description="Add your first customer review to build trust with visitors"
                       action={
-                        <button onClick={openCreate} className="flex items-center gap-1.5 rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700">
+                        <button onClick={openCreate} className="flex items-center gap-1.5 rounded-lg bg-brand-primary px-4 py-2 text-sm font-semibold text-white hover:bg-brand-primary-dark transition-all shadow-sm">
                           <Plus className="h-4 w-4" /> Add Testimonial
                         </button>
                       }
@@ -297,7 +297,7 @@ export default function AdminTestimonialsPage() {
               <button
                 type="submit"
                 disabled={saving}
-                className="flex-1 rounded-lg bg-gray-900 py-2 text-sm font-medium text-white hover:bg-gray-700 disabled:opacity-60"
+                className="flex-1 rounded-lg bg-brand-primary py-2 text-sm font-semibold text-white hover:bg-brand-primary-dark transition-all shadow-sm disabled:opacity-60"
               >
                 {saving ? 'Saving…' : editing ? 'Save Changes' : 'Add Testimonial'}
               </button>

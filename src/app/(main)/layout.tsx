@@ -14,9 +14,15 @@ export default function MainLayout({
       <OrganizationJsonLd />
       <WebSiteJsonLd />
       <LocalBusinessJsonLd />
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:top-2 focus:left-2 focus:rounded-md focus:bg-brand-primary focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-white"
+      >
+        Skip to main content
+      </a>
       <TopBar />
       <Header />
-      <main className="flex-1">{children}</main>
+      <main id="main-content" className="flex-1">{children}</main>
       <Footer />
       <WhatsAppButton />
     </div>

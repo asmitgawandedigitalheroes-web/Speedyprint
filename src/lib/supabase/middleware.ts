@@ -132,7 +132,7 @@ export async function updateSession(request: NextRequest) {
   // Note: we still keep 'unsafe-eval' for Fabric.js for now, but remove 'unsafe-inline' where possible.
   const cspHeader = `
     default-src 'self';
-    script-src 'self' 'nonce-${nonce}' 'strict-dynamic' 'unsafe-eval' https: http:;
+    script-src 'self' 'nonce-${nonce}' 'strict-dynamic' 'unsafe-eval' https:;
     style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
     font-src 'self' https://fonts.gstatic.com;
     img-src 'self' data: blob: https://atqjywawohnhvlnggozu.supabase.co https://res.cloudinary.com;

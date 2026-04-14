@@ -9,20 +9,22 @@ import { useSiteSettings } from '@/hooks/useSiteSettings'
 const QUICK_LINKS = [
   { href: '/', label: 'Home' },
   { href: '/our-story', label: 'Our Story' },
-  { href: '/order-now', label: 'Order Now' },
-  { href: '/templates', label: 'Design Wizard' },
+  { href: '/how-it-works', label: 'How It Works' },
+  { href: '/bulk-orders', label: 'Bulk Orders' },
+  { href: '/artwork-specs', label: 'Artwork Specs' },
+  { href: '/track-order', label: 'Track Order' },
   { href: '/faq', label: 'FAQ' },
   { href: '/contact', label: 'Contact' },
   { href: '/delivery-info', label: 'Delivery Info' },
 ]
 
 const PRODUCT_LINKS = [
-  { href: '/products?division=labels', label: 'Labels, Stickers & Wristbands' },
-  { href: '/products?division=race-numbers', label: 'Race Numbers & Event Tags' },
-  { href: '/products?division=mtb-boards', label: 'MTB Boards & Correx' },
-  { href: '/products?division=print', label: 'Print & Stationery' },
-  { href: '/products?division=laser', label: 'Laser & NFC Stands' },
-  { href: '/products?division=trophies', label: 'Trophies & Awards' },
+  { href: '/labels', label: 'Labels, Stickers & Wristbands' },
+  { href: '/race-numbers', label: 'Race Numbers & Event Tags' },
+  { href: '/mtb-boards', label: 'MTB Boards & Correx' },
+  { href: '/stamps', label: 'Stamps' },
+  { href: '/laser', label: 'Laser & NFC Stands' },
+  { href: '/trophies', label: 'Trophies & Awards' },
 ]
 
 export function Footer() {
@@ -30,9 +32,9 @@ export function Footer() {
   const currentYear = new Date().getFullYear()
 
   // Dynamic values with fallbacks
-  const companyEmail = settings.company_email || 'info@speedylabels.co.za'
+  const companyEmail = settings.company_email || 'info@speedyprint.co.za'
   const companyPhone = settings.company_phone || '011 027 1811'
-  const companyAddress = settings.company_address || '13 Langwa Street, Strydompark, Randburg'
+  const companyAddress = settings.company_address || '13 Langwa Street, Strydompark, Randburg, 2169'
   const whatsappNumber = settings.whatsapp_number
   const whatsappUrl = whatsappNumber
     ? `https://wa.me/${whatsappNumber.replace(/[^0-9]/g, '')}`
@@ -56,7 +58,7 @@ export function Footer() {
           <div>
             <Link href="/" className="inline-block">
               <Image
-                src="/images/logo.png"
+                src="/images/speedyprint-logo.png"
                 alt={siteName}
                 width={224}
                 height={56}
