@@ -168,9 +168,10 @@ export function Header() {
   const [mobileOpen, setMobileOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
-  const [notifications, setNotifications] = useState<any[]>([])
-  const [unreadCount, setUnreadCount] = useState(0)
+  // const [notifications, setNotifications] = useState<any[]>([])
+  // const [unreadCount, setUnreadCount] = useState(0)
 
+  /*
   // Fetch notifications
   useEffect(() => {
     if (!isAuthenticated) {
@@ -212,6 +213,7 @@ export function Header() {
       clearInterval(interval)
     }
   }, [isAuthenticated])
+  */
 
   // Sync cart count client-side only to avoid hydration mismatch
   // (Zustand store is populated from localStorage after hydration)
@@ -317,7 +319,7 @@ export function Header() {
             </Button>
 
             {/* Audit Log Notifications */}
-            {isAuthenticated && (
+            {/* {isAuthenticated && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
@@ -372,7 +374,7 @@ export function Header() {
                   </div>
                 </DropdownMenuContent>
               </DropdownMenu>
-            )}
+            )} */}
 
             {/* Cart */}
             <Link href="/cart">
