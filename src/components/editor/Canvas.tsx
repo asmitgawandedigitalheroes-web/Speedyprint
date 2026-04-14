@@ -504,69 +504,103 @@ export default function EditorCanvas() {
     }
   }, [showGrid, canvasDimensions])
 
-  // Add print boundary guides (bleed & safe zone)
+  // Add print boundary guides (bleed & safe zone) — always visible by default
   useEffect(() => {
     const canvas = fabricRef.current
-    if (!canvas || !canvasDimensions || !showPrintBoundaries) return
+    if (!canvas || !showPrintBoundaries) return
 
     const { artboardWidth, artboardHeight } = useEditorStore.getState()
     if (!artboardWidth || !artboardHeight) return
 
-    // Compute display-scale ratio (artboard display px / full px with bleed)
-    const fullW = canvasDimensions.widthPx
-    const fullH = canvasDimensions.heightPx
-    const scaleX = artboardWidth / fullW
-    const scaleY = artboardHeight / fullH
+    // Use template values if available; fall back to sensible print defaults
+    // Default: 3 mm bleed, 3 mm safe zone (typical for most print products)
+    const DEFAULT_BLEED_PX   = Math.max(12, artboardWidth * 0.018)  // ~3 mm at 96dpi
+    const DEFAULT_SAFE_PX    = Math.max(12, artboardWidth * 0.018)
 
-    const bleedPx = canvasDimensions.bleedPx * scaleX
-    const safeZonePx = canvasDimensions.safeZonePx * scaleX
+    let bleedPx: number
+    let safeZonePx: number
 
-    const guideObjects: FabricLine[] = []
-
-    const makeLine = (coords: [number, number, number, number], color: string, dashArray: number[]) => {
-      const line = new FabricLine(coords, {
-        stroke: color,
-        strokeWidth: 1,
-        strokeDashArray: dashArray,
-        selectable: false,
-        evented: false,
-        hoverCursor: 'default',
-        excludeFromExport: true,
-      })
-      ;(line as unknown as Record<string, unknown>).isGuide = true
-      return line
+    if (canvasDimensions) {
+      const scaleX = artboardWidth / canvasDimensions.widthPx
+      bleedPx   = canvasDimensions.bleedPx    > 0 ? canvasDimensions.bleedPx    * scaleX : DEFAULT_BLEED_PX
+      safeZonePx = canvasDimensions.safeZonePx > 0 ? canvasDimensions.safeZonePx * scaleX : DEFAULT_SAFE_PX
+    } else {
+      bleedPx    = DEFAULT_BLEED_PX
+      safeZonePx = DEFAULT_SAFE_PX
     }
 
-    // Bleed boundary (red dashed) — inset from artboard edges by bleed amount
-    if (bleedPx > 1) {
-      const bx = bleedPx
-      const by = bleedPx
-      const bw = artboardWidth - bleedPx
-      const bh = artboardHeight - bleedPx
-      // Top
-      guideObjects.push(makeLine([bx, by, bw, by], 'rgba(239,68,68,0.6)', [6, 4]))
-      // Bottom
-      guideObjects.push(makeLine([bx, bh, bw, bh], 'rgba(239,68,68,0.6)', [6, 4]))
-      // Left
-      guideObjects.push(makeLine([bx, by, bx, bh], 'rgba(239,68,68,0.6)', [6, 4]))
-      // Right
-      guideObjects.push(makeLine([bw, by, bw, bh], 'rgba(239,68,68,0.6)', [6, 4]))
-    }
+    const guideObjects: (Rect | FabricLine)[] = []
 
-    // Safe zone (green dashed) — inset further by safe zone amount
-    if (safeZonePx > 1) {
-      const sx = bleedPx + safeZonePx
-      const sy = bleedPx + safeZonePx
-      const sw = artboardWidth - bleedPx - safeZonePx
-      const sh = artboardHeight - bleedPx - safeZonePx
-      // Top
-      guideObjects.push(makeLine([sx, sy, sw, sy], 'rgba(34,197,94,0.5)', [4, 4]))
-      // Bottom
-      guideObjects.push(makeLine([sx, sh, sw, sh], 'rgba(34,197,94,0.5)', [4, 4]))
-      // Left
-      guideObjects.push(makeLine([sx, sy, sx, sh], 'rgba(34,197,94,0.5)', [4, 4]))
-      // Right
-      guideObjects.push(makeLine([sw, sy, sw, sh], 'rgba(34,197,94,0.5)', [4, 4]))
+    // ── Bleed boundary rect (red dashed) ─────────────────────────────────
+    //    The trim line — where the paper will be cut.
+    const bleedRect = new Rect({
+      left:         bleedPx,
+      top:          bleedPx,
+      width:        artboardWidth  - bleedPx * 2,
+      height:       artboardHeight - bleedPx * 2,
+      fill:         'transparent',
+      stroke:       'rgba(239,68,68,0.85)',
+      strokeWidth:  1,
+      strokeDashArray: [6, 3],
+      selectable:   false,
+      evented:      false,
+      hoverCursor:  'default',
+      excludeFromExport: true,
+    })
+    ;(bleedRect as unknown as Record<string, unknown>).isGuide = true
+    guideObjects.push(bleedRect)
+
+    // ── Safe zone rect (blue dashed) ──────────────────────────────────────
+    //    Keep all critical content (text, logos) inside this boundary.
+    const sx = bleedPx + safeZonePx
+    const safeRect = new Rect({
+      left:         sx,
+      top:          sx,
+      width:        artboardWidth  - sx * 2,
+      height:       artboardHeight - sx * 2,
+      fill:         'transparent',
+      stroke:       'rgba(59,130,246,0.75)',
+      strokeWidth:  1,
+      strokeDashArray: [4, 3],
+      selectable:   false,
+      evented:      false,
+      hoverCursor:  'default',
+      excludeFromExport: true,
+    })
+    ;(safeRect as unknown as Record<string, unknown>).isGuide = true
+    guideObjects.push(safeRect)
+
+    // ── Corner crop marks at bleed boundary ──────────────────────────────
+    //    Short L-shaped lines just outside the trim at each corner.
+    const markLen = Math.max(8, bleedPx * 0.8)   // length of each crop-mark arm
+    const gap = 2                                  // gap between crop mark and trim line
+    const corners: Array<[number, number, number, number][]> = [
+      // Top-left  (horizontal + vertical)
+      [[bleedPx - gap - markLen, bleedPx, bleedPx - gap, bleedPx],
+       [bleedPx, bleedPx - gap - markLen, bleedPx, bleedPx - gap]],
+      // Top-right
+      [[artboardWidth - bleedPx + gap, bleedPx, artboardWidth - bleedPx + gap + markLen, bleedPx],
+       [artboardWidth - bleedPx, bleedPx - gap - markLen, artboardWidth - bleedPx, bleedPx - gap]],
+      // Bottom-left
+      [[bleedPx - gap - markLen, artboardHeight - bleedPx, bleedPx - gap, artboardHeight - bleedPx],
+       [bleedPx, artboardHeight - bleedPx + gap, bleedPx, artboardHeight - bleedPx + gap + markLen]],
+      // Bottom-right
+      [[artboardWidth - bleedPx + gap, artboardHeight - bleedPx, artboardWidth - bleedPx + gap + markLen, artboardHeight - bleedPx],
+       [artboardWidth - bleedPx, artboardHeight - bleedPx + gap, artboardWidth - bleedPx, artboardHeight - bleedPx + gap + markLen]],
+    ]
+    for (const [h, v] of corners) {
+      for (const coords of [h, v]) {
+        const mark = new FabricLine(coords as [number, number, number, number], {
+          stroke:      'rgba(0,0,0,0.35)',
+          strokeWidth: 0.75,
+          selectable:  false,
+          evented:     false,
+          hoverCursor: 'default',
+          excludeFromExport: true,
+        })
+        ;(mark as unknown as Record<string, unknown>).isGuide = true
+        guideObjects.push(mark)
+      }
     }
 
     guideObjects.forEach((obj) => canvas.add(obj))
@@ -587,9 +621,25 @@ export default function EditorCanvas() {
       ref={containerRef}
       className="flex-1 relative overflow-hidden editor-checkered-bg"
     >
+      {/* Template info pill */}
       <div className={`absolute top-2 left-2 z-10 bg-ed-surface/90 backdrop-blur-sm border border-ed-border rounded-md px-3 py-1 text-xs text-ed-text-muted shadow-sm ${templateInfo ? '' : 'hidden'}`}>
         {templateInfo}
       </div>
+
+      {/* Bleed / Safe legend — shown when print boundaries are on */}
+      {showPrintBoundaries && (
+        <div className="absolute bottom-3 right-3 z-10 flex items-center gap-3 rounded-lg bg-white/90 backdrop-blur-sm border border-gray-200 shadow-sm px-3 py-1.5 select-none pointer-events-none">
+          <span className="flex items-center gap-1.5 text-[10px] font-semibold text-gray-600">
+            <span className="inline-block h-[2px] w-5 rounded-full" style={{ background: 'rgba(239,68,68,0.85)', backgroundImage: 'repeating-linear-gradient(90deg,rgba(239,68,68,0.85) 0,rgba(239,68,68,0.85) 6px,transparent 6px,transparent 9px)' }} />
+            Bleed
+          </span>
+          <span className="flex items-center gap-1.5 text-[10px] font-semibold text-gray-600">
+            <span className="inline-block h-[2px] w-5 rounded-full" style={{ backgroundImage: 'repeating-linear-gradient(90deg,rgba(59,130,246,0.85) 0,rgba(59,130,246,0.85) 4px,transparent 4px,transparent 7px)' }} />
+            Safe
+          </span>
+        </div>
+      )}
+
       <canvas ref={canvasElRef} />
       <DrawingModeSync />
       <FloatingToolbar />

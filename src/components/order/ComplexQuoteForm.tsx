@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { ArrowRight, Loader2, Send } from 'lucide-react'
+import { ArrowRight, Loader2, Send, ShieldCheck, CheckCircle2, Palette } from 'lucide-react'
 import { toast } from 'sonner'
 import { ArtworkUpload } from '@/components/order/ArtworkUpload'
 
@@ -31,6 +31,7 @@ export function ComplexQuoteForm({ defaultProductType }: ComplexQuoteFormProps) 
     special_instructions: '',
     referral: '',
   })
+  const [artworkFile, setArtworkFile] = useState<File | null>(null)
   const [submitted, setSubmitted] = useState(false)
   const [loading, setLoading] = useState(false)
 
@@ -42,27 +43,25 @@ export function ComplexQuoteForm({ defaultProductType }: ComplexQuoteFormProps) 
     e.preventDefault()
     setLoading(true)
     try {
-      const res = await fetch('/api/contact', {
+      // Upload artwork file first (if provided)
+      let artworkUrl: string | undefined
+      if (artworkFile) {
+        const fd = new FormData()
+        fd.append('file', artworkFile)
+        const uploadRes = await fetch('/api/quote-upload', { method: 'POST', body: fd })
+        if (uploadRes.ok) {
+          const uploadData = await uploadRes.json()
+          artworkUrl = uploadData.url
+        }
+        // Non-fatal: if upload fails, proceed without artwork URL
+      }
+
+      const res = await fetch('/api/quotes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: form.full_name,
-          email: form.email,
-          subject: `Quote Request — ${form.product_type || 'General'} — ${form.event_name || 'No event name'}`,
-          message: `
-Company: ${form.company || '—'}
-Phone: ${form.phone}
-Event/Project: ${form.event_name || '—'}
-Event Date: ${form.event_date || '—'}
-Required Delivery: ${form.delivery_date}
-Product Type: ${form.product_type}
-Quantity: ${form.quantity}
-Dimensions: ${form.dimensions || '—'}
-Material: ${form.material || '—'}
-Finish: ${form.finish || '—'}
-Special Instructions: ${form.special_instructions || '—'}
-How they heard about us: ${form.referral || '—'}
-          `.trim(),
+          ...form,
+          artwork_url: artworkUrl,
         }),
       })
       const data = await res.json()
@@ -89,6 +88,7 @@ How they heard about us: ${form.referral || '—'}
         <button
           onClick={() => {
             setSubmitted(false)
+            setArtworkFile(null)
             setForm({ full_name: '', company: '', email: '', phone: '', event_name: '', event_date: '', delivery_date: '', product_type: defaultProductType ?? '', quantity: '', dimensions: '', material: '', finish: '', special_instructions: '', referral: '' })
           }}
           className="mt-6 inline-flex items-center gap-2 rounded-md bg-brand-primary px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-primary-dark"
@@ -179,7 +179,7 @@ How they heard about us: ${form.referral || '—'}
       {/* Artwork Upload */}
       <div>
         <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-brand-text-muted">Artwork</h3>
-        <ArtworkUpload label="Upload your artwork file (optional)" />
+        <ArtworkUpload label="Upload your artwork file (optional)" onFileChange={setArtworkFile} />
       </div>
 
       {/* Additional */}
@@ -201,17 +201,33 @@ How they heard about us: ${form.referral || '—'}
         </div>
       </div>
 
-      <button
-        type="submit"
-        disabled={loading}
-        className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-brand-primary px-7 py-3 text-sm font-semibold text-white transition hover:bg-brand-primary-dark disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
-      >
-        {loading ? (
-          <><Loader2 className="h-4 w-4 animate-spin" /> Sending…</>
-        ) : (
-          <>Send My Quote Request <ArrowRight className="h-4 w-4" /></>
-        )}
-      </button>
+      <div className="space-y-4">
+        <button
+          type="submit"
+          disabled={loading}
+          className="inline-flex w-full items-center justify-center gap-2 rounded-md bg-brand-primary px-7 py-3 text-sm font-semibold text-white transition hover:bg-brand-primary-dark disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+        >
+          {loading ? (
+            <><Loader2 className="h-4 w-4 animate-spin" /> {artworkFile ? 'Uploading & Sending…' : 'Sending…'}</>
+          ) : (
+            <>Send My Quote Request <ArrowRight className="h-4 w-4" /></>
+          )}
+        </button>
+
+        {/* Reassurance points */}
+        <div className="flex flex-wrap gap-4 pt-1">
+          {[
+            { icon: CheckCircle2, text: 'You\'ll approve a proof before we print' },
+            { icon: Palette, text: 'Artwork help available from our team' },
+            { icon: ShieldCheck, text: 'Local South African support' },
+          ].map((item) => (
+            <div key={item.text} className="flex items-center gap-1.5 text-xs text-brand-text-muted">
+              <item.icon className="h-3.5 w-3.5 shrink-0 text-brand-primary" />
+              {item.text}
+            </div>
+          ))}
+        </div>
+      </div>
     </form>
   )
 }

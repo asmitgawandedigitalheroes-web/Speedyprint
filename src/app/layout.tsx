@@ -67,7 +67,7 @@ export const metadata: Metadata = {
     description: SITE_DESCRIPTION,
     images: [
       {
-        url: '/images/logo.png',
+        url: '/images/speedyprint-logo.png',
         width: 800,
         height: 600,
         alt: `${SITE_NAME} - Custom Printing Solutions`,
@@ -78,7 +78,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: `${SITE_NAME} | Custom Printing Solutions`,
     description: SITE_DESCRIPTION,
-    images: ['/images/logo.png'],
+    images: ['/images/speedyprint-logo.png'],
   },
   robots: {
     index: true,
@@ -95,8 +95,8 @@ export const metadata: Metadata = {
     canonical: SITE_URL,
   },
   icons: {
-    icon: '/images/logo.png',
-    apple: '/images/logo.png',
+    icon: '/images/speedyprint-logo.png',
+    apple: '/images/speedyprint-logo.png',
   },
 }
 

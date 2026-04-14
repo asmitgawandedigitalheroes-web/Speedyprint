@@ -1,9 +1,9 @@
 import type { Metadata } from 'next'
 import { Suspense } from 'react'
-import { SITE_NAME, DIVISIONS } from '@/lib/utils/constants'
+import { SITE_NAME, DIVISIONS, WHATSAPP_URL } from '@/lib/utils/constants'
 import { QuickOrderForm } from '@/components/order/QuickOrderForm'
 import { ComplexQuoteForm } from '@/components/order/ComplexQuoteForm'
-import { Loader2, Tag, Hash, Bike, Zap, Trophy, Printer } from 'lucide-react'
+import { Loader2, Tag, Hash, Bike, Zap, Trophy, Printer, Phone, MessageCircle, Mail } from 'lucide-react'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import Link from 'next/link'
 
@@ -97,6 +97,19 @@ export default async function OrderNowPage(props: PageProps) {
           <p className="mt-2 text-brand-text-muted">
             Configure your product specifications — get an instant price. Free delivery on orders over R500.
           </p>
+          {/* Support bar */}
+          <div className="mt-5 flex flex-wrap items-center gap-4 rounded-xl border border-gray-100 bg-brand-bg px-4 py-3 text-sm">
+            <span className="font-semibold text-brand-text">Need help?</span>
+            <a href="tel:0110271811" className="flex items-center gap-1.5 text-brand-text-muted hover:text-brand-primary transition-colors">
+              <Phone className="h-3.5 w-3.5" /> 011 027 1811
+            </a>
+            <a href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-[#25D366] hover:underline transition-colors">
+              <MessageCircle className="h-3.5 w-3.5" /> WhatsApp us
+            </a>
+            <a href="mailto:info@speedyprint.co.za" className="flex items-center gap-1.5 text-brand-text-muted hover:text-brand-primary transition-colors">
+              <Mail className="h-3.5 w-3.5" /> info@speedyprint.co.za
+            </a>
+          </div>
         </div>
       </div>
 

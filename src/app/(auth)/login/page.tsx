@@ -4,7 +4,7 @@ import { useState, type FormEvent, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { toast } from 'sonner'
-import { Loader2, ArrowRight, MailWarning, CheckCircle2, XCircle } from 'lucide-react'
+import { Loader2, ArrowRight, MailWarning } from 'lucide-react'
 
 import { useAuth } from '@/hooks/useAuth'
 import { SITE_NAME } from '@/lib/utils/constants'
@@ -152,32 +152,10 @@ function LoginForm() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            minLength={8}
-            maxLength={15}
-            pattern="(?=.*[A-Z])(?=.*[0-9])(?=.*[^A-Za-z0-9\s])[^\s]{8,15}"
-            title="8–15 characters, no spaces, at least 1 uppercase letter, 1 number and 1 symbol"
             autoComplete="current-password"
             disabled={isLoading}
             className="focus:border-brand-primary focus:ring-brand-primary"
           />
-          {password.length > 0 && (
-            <ul className="mt-2 space-y-1">
-              {[
-                { label: '8–15 characters', valid: password.length >= 8 && password.length <= 15 },
-                { label: 'No spaces', valid: !/\s/.test(password) },
-                { label: 'At least 1 uppercase letter', valid: /[A-Z]/.test(password) },
-                { label: 'At least 1 number', valid: /[0-9]/.test(password) },
-                { label: 'At least 1 symbol (e.g. @, #, !)', valid: /[^A-Za-z0-9\s]/.test(password) },
-              ].map((rule) => (
-                <li key={rule.label} className={`flex items-center gap-1.5 text-xs ${rule.valid ? 'text-green-600' : 'text-red-500'}`}>
-                  {rule.valid
-                    ? <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
-                    : <XCircle className="h-3.5 w-3.5 shrink-0" />}
-                  {rule.label}
-                </li>
-              ))}
-            </ul>
-          )}
         </div>
 
         <Button

@@ -81,6 +81,15 @@ export function isValidOrigin(origin: string | null, appUrl: string): boolean {
   try {
     const requestOrigin = new URL(origin)
     const appOrigin = new URL(appUrl)
+
+    // Allow localhost and 127.0.0.1 in development
+    if (
+      requestOrigin.hostname === 'localhost' ||
+      requestOrigin.hostname === '127.0.0.1'
+    ) {
+      return true
+    }
+
     return requestOrigin.hostname === appOrigin.hostname
   } catch {
     return false

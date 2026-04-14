@@ -186,7 +186,7 @@ export function FilterTabs<T extends string>({
           className={cn(
             'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-all',
             value === opt.value
-              ? 'bg-gray-900 text-white shadow-sm'
+              ? 'bg-brand-primary text-white shadow-sm'
               : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
           )}
         >
@@ -288,7 +288,7 @@ export function Pagination({
               onClick={() => onPage(p)}
               className={cn(
                 'flex h-7 w-7 items-center justify-center rounded-lg text-xs font-medium transition-colors',
-                p === page ? 'bg-gray-900 text-white' : 'border border-gray-200 text-gray-500 hover:bg-gray-50'
+                p === page ? 'bg-brand-primary text-white' : 'border border-gray-200 text-gray-500 hover:bg-gray-50'
               )}
             >
               {p}

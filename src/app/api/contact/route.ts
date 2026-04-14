@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    const { name, email, subject, message } = await request.json()
+    const { name, email, subject, message, artwork_url } = await request.json()
 
     // Field length limits
     if (!name?.trim() || !email?.trim() || !subject?.trim() || !message?.trim()) {
@@ -30,6 +30,11 @@ export async function POST(request: NextRequest) {
 
     const supabase = createAdminClient()
 
+    // Append artwork URL to message body so it's persisted in DB regardless of schema
+    const fullMessage = artwork_url
+      ? `${message.trim()}\n\nArtwork File: ${artwork_url}`
+      : message.trim()
+
     // Save to database
     const { data: submission, error: dbError } = await supabase
       .from('contact_submissions')
@@ -37,7 +42,7 @@ export async function POST(request: NextRequest) {
         name: name.trim(),
         email: email.trim().toLowerCase(),
         subject: subject.trim(),
-        message: message.trim(),
+        message: fullMessage,
         status: 'unread',
       })
       .select('id')
@@ -49,7 +54,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Send notification email to admin (non-blocking — don't fail the request if email fails)
-    sendContactFormEmail(name.trim(), email.trim(), subject.trim(), message.trim()).catch(
+    sendContactFormEmail(name.trim(), email.trim(), subject.trim(), message.trim(), artwork_url || undefined).catch(
       (err) => console.error('[Contact] Admin notification email error:', err)
     )
 

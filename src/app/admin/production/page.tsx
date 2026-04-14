@@ -237,7 +237,7 @@ export default function AdminProductionPage() {
           />
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className={`flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-medium transition-colors ${showFilters ? 'border-gray-900 bg-gray-900 text-white' : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'}`}
+            className={`flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-medium transition-colors ${showFilters ? 'border-brand-primary bg-brand-primary text-white shadow-sm' : 'border-gray-200 bg-white text-gray-600 hover:border-brand-primary hover:text-brand-primary hover:bg-red-50'}`}
           >
             <Filter className="h-3.5 w-3.5" />
             Filters
@@ -412,7 +412,7 @@ export default function AdminProductionPage() {
                         {/* View */}
                         <Link
                           href={`/admin/orders/${order.id}`}
-                          className="flex items-center gap-1 rounded-lg bg-gray-900 px-2.5 py-1 text-xs font-medium text-white hover:bg-gray-700"
+                          className="flex items-center gap-1 rounded-lg bg-brand-primary px-2.5 py-1 text-xs font-medium text-white hover:bg-brand-primary-dark shadow-sm transition-all"
                         >
                           View
                         </Link>

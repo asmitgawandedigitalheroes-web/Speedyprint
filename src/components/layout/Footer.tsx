@@ -58,7 +58,7 @@ export function Footer() {
           <div>
             <Link href="/" className="inline-block">
               <Image
-                src="/images/logo.png"
+                src="/images/speedyprint-logo.png"
                 alt={siteName}
                 width={224}
                 height={56}

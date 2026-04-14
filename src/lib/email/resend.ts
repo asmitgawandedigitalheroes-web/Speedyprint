@@ -12,6 +12,8 @@ import {
   adminProofApprovedTemplate,
   adminRevisionRequestedTemplate,
   passwordResetTemplate,
+  quoteNotificationTemplate,
+  quoteReplyTemplate,
 } from './templates'
 
 let _resend: Resend | null = null
@@ -99,14 +101,15 @@ export async function sendContactFormEmail(
   name: string,
   email: string,
   subject: string,
-  message: string
+  message: string,
+  artworkUrl?: string
 ) {
   return getResend().emails.send({
     from: FROM,
     to: ADMIN_EMAIL,
     replyTo: email,
     subject: `Contact Form: ${subject}`,
-    html: contactFormTemplate(name, email, subject, message),
+    html: contactFormTemplate(name, email, subject, message, artworkUrl),
   })
 }
 
@@ -140,5 +143,31 @@ export async function sendAdminRevisionRequested(orderNumber: string, customerNo
     to: ADMIN_EMAIL,
     subject: `🔄 Revision Requested — Order #${orderNumber}`,
     html: adminRevisionRequestedTemplate(orderNumber, customerNotes),
+  })
+}
+
+export async function sendQuoteNotification(data: Parameters<typeof quoteNotificationTemplate>[0]) {
+  return getResend().emails.send({
+    from: FROM,
+    to: ADMIN_EMAIL,
+    replyTo: data.email,
+    subject: `📋 New Quote Request — ${data.product_type || 'General'} — ${data.full_name}`,
+    html: quoteNotificationTemplate(data),
+  })
+}
+
+export async function sendQuoteReply(
+  customerName: string,
+  customerEmail: string,
+  replyMessage: string,
+  quotedPrice?: number | null,
+  quoteValidDays?: number | null
+) {
+  return getResend().emails.send({
+    from: FROM,
+    to: customerEmail,
+    replyTo: ADMIN_EMAIL,
+    subject: `Your Quote from Speedy Print is Ready`,
+    html: quoteReplyTemplate(customerName, replyMessage, quotedPrice, quoteValidDays),
   })
 }

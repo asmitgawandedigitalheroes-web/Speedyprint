@@ -14,10 +14,10 @@ export function CTABand() {
         <p className="mx-auto mt-4 max-w-2xl text-lg text-white/80">
           Tell us what you need and we’ll guide you to the right product for your specific requirements.
         </p>
-        
+
         <div className="mt-10 flex flex-wrap justify-center gap-4">
           <Link
-            href="/contact"
+            href="/order-now"
             className="inline-flex items-center gap-2 rounded-xl bg-white px-8 py-4 text-sm font-bold text-brand-primary shadow-lg transition-transform hover:-translate-y-0.5"
           >
             <FileText className="h-5 w-5" />

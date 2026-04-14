@@ -88,7 +88,7 @@ export default function AdminBlogPage() {
             )}
             <Link
               href="/admin/blog/new"
-              className="flex items-center gap-1.5 rounded-lg bg-gray-900 px-3.5 py-2 text-sm font-medium text-white hover:bg-gray-700 transition-colors"
+              className="flex items-center gap-1.5 rounded-lg bg-brand-primary px-3.5 py-2 text-sm font-medium text-white hover:bg-brand-primary-dark transition-colors"
             >
               <Plus className="h-4 w-4" />
               New Post
@@ -120,7 +120,7 @@ export default function AdminBlogPage() {
                       title="No blog posts yet"
                       description="Create your first post to start engaging your audience"
                       action={
-                        <Link href="/admin/blog/new" className="flex items-center gap-1.5 rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700">
+                        <Link href="/admin/blog/new" className="flex items-center gap-1.5 rounded-lg bg-brand-primary px-4 py-2 text-sm font-medium text-white hover:bg-brand-primary-dark transition-colors shadow-sm">
                           <Plus className="h-4 w-4" /> Create Post
                         </Link>
                       }

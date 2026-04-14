@@ -113,7 +113,7 @@ function TopBar() {
         >
           <ShoppingCart className="h-4 w-4" />
           {cartCount > 0 && (
-            <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-brand-primary px-0.5 text-[10px] font-bold text-white ring-2 ring-white">
+            <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-brand-primary px-0.5 text-[10px] font-bold text-white ring-2 ring-white shadow-sm">
               {cartCount > 99 ? '99+' : cartCount}
             </span>
           )}
@@ -122,8 +122,7 @@ function TopBar() {
         {/* Avatar */}
         <Link
           href="/account/profile"
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white transition hover:opacity-80"
-          style={{ background: '#E30613' }}
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white transition hover:opacity-80 bg-brand-primary"
           title={user?.full_name ?? 'Profile'}
         >
           {initials}

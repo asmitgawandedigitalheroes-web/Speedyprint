@@ -15,7 +15,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         {/* Top: logo */}
         <Link href="/" className="inline-block">
             <Image
-              src="/images/logo.png"
+              src="/images/speedyprint-logo.png"
               alt={SITE_NAME}
               width={140}
               height={36}

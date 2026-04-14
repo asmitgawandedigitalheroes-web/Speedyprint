@@ -32,6 +32,7 @@ import {
   Briefcase,
   Bell,
 } from 'lucide-react'
+import { DivisionNav } from '@/components/layout/DivisionNav'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -178,18 +179,27 @@ export function Header() {
       return
     }
 
+    // AbortController lets us cancel in-flight requests on cleanup (e.g. HMR, unmount).
+    // Without this, stale requests fire "TypeError: Failed to fetch" in the console whenever
+    // the dev server briefly restarts during Fast Refresh.
+    const controller = new AbortController()
+
     const fetchNotifications = async () => {
       try {
-        const res = await fetch('/api/notifications')
+        const res = await fetch('/api/notifications', { signal: controller.signal })
         if (res.ok) {
           const data = await res.json()
           setNotifications(data.notifications || [])
-          // For now, let's say all new logs are "unread" if they are less than 24h old
+          // Mark notifications from the last 24 h as unread
           const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000)
-          const count = (data.notifications || []).filter((n: any) => new Date(n.created_at) > oneDayAgo).length
+          const count = (data.notifications || []).filter(
+            (n: any) => new Date(n.created_at) > oneDayAgo
+          ).length
           setUnreadCount(count)
         }
-      } catch (err) {
+      } catch (err: any) {
+        // Ignore intentional abort errors (component unmount / HMR cleanup)
+        if (err?.name === 'AbortError') return
         console.error('Failed to fetch notifications:', err)
       }
     }
@@ -197,7 +207,10 @@ export function Header() {
     fetchNotifications()
     // Refresh every 5 minutes
     const interval = setInterval(fetchNotifications, 5 * 60 * 1000)
-    return () => clearInterval(interval)
+    return () => {
+      controller.abort()
+      clearInterval(interval)
+    }
   }, [isAuthenticated])
 
   // Sync cart count client-side only to avoid hydration mismatch
@@ -226,18 +239,18 @@ export function Header() {
       <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Logo */}
         <Link href="/" className="flex shrink-0 items-center gap-3 group">
-            <div className="relative">
-              <Image
-                src="/images/logo.png"
-                alt={SITE_NAME}
-                width={264}
-                height={56}
-                className="h-12 w-auto transition-transform duration-200 group-hover:scale-[1.02]"
-                style={{ width: 'auto' }}
-                sizes="(max-width: 768px) 200px, 264px"
-                priority
-              />
-            </div>
+          <div className="relative">
+            <Image
+              src="/images/speedyprint-logo-white.png"
+              alt={SITE_NAME}
+              width={264}
+              height={56}
+              className="h-12 w-auto transition-transform duration-200 group-hover:scale-[1.02]"
+              style={{ width: 'auto' }}
+              sizes="(max-width: 768px) 200px, 264px"
+              priority
+            />
+          </div>
         </Link>
 
         {/* Desktop Navigation */}
@@ -490,19 +503,19 @@ export function Header() {
                       </div>
                     </div>
                   ) : (
-                      <Link
-                        key={item.href}
-                        href={item.href}
-                        onClick={() => setMobileOpen(false)}
-                        className={cn(
-                          'rounded-xl px-3 py-3 text-sm font-bold transition-colors',
-                          isActive(item.href)
-                            ? 'bg-brand-primary/10 text-brand-primary'
-                            : 'text-brand-text hover:bg-gray-100'
-                        )}
-                      >
-                        {item.label}
-                      </Link>
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={() => setMobileOpen(false)}
+                      className={cn(
+                        'rounded-xl px-3 py-3 text-sm font-bold transition-colors',
+                        isActive(item.href)
+                          ? 'bg-brand-primary/10 text-brand-primary'
+                          : 'text-brand-text hover:bg-gray-100'
+                      )}
+                    >
+                      {item.label}
+                    </Link>
                   )
                 )}
 
@@ -616,6 +629,9 @@ export function Header() {
           </Sheet>
         </div>
       </div>
+
+      {/* Division icon strip — click any logo to jump to that division */}
+      <DivisionNav />
 
       {/* Search Bar (toggled) */}
       {searchOpen && (

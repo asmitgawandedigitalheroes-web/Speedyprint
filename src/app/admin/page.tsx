@@ -55,10 +55,10 @@ export default function AdminDashboardPage() {
   }, [])
 
   const quickActions = [
-    { href: '/admin/orders',     label: 'Orders',     icon: ShoppingCart, color: 'bg-blue-50 text-blue-600' },
-    { href: '/admin/proofs',     label: 'Proofs',     icon: FileText,     color: 'bg-yellow-50 text-yellow-600' },
-    { href: '/admin/production', label: 'Production', icon: Printer,      color: 'bg-purple-50 text-purple-600' },
-    { href: '/admin/users',      label: 'Users',      icon: Users,        color: 'bg-green-50 text-green-600' },
+    { href: '/admin/orders',     label: 'Orders',     icon: ShoppingCart, color: 'bg-red-50 text-brand-primary' },
+    { href: '/admin/proofs',     label: 'Proofs',     icon: FileText,     color: 'bg-red-50 text-brand-primary' },
+    { href: '/admin/production', label: 'Production', icon: Printer,      color: 'bg-red-50 text-brand-primary' },
+    { href: '/admin/users',      label: 'Users',      icon: Users,        color: 'bg-red-50 text-brand-primary' },
   ]
 
   return (
@@ -121,7 +121,7 @@ export default function AdminDashboardPage() {
           title="Recent Orders"
           noPad
           actions={
-            <Link href="/admin/orders" className="flex items-center gap-1 text-xs font-medium text-brand-primary hover:underline">
+            <Link href="/admin/orders" className="flex items-center gap-1 text-xs font-semibold text-brand-primary hover:text-brand-primary-dark transition-colors">
               View all <ArrowUpRight className="h-3 w-3" />
             </Link>
           }
@@ -191,28 +191,28 @@ export default function AdminDashboardPage() {
               <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${color}`}>
                 <Icon className="h-4.5 w-4.5" />
               </div>
-              <span className="flex-1 text-sm font-medium text-gray-700 group-hover:text-gray-900">{label}</span>
-              <ArrowRight className="h-4 w-4 text-gray-300 transition-transform group-hover:translate-x-0.5 group-hover:text-gray-500" />
+              <span className="flex-1 text-sm font-semibold text-gray-700 group-hover:text-brand-primary">{label}</span>
+              <ArrowRight className="h-4 w-4 text-gray-300 transition-transform group-hover:translate-x-0.5 group-hover:text-brand-primary" />
             </Link>
           ))}
 
           {/* Attention cards */}
           <div className="mt-4 space-y-2">
             <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Needs Attention</p>
-            <Link href="/admin/proofs?status=revision_requested" className="group flex items-center gap-3 rounded-xl border border-yellow-100 bg-yellow-50/50 p-3.5 transition-all hover:border-yellow-200">
-              <AlertCircle className="h-4 w-4 text-yellow-500" />
-              <span className="flex-1 text-xs font-medium text-yellow-800">Revision Requests</span>
-              <ArrowRight className="h-3.5 w-3.5 text-yellow-400" />
+            <Link href="/admin/proofs?status=revision_requested" className="group flex items-center gap-3 rounded-xl border border-red-100 bg-red-50/50 p-3.5 transition-all hover:border-brand-primary hover:bg-red-50">
+              <AlertCircle className="h-4 w-4 text-brand-primary" />
+              <span className="flex-1 text-xs font-semibold text-brand-primary">Revision Requests</span>
+              <ArrowRight className="h-3.5 w-3.5 text-brand-primary/40 group-hover:text-brand-primary group-hover:translate-x-0.5 transition-all" />
             </Link>
-            <Link href="/admin/production" className="group flex items-center gap-3 rounded-xl border border-orange-100 bg-orange-50/50 p-3.5 transition-all hover:border-orange-200">
-              <Printer className="h-4 w-4 text-orange-500" />
-              <span className="flex-1 text-xs font-medium text-orange-800">Generate Files</span>
-              <ArrowRight className="h-3.5 w-3.5 text-orange-400" />
+            <Link href="/admin/production" className="group flex items-center gap-3 rounded-xl border border-red-100 bg-red-50/50 p-3.5 transition-all hover:border-brand-primary hover:bg-red-50">
+              <Printer className="h-4 w-4 text-brand-primary" />
+              <span className="flex-1 text-xs font-semibold text-brand-primary">Generate Files</span>
+              <ArrowRight className="h-3.5 w-3.5 text-brand-primary/40 group-hover:text-brand-primary group-hover:translate-x-0.5 transition-all" />
             </Link>
-            <Link href="/admin/csv" className="group flex items-center gap-3 rounded-xl border border-blue-100 bg-blue-50/50 p-3.5 transition-all hover:border-blue-200">
-              <CheckCircle2 className="h-4 w-4 text-blue-500" />
-              <span className="flex-1 text-xs font-medium text-blue-800">CSV Jobs</span>
-              <ArrowRight className="h-3.5 w-3.5 text-blue-400" />
+            <Link href="/admin/csv" className="group flex items-center gap-3 rounded-xl border border-red-100 bg-red-50/50 p-3.5 transition-all hover:border-brand-primary hover:bg-red-50">
+              <CheckCircle2 className="h-4 w-4 text-brand-primary" />
+              <span className="flex-1 text-xs font-semibold text-brand-primary">CSV Jobs</span>
+              <ArrowRight className="h-3.5 w-3.5 text-brand-primary/40 group-hover:text-brand-primary group-hover:translate-x-0.5 transition-all" />
             </Link>
           </div>
         </div>

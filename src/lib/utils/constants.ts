@@ -71,7 +71,7 @@ export const MAX_CSV_ROWS = 5000
 
 // --- V2 Additions ---
 
-export const WHATSAPP_NUMBER = '27123456789' // Update with real number
+export const WHATSAPP_NUMBER = '27110271811'
 export const WHATSAPP_URL = `https://wa.me/${WHATSAPP_NUMBER}`
 export const FREE_DELIVERY_THRESHOLD = 500 // R500
 export const FLAT_SHIPPING_RATE = 85 // R85

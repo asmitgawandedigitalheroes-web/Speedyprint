@@ -23,6 +23,13 @@ export async function GET() {
   return NextResponse.json(data)
 }
 
+/** Generates a unique, human-readable order number e.g. ORD-LX1A2B-C3D4 */
+function generateOrderNumber(): string {
+  const ts = Date.now().toString(36).toUpperCase().slice(-5)
+  const rnd = Math.random().toString(36).substring(2, 6).toUpperCase()
+  return `ORD-${ts}-${rnd}`
+}
+
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -32,7 +39,7 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json()
-  const { items, shipping_address, billing_address, notes } = body
+  const { items, shipping_address, billing_address, notes, shipping_cost: shippingFromBody } = body
 
   // Input validation
   if (!Array.isArray(items) || items.length === 0) {
@@ -56,14 +63,16 @@ export async function POST(request: NextRequest) {
     subtotal += item.quantity * item.unit_price
   }
   const tax = subtotal * 0.15
-  const shipping_cost = 0
+  const shipping_cost = typeof shippingFromBody === 'number' && shippingFromBody >= 0
+    ? shippingFromBody
+    : 0
   const total = subtotal + tax + shipping_cost
 
   const { data: order, error: orderError } = await supabase
     .from('orders')
     .insert({
       user_id: user.id,
-      order_number: '',
+      order_number: generateOrderNumber(),
       status: 'pending_payment',
       subtotal,
       tax,

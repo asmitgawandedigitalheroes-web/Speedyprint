@@ -155,7 +155,7 @@ export default function AdminUsersPage() {
                     <td className="px-5 py-3.5 text-right">
                       <Link
                         href={`/admin/users/${user.id}`}
-                        className="inline-flex items-center gap-1 rounded-lg border border-gray-200 px-2.5 py-1 text-xs font-medium text-gray-600 hover:border-gray-300 hover:bg-gray-50 transition-colors"
+                        className="inline-flex items-center gap-1 rounded-lg border border-gray-200 px-2.5 py-1 text-xs font-semibold text-gray-600 hover:border-brand-primary hover:text-brand-primary hover:bg-red-50 transition-colors"
                       >
                         View <ExternalLink className="h-3 w-3" />
                       </Link>

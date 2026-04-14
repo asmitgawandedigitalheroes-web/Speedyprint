@@ -81,8 +81,8 @@ export function ProductDetailClient({
             // TODO: Replace with real product photography before launch
             <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-gradient-to-br from-gray-50 to-gray-100">
               <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                <rect width="64" height="64" rx="12" fill="#E30613" fillOpacity="0.08"/>
-                <path d="M20 44V20h24v24H20zm4-4h16V24H24v16zm4-8h8v-4h-8v4z" fill="#E30613" fillOpacity="0.4"/>
+                <rect width="64" height="64" rx="12" fill="var(--color-brand-primary)" fillOpacity="0.08"/>
+                <path d="M20 44V20h24v24H20zm4-4h16V24H24v16zm4-8h8v-4h-8v4z" fill="var(--color-brand-primary)" fillOpacity="0.4"/>
               </svg>
               <span className="text-xs font-medium text-gray-400 select-none">{product.name}</span>
             </div>
