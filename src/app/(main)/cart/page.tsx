@@ -7,17 +7,17 @@ import { livePricing } from '@/hooks/useSiteSettings'
 import { Trash2, ArrowRight, ShoppingBag, Check } from 'lucide-react'
 
 export default function CartPage() {
-  const { 
-    items, 
-    removeItem, 
-    updateQuantity, 
-    toggleSelection, 
+  const {
+    items,
+    removeItem,
+    updateQuantity,
+    toggleSelection,
     selectAll,
-    getSubtotal, 
-    getTax, 
-    getTotal, 
+    getSubtotal,
+    getTax,
+    getTotal,
     getItemCount,
-    getSelectedCount 
+    getSelectedCount
   } = useCart()
 
   const allSelected = items.length > 0 && items.every(i => i.selected !== false)
@@ -68,11 +68,10 @@ export default function CartPage() {
             <div className="flex items-center gap-3 rounded-md border border-gray-100 bg-white px-4 py-3">
               <button
                 onClick={() => selectAll(!allSelected)}
-                className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border transition ${
-                  allSelected 
-                    ? 'border-brand-primary bg-brand-primary text-white' 
+                className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border transition ${allSelected
+                    ? 'border-brand-primary bg-brand-primary text-white'
                     : 'border-gray-300 bg-white'
-                }`}
+                  }`}
               >
                 {allSelected && <Check className="h-3.5 w-3.5 bold" />}
               </button>
@@ -82,22 +81,20 @@ export default function CartPage() {
             </div>
 
             {items.map((item) => (
-              <div 
-                key={item.id} 
-                className={`flex items-center gap-3 rounded-md border p-4 transition ${
-                  item.selected !== false 
-                    ? 'border-brand-primary/20 bg-white' 
+              <div
+                key={item.id}
+                className={`flex items-center gap-3 rounded-md border p-4 transition ${item.selected !== false
+                    ? 'border-brand-primary/20 bg-white'
                     : 'border-gray-100 bg-gray-50/50 grayscale-[0.5]'
-                }`}
+                  }`}
               >
                 {/* Checkbox */}
                 <button
                   onClick={() => toggleSelection(item.id)}
-                  className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border transition ${
-                    item.selected !== false 
-                      ? 'border-brand-primary bg-brand-primary text-white' 
+                  className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border transition ${item.selected !== false
+                      ? 'border-brand-primary bg-brand-primary text-white'
                       : 'border-gray-300 bg-white'
-                  }`}
+                    }`}
                 >
                   {item.selected !== false && <Check className="h-3.5 w-3.5 bold" />}
                 </button>
@@ -171,7 +168,7 @@ export default function CartPage() {
                   <span className="font-medium text-brand-text">{formatCurrency(getSubtotal())}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-brand-text-muted">GST ({Math.round(livePricing.vatRate * 100)}%)</span>
+                  <span className="text-brand-text-muted">VAT ({Math.round(livePricing.vatRate * 100)}%)</span>
                   <span className="font-medium text-brand-text">{formatCurrency(getTax())}</span>
                 </div>
                 <div className="flex justify-between">
@@ -186,11 +183,10 @@ export default function CartPage() {
               </div>
               <Link
                 href={selectedCount > 0 ? "/checkout" : "#"}
-                className={`mt-5 flex w-full items-center justify-center gap-2 rounded-md py-3 text-sm font-semibold text-white transition ${
-                  selectedCount > 0 
-                    ? 'bg-brand-primary hover:bg-brand-primary-dark cursor-pointer' 
+                className={`mt-5 flex w-full items-center justify-center gap-2 rounded-md py-3 text-sm font-semibold text-white transition ${selectedCount > 0
+                    ? 'bg-brand-primary hover:bg-brand-primary-dark cursor-pointer'
                     : 'bg-gray-300 cursor-not-allowed'
-                }`}
+                  }`}
                 onClick={(e) => selectedCount === 0 && e.preventDefault()}
               >
                 {selectedCount === 0 ? 'Select items to checkout' : 'Proceed to checkout'} <ArrowRight className="h-4 w-4" />
