@@ -39,9 +39,9 @@ export function Footer() {
   const whatsappUrl = whatsappNumber
     ? `https://wa.me/${whatsappNumber.replace(/[^0-9]/g, '')}`
     : WHATSAPP_URL
-  const facebookUrl = settings.social_facebook || 'https://facebook.com/speedylabels'
-  const instagramUrl = settings.social_instagram || 'https://instagram.com/speedylabels'
-  const linkedinUrl = settings.social_twitter || 'https://linkedin.com/company/speedylabels'
+  const facebookUrl = settings.social_facebook || 'https://facebook.com/speedyprint'
+  const instagramUrl = settings.social_instagram || 'https://instagram.com/speedyprint'
+  const linkedinUrl = settings.social_twitter || 'https://linkedin.com/company/speedyprint'
   const siteName = settings.site_name || SITE_NAME
 
   const SOCIAL_LINKS = [
@@ -51,7 +51,7 @@ export function Footer() {
   ]
 
   return (
-    <footer className="bg-brand-secondary text-white">
+    <footer className="bg-brand-secondary text-white border-t-4 border-brand-primary">
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
           {/* Branding */}

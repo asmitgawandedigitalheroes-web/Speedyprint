@@ -243,7 +243,7 @@ export function Header() {
         <Link href="/" className="flex shrink-0 items-center gap-3 group">
           <div className="relative">
             <Image
-              src="/images/speedyprint-logo-white.png"
+              src="/images/speedyprint-logo.png"
               alt={SITE_NAME}
               width={264}
               height={56}

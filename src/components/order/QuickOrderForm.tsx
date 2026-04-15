@@ -411,7 +411,7 @@ export function QuickOrderForm({
                 </span>
               </div>
               <div className="mt-1 flex justify-between text-sm">
-                <span className="text-brand-text-muted">GST ({Math.round(VAT_RATE * 100)}%)</span>
+                <span className="text-brand-text-muted">VAT ({Math.round(VAT_RATE * 100)}%)</span>
                 <span>
                   {CURRENCY_SYMBOL}{price.vat.toFixed(2)}
                 </span>
