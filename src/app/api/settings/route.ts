@@ -14,7 +14,12 @@ export async function GET() {
       settings[row.key] = row.value
     }
 
-    return NextResponse.json({ settings })
+    return NextResponse.json({ settings }, {
+      headers: {
+        // Cache at the browser and CDN edge for 5 min; serve stale for up to 10 min while revalidating
+        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
+      },
+    })
   } catch {
     return NextResponse.json(
       { error: 'Failed to fetch settings' },

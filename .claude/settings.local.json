@@ -26,7 +26,9 @@
       "Read(//tmp/**)",
       "Bash(pip install:*)",
       "Bash(python -c \"import zipfile, re; z=zipfile.ZipFile\\('C:/Users/Vikram Gondane/OneDrive/Desktop/Asmit/SpeedyPrint_Development_Brief.docx'\\); content=z.read\\('word/document.xml'\\).decode\\('utf-8'\\); text=re.sub\\(r'<[^>]+>','',content\\); lines=[l.strip\\(\\) for l in text.split\\('\\\\n'\\) if l.strip\\(\\)]; print\\('\\\\n'.join\\(lines[:600]\\)\\)\")",
-      "Bash(python -c ':*)"
+      "Bash(python -c ':*)",
+      "WebFetch(domain:api-docs.bob.co.za)",
+      "WebFetch(domain:api.bob.co.za)"
     ]
   }
 }

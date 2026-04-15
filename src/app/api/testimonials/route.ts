@@ -22,7 +22,12 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    return NextResponse.json(data)
+    return NextResponse.json(data, {
+      headers: {
+        // Testimonials rarely change — cache for 30 min, serve stale for 1 hr
+        'Cache-Control': 'public, s-maxage=1800, stale-while-revalidate=3600',
+      },
+    })
   } catch {
     return NextResponse.json(
       { error: 'Internal server error' },

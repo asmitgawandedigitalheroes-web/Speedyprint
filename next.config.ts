@@ -15,6 +15,8 @@ const nextConfig: NextConfig = {
     serverActions: {
       bodySizeLimit: '50mb',
     },
+    // Tree-shake lucide-react so only used icons are compiled per route
+    optimizePackageImports: ['lucide-react'],
   },
   webpack: (config, { isServer }) => {
     if (isServer) {
