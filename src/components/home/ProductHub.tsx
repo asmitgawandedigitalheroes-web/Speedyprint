@@ -31,7 +31,7 @@ const PRODUCTS = [
   {
     name: 'Stamps',
     description: 'Self-inking and pre-inked stamps',
-    href: '/products?division=print',
+    href: '/stamps',
     icon: Stamp,
     color: 'bg-purple-500/10',
     iconColor: 'text-purple-500',

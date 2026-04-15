@@ -148,28 +148,84 @@ export default async function HomePage() {
               </div>
             </div>
 
-            {/* Right: Neutral/Mixed Visuals */}
+            {/* Right: Product showcase grid */}
             <div className="relative">
               <div className="grid grid-cols-2 gap-4">
+
+                {/* Column 1 — offset down */}
                 <div className="space-y-4 pt-12">
-                  <div className="relative aspect-[4/5] overflow-hidden rounded-2xl bg-gray-100 shadow-xl ring-1 ring-black/5">
-                    <Image src="/newimages/Pure Bloom Body Oil label 50mm x 100mm.jpg" alt="Custom Labels" fill className="object-cover" />
-                  </div>
-                  <div className="relative aspect-square overflow-hidden rounded-2xl bg-gray-100 shadow-xl ring-1 ring-black/5">
-                    <Image src="/newimages/CBZ Marathon.jpg" alt="Race Numbers" fill className="object-cover" />
-                  </div>
+
+                  {/* Custom Labels */}
+                  <Link
+                    href="/labels"
+                    className="group relative block aspect-[4/5] overflow-hidden rounded-2xl bg-white shadow-xl ring-1 ring-black/5 transition-transform duration-300 hover:-translate-y-1 hover:shadow-2xl"
+                  >
+                    <Image
+                      src="/newimages/Pure Bloom Body Oil label 50mm x 100mm.jpg"
+                      alt="Custom Labels — Pure Bloom Body Oil"
+                      fill
+                      className="object-contain p-2 transition-transform duration-300 group-hover:scale-105"
+                    />
+                    <span className="absolute bottom-2 left-2 right-2 rounded-lg bg-black/50 px-2 py-1 text-center text-[11px] font-bold text-white backdrop-blur-sm">
+                      Custom Labels →
+                    </span>
+                  </Link>
+
+                  {/* Race Numbers */}
+                  <Link
+                    href="/race-numbers"
+                    className="group relative block aspect-square overflow-hidden rounded-2xl bg-white shadow-xl ring-1 ring-black/5 transition-transform duration-300 hover:-translate-y-1 hover:shadow-2xl"
+                  >
+                    <Image
+                      src="/newimages/CBZ Marathon.jpg"
+                      alt="Race Numbers — CBZ Marathon"
+                      fill
+                      className="object-contain p-2 transition-transform duration-300 group-hover:scale-105"
+                    />
+                    <span className="absolute bottom-2 left-2 right-2 rounded-lg bg-black/50 px-2 py-1 text-center text-[11px] font-bold text-white backdrop-blur-sm">
+                      Race Numbers →
+                    </span>
+                  </Link>
+
                 </div>
+
+                {/* Column 2 */}
                 <div className="space-y-4">
-                  <div className="relative aspect-square overflow-hidden rounded-2xl bg-gray-100 shadow-xl ring-1 ring-black/5">
-                    <Image src="/newimages/Toricda Elegancia business cards.jpg" alt="Business Cards" fill className="object-cover" />
-                  </div>
-                  <div className="relative aspect-[4/5] overflow-hidden rounded-2xl bg-gray-100 shadow-xl ring-1 ring-black/5">
-                    <Image src="/newimages/Prego Coffee Sleeves.jpg" alt="Coffee Sleeves" fill className="object-cover" />
-                  </div>
+
+                  {/* Business Cards / Stationery */}
+                  <Link
+                    href="/labels"
+                    className="group relative block aspect-square overflow-hidden rounded-2xl bg-white shadow-xl ring-1 ring-black/5 transition-transform duration-300 hover:-translate-y-1 hover:shadow-2xl"
+                  >
+                    <Image
+                      src="/newimages/Toricda Elegancia business cards.jpg"
+                      alt="Business Cards — Toricda Elegancia"
+                      fill
+                      className="object-contain p-2 transition-transform duration-300 group-hover:scale-105"
+                    />
+                    <span className="absolute bottom-2 left-2 right-2 rounded-lg bg-black/50 px-2 py-1 text-center text-[11px] font-bold text-white backdrop-blur-sm">
+                      Business Cards →
+                    </span>
+                  </Link>
+
+                  {/* Coffee Sleeves */}
+                  <Link
+                    href="/labels"
+                    className="group relative block aspect-[4/5] overflow-hidden rounded-2xl bg-white shadow-xl ring-1 ring-black/5 transition-transform duration-300 hover:-translate-y-1 hover:shadow-2xl"
+                  >
+                    <Image
+                      src="/newimages/Prego Coffee Sleeves.jpg"
+                      alt="Coffee Sleeves — Prego"
+                      fill
+                      className="object-contain p-2 transition-transform duration-300 group-hover:scale-105"
+                    />
+                    <span className="absolute bottom-2 left-2 right-2 rounded-lg bg-black/50 px-2 py-1 text-center text-[11px] font-bold text-white backdrop-blur-sm">
+                      Coffee Sleeves →
+                    </span>
+                  </Link>
+
                 </div>
               </div>
-
-
             </div>
 
           </div>

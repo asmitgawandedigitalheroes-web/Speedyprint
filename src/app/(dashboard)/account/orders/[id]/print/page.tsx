@@ -139,7 +139,7 @@ export default function OrderPrintPage() {
               <span>{formatCurrency(order.subtotal)}</span>
             </div>
             <div className="flex justify-between text-brand-text-muted">
-              <span>Tax (GST 18%)</span>
+              <span>VAT (15%)</span>
               <span>{formatCurrency(order.tax)}</span>
             </div>
             <div className="flex justify-between text-brand-text-muted">
