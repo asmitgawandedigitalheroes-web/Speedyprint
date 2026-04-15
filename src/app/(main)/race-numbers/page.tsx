@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import Image from 'next/image'
 import { CheckCircle2, ArrowRight, Timer, Upload, Shield, Layers } from 'lucide-react'
 import { SITE_NAME } from '@/lib/utils/constants'
 import { CsvUpload } from '@/components/order/CsvUpload'
@@ -36,6 +37,15 @@ export default async function RaceNumbersPage() {
       <div className="bg-brand-secondary">
         <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
           <div className="max-w-2xl">
+            <div className="mb-6">
+              <Image
+                src="/images/speedy-print-logo.png"
+                alt="Speedy Print"
+                width={220}
+                height={80}
+                className="h-20 w-auto"
+              />
+            </div>
             <div className="mb-3 flex items-center gap-2">
               <Timer className="h-5 w-5 text-brand-primary" />
               <span className="text-xs font-bold uppercase tracking-widest text-brand-primary">Speedy Race Numbers</span>
