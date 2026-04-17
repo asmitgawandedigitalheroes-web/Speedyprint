@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import {
-  getGoBobQuotes,
-  buildGoBobDeliveryAddress,
-  getCollectionAddress,
+  getBobGoRates,
+  buildBobGoDeliveryAddress,
+  getWarehouseAddress,
 } from '@/lib/gobob/client'
 import { FLAT_SHIPPING_RATE } from '@/lib/utils/constants'
 
@@ -21,31 +21,34 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const collectionAddress = getCollectionAddress()
-    const deliveryAddress = buildGoBobDeliveryAddress(shippingAddress)
+    const collectionAddress = getWarehouseAddress()
+    const deliveryAddress = buildBobGoDeliveryAddress(shippingAddress)
 
-    const quotes = await getGoBobQuotes({
+    const rates = await getBobGoRates({
       collection_address: collectionAddress,
       delivery_address: deliveryAddress,
-      parcels: [
+      items: [
         {
           // ⚠️ PLACEHOLDER: Derive weight/dimensions from cart items in a future phase
-          weight_kg: 1,
+          description: 'Printed stickers and labels',
+          price: cartSubtotal ?? 0,
+          quantity: 1,
           length_cm: 20,
           width_cm: 15,
           height_cm: 5,
-          description: 'Printed stickers and labels',
-          value: cartSubtotal ?? 0,
+          weight_kg: 1,
         },
       ],
+      declared_value: cartSubtotal ?? 0,
+      handling_time: 1, // 1 business day handling before dispatch
     })
 
-    return NextResponse.json({ quotes })
+    return NextResponse.json({ rates })
   } catch (err: any) {
-    console.error('GoBob quote error:', err)
-    // Fallback to flat rate if GoBob API is unavailable
+    console.error('Bob Go quote error:', err)
+    // Fallback to flat rate if Bob Go API is unavailable
     return NextResponse.json({
-      quotes: [],
+      rates: [],
       fallback: true,
       fallbackRate: FLAT_SHIPPING_RATE,
     })
