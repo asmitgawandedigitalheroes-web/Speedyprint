@@ -1,11 +1,59 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/server'
+import { unstable_cache } from 'next/cache'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { DIVISIONS, SITE_URL, SITE_NAME } from '@/lib/utils/constants'
 import { ProductDetailClient } from './ProductDetailClient'
 import { ProductJsonLd, BreadcrumbJsonLd } from '@/components/seo/JsonLd'
 import { CheckCircle2, ChevronRight } from 'lucide-react'
 import type { ProductGroup, ProductTemplate, TemplateParameter, PricingRule } from '@/types'
+
+// Revalidate product pages every hour
+export const revalidate = 3600
+
+// Pre-build all active product pages at deploy time
+export async function generateStaticParams() {
+  const supabase = createAdminClient()
+  const { data } = await supabase
+    .from('product_groups')
+    .select('slug')
+    .eq('is_active', true)
+  return (data ?? []).map(({ slug }) => ({ slug }))
+}
+
+// Cached product fetcher — shared between generateMetadata and the page component
+// so we only hit the DB once per slug per revalidation window
+const getProduct = unstable_cache(
+  async (slug: string) => {
+    const supabase = createAdminClient()
+    const { data, error } = await supabase
+      .from('product_groups')
+      .select(`*, product_templates (*, template_parameters (*)), pricing_rules (*)`)
+      .eq('slug', slug)
+      .eq('is_active', true)
+      .single()
+    if (error || !data) return null
+    return data
+  },
+  ['product-detail'],
+  { revalidate: 3600, tags: ['products'] }
+)
+
+const getRelated = unstable_cache(
+  async (division: string, slug: string) => {
+    const supabase = createAdminClient()
+    const { data } = await supabase
+      .from('product_groups')
+      .select('name, slug, image_url, description')
+      .eq('division', division)
+      .eq('is_active', true)
+      .neq('slug', slug)
+      .limit(4)
+    return data ?? []
+  },
+  ['product-related'],
+  { revalidate: 3600, tags: ['products'] }
+)
 
 interface ProductPageProps {
   params: Promise<{ slug: string }>
@@ -14,13 +62,7 @@ interface ProductPageProps {
 
 export async function generateMetadata({ params }: ProductPageProps) {
   const { slug } = await params
-  const supabase = await createClient()
-  const { data } = await supabase
-    .from('product_groups')
-    .select('name, description, image_url')
-    .eq('slug', slug)
-    .eq('is_active', true)
-    .single()
+  const data = await getProduct(slug)
 
   if (!data) return { title: 'Product Not Found' }
 
@@ -41,16 +83,9 @@ export async function generateMetadata({ params }: ProductPageProps) {
 export default async function ProductPage({ params, searchParams: searchParamsPromise }: ProductPageProps) {
   const { slug } = await params
   const searchParams = await searchParamsPromise
-  const supabase = await createClient()
 
-  const { data: product, error } = await supabase
-    .from('product_groups')
-    .select(`*, product_templates (*, template_parameters (*)), pricing_rules (*)`)
-    .eq('slug', slug)
-    .eq('is_active', true)
-    .single()
-
-  if (error || !product) notFound()
+  const product = await getProduct(slug)
+  if (!product) notFound()
 
   const typedProduct = product as ProductGroup & {
     product_templates: (ProductTemplate & { template_parameters: TemplateParameter[] })[]
@@ -111,13 +146,7 @@ export default async function ProductPage({ params, searchParams: searchParamsPr
   const galleryImages = PRODUCT_GALLERY[slug] ?? []
 
   // Sibling products in same division for "Related" section
-  const { data: related } = await supabase
-    .from('product_groups')
-    .select('name, slug, image_url, description')
-    .eq('division', typedProduct.division)
-    .eq('is_active', true)
-    .neq('slug', slug)
-    .limit(4)
+  const related = await getRelated(typedProduct.division, slug)
 
   return (
     <>

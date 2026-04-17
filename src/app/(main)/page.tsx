@@ -28,6 +28,9 @@ import {
   Layout,
 } from 'lucide-react'
 
+// Revalidate homepage every hour — blog posts and static content don't change frequently
+export const revalidate = 3600
+
 export const metadata: Metadata = {
   title: `${SITE_NAME} | Fast Custom Print Solutions for South Africa`,
   description:
