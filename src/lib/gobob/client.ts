@@ -1,69 +1,107 @@
-// ⚠️ PLACEHOLDER: Verify all endpoint paths, field names, and auth scheme with GoBob API docs.
+/**
+ * Bob Go Shipping API client — v2
+ * Sandbox: https://api.sandbox.bobgo.co.za/v2
+ * Production: https://api.bobgo.co.za/v2
+ * Auth: Bearer token
+ */
 
-const GOBOB_BASE_URL = process.env.GOBOB_API_URL || 'https://api.gobob.co.za'
-const GOBOB_API_KEY = process.env.GOBOB_API_KEY || ''
+const BOBGO_BASE_URL = (process.env.BOBGO_API_URL || 'https://api.sandbox.bobgo.co.za/v2').replace(/\/$/, '')
+const BOBGO_API_KEY = process.env.BOBGO_API_KEY || ''
 
-export interface GoBobAddress {
-  name: string
+// ─── Address ───────────────────────────────────────────────────────────────
+
+export interface BobGoAddress {
   company?: string
-  address1: string
-  address2?: string
-  city: string
-  province: string
-  postal_code: string
-  country: string
-  phone: string
-  email?: string
+  street_address: string  // e.g. "13 Langwa Street"
+  local_area: string      // suburb / area e.g. "Strydompark"
+  city: string            // e.g. "Randburg"
+  zone: string            // province e.g. "Gauteng"
+  country: string         // ISO 3166-1 alpha-2 e.g. "ZA"
+  code: string            // postal code e.g. "2169"
+  lat?: number
+  lng?: number
 }
 
-export interface GoBobParcel {
-  weight_kg: number
+// ─── Rates at Checkout ─────────────────────────────────────────────────────
+
+export interface BobGoRACItem {
+  description: string
+  price: number
+  quantity: number
   length_cm: number
   width_cm: number
   height_cm: number
+  weight_kg: number
+}
+
+export interface BobGoRACRequest {
+  collection_address: BobGoAddress
+  delivery_address: BobGoAddress
+  items: BobGoRACItem[]
+  declared_value: number
+  handling_time: number  // business days before dispatch
+}
+
+export interface BobGoRate {
+  id: number
+  service_level_code: string
+  service_name: string        // display name e.g. "Standard shipping"
+  provider_slug: string
+  total_price: number         // price incl. VAT
+  base_rate?: number
+  currency?: string
+  min_delivery_date?: string
+  max_delivery_date?: string
+  type?: string               // e.g. "door"
+}
+
+// ─── Shipments (booking) ───────────────────────────────────────────────────
+
+export interface BobGoParcel {
   description: string
-  value: number
+  submitted_length_cm: number
+  submitted_width_cm: number
+  submitted_height_cm: number
+  submitted_weight_kg: number
+  custom_parcel_reference?: string
 }
 
-export interface GoBobQuoteRequest {
-  collection_address: GoBobAddress
-  delivery_address: GoBobAddress
-  parcels: GoBobParcel[]
-  service_type?: string
+export interface BobGoShipmentRequest {
+  collection_address: BobGoAddress
+  collection_contact_name: string
+  collection_contact_mobile_number: string
+  collection_contact_email: string
+  delivery_address: BobGoAddress
+  delivery_contact_name: string
+  delivery_contact_mobile_number: string
+  delivery_contact_email: string
+  parcels: BobGoParcel[]
+  declared_value: number
+  service_level_code: string   // from the prior rate quote
+  provider_slug: string        // from the prior rate quote
+  custom_order_number?: string
+  custom_tracking_reference?: string
+  instructions_collection?: string
+  instructions_delivery?: string
 }
 
-export interface GoBobQuoteResult {
-  service_type: string
-  service_code: string
-  price: number
-  price_incl_vat: number
-  estimated_days: number
-}
-
-export interface GoBobBookRequest {
-  collection_address: GoBobAddress
-  delivery_address: GoBobAddress
-  parcels: GoBobParcel[]
-  service_code: string
-  reference: string
-  special_instructions?: string
-}
-
-export interface GoBobBookResult {
-  shipment_id: string
-  waybill_number: string
-  tracking_url: string
-  collection_date: string
-  estimated_delivery: string
+export interface BobGoShipmentResult {
+  id: number
+  tracking_reference: string
+  waybill_url?: string
   label_url?: string
+  collection_date?: string
+  estimated_delivery?: string
 }
 
-async function gobobFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const url = `${GOBOB_BASE_URL}${path}`
+// ─── HTTP helper ───────────────────────────────────────────────────────────
+
+async function bobGoFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const url = `${BOBGO_BASE_URL}${path}`
   const res = await fetch(url, {
     ...options,
     headers: {
-      Authorization: `Bearer ${GOBOB_API_KEY}`, // ⚠️ PLACEHOLDER: confirm auth scheme
+      Authorization: `Bearer ${BOBGO_API_KEY}`,
       'Content-Type': 'application/json',
       Accept: 'application/json',
       ...(options.headers ?? {}),
@@ -72,43 +110,73 @@ async function gobobFetch<T>(path: string, options: RequestInit = {}): Promise<T
 
   if (!res.ok) {
     const body = await res.text()
-    throw new Error(`GoBob API error ${res.status}: ${body}`)
+    throw new Error(`Bob Go API error ${res.status}: ${body}`)
   }
 
   return res.json() as Promise<T>
 }
 
+// ─── Public API ────────────────────────────────────────────────────────────
+
 /**
- * Fetch shipping quotes from GoBob for a given collection/delivery address pair.
- * ⚠️ PLACEHOLDER: Verify endpoint and request shape with GoBob docs.
+ * Fetch shipping rates at checkout (uses your Bob Go platform rules/markup).
+ * Response shape: { rates: { count: number; rates: BobGoRate[] } }
  */
-export async function getGoBobQuotes(
-  request: GoBobQuoteRequest
-): Promise<GoBobQuoteResult[]> {
-  return gobobFetch<GoBobQuoteResult[]>('/v1/quotes', {
+export async function getBobGoRates(request: BobGoRACRequest): Promise<BobGoRate[]> {
+  const response = await bobGoFetch<{ count: number; rates: BobGoRate[] }>(
+    '/rates-at-checkout',
+    { method: 'POST', body: JSON.stringify(request) }
+  )
+  return response?.rates ?? []
+}
+
+// ─── Tracking ──────────────────────────────────────────────────────────────
+
+export interface BobGoTrackingEvent {
+  id: number
+  date: string
+  status: string
+  location?: string
+  message?: string
+}
+
+export interface BobGoTrackingResult {
+  id: number
+  shipment_tracking_reference: string
+  status: string
+  tracking_events: BobGoTrackingEvent[]
+}
+
+/**
+ * Fetch live tracking events for a shipment by its tracking reference.
+ */
+export async function getBobGoTracking(trackingReference: string): Promise<BobGoTrackingResult> {
+  return bobGoFetch<BobGoTrackingResult>(
+    `/tracking?tracking_reference=${encodeURIComponent(trackingReference)}`
+  )
+}
+
+/**
+ * Book a shipment after payment. Requires service_level_code + provider_slug
+ * obtained from a prior rates call.
+ */
+export async function bookBobGoShipment(
+  request: BobGoShipmentRequest
+): Promise<BobGoShipmentResult> {
+  return bobGoFetch<BobGoShipmentResult>('/shipments', {
     method: 'POST',
     body: JSON.stringify(request),
   })
 }
 
-/**
- * Book a shipment with GoBob after payment is confirmed.
- * ⚠️ PLACEHOLDER: Verify endpoint and request shape with GoBob docs.
- */
-export async function bookGoBobShipment(
-  request: GoBobBookRequest
-): Promise<GoBobBookResult> {
-  return gobobFetch<GoBobBookResult>('/v1/shipments', {
-    method: 'POST',
-    body: JSON.stringify(request),
-  })
-}
+// ─── Address helpers ───────────────────────────────────────────────────────
 
 /**
- * Maps our internal shipping address JSONB to a GoBobAddress shape.
+ * Map our internal ShippingAddress shape to a BobGoAddress.
+ * Bob Go requires street_address, local_area, city, zone, code.
  */
-export function buildGoBobDeliveryAddress(
-  shippingAddress: {
+export function buildBobGoDeliveryAddress(
+  addr: {
     full_name?: string
     address_line1?: string
     address_line2?: string
@@ -117,33 +185,45 @@ export function buildGoBobDeliveryAddress(
     postal_code?: string
     country?: string
     phone?: string
-  },
-  email?: string
-): GoBobAddress {
+  }
+): BobGoAddress {
   return {
-    name: shippingAddress.full_name ?? '',
-    address1: shippingAddress.address_line1 ?? '',
-    address2: shippingAddress.address_line2,
-    city: shippingAddress.city ?? '',
-    province: shippingAddress.province ?? '',
-    postal_code: shippingAddress.postal_code ?? '',
-    country: shippingAddress.country ?? 'ZA',
-    phone: shippingAddress.phone ?? '',
-    email,
+    // Use address_line2 as suburb/local_area; fall back to city
+    street_address: addr.address_line1 ?? '',
+    local_area: addr.address_line2 || addr.city || '',
+    city: addr.city ?? '',
+    zone: addr.province ?? '',
+    country: addr.country ?? 'ZA',
+    code: addr.postal_code ?? '',
   }
 }
 
 /**
- * Returns the Speedyprint warehouse/collection address from env vars.
+ * Returns the SpeedyPrint warehouse collection address from env vars.
  */
-export function getCollectionAddress(): GoBobAddress {
+export function getWarehouseAddress(): BobGoAddress {
   return {
-    name: 'SpeedyPrint',
-    address1: process.env.GOBOB_WAREHOUSE_ADDRESS1 ?? '',
-    city: process.env.GOBOB_WAREHOUSE_CITY ?? 'Randburg',
-    province: process.env.GOBOB_WAREHOUSE_PROVINCE ?? 'Gauteng',
-    postal_code: process.env.GOBOB_WAREHOUSE_POSTAL ?? '',
+    street_address: process.env.BOBGO_WAREHOUSE_STREET ?? '13 Langwa Street',
+    local_area: process.env.BOBGO_WAREHOUSE_LOCAL_AREA ?? 'Strydompark',
+    city: process.env.BOBGO_WAREHOUSE_CITY ?? 'Randburg',
+    zone: process.env.BOBGO_WAREHOUSE_PROVINCE ?? 'Gauteng',
     country: 'ZA',
-    phone: process.env.GOBOB_WAREHOUSE_PHONE ?? '',
+    code: process.env.BOBGO_WAREHOUSE_POSTAL ?? '2169',
   }
+}
+
+/**
+ * Encode a selected rate into a single string for DB storage.
+ * Format: "provider_slug|service_level_code"
+ */
+export function encodeServiceType(providerSlug: string, serviceLevelCode: string): string {
+  return `${providerSlug}|${serviceLevelCode}`
+}
+
+/**
+ * Decode a service type string back into provider_slug + service_level_code.
+ */
+export function decodeServiceType(serviceType: string): { provider_slug: string; service_level_code: string } {
+  const [provider_slug = '', service_level_code = ''] = serviceType.split('|')
+  return { provider_slug, service_level_code }
 }

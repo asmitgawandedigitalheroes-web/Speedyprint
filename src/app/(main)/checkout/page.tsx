@@ -8,9 +8,9 @@ import { useAuth } from '@/hooks/useAuth'
 import { useCart } from '@/hooks/useCart'
 import { createClient } from '@/lib/supabase/client'
 import { formatCurrency } from '@/lib/utils/format'
-import { SA_PROVINCES } from '@/lib/utils/constants'
+import { SA_PROVINCES, FLAT_SHIPPING_RATE, FREE_DELIVERY_THRESHOLD } from '@/lib/utils/constants'
 import { toast } from 'sonner'
-import { Check, ChevronDown, ShieldCheck, Truck, AlertCircle, CreditCard, ArrowRight, ChevronLeft } from 'lucide-react'
+import { Check, ChevronDown, ShieldCheck, Truck, AlertCircle, CreditCard, ArrowRight, ChevronLeft, Package } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const shippingSchema = z.object({
@@ -26,6 +26,16 @@ const shippingSchema = z.object({
 
 type ShippingData = z.infer<typeof shippingSchema>
 
+interface ShippingRate {
+  id: number
+  service_level_code: string
+  service_name: string
+  provider_slug: string
+  total_price: number
+  min_delivery_date?: string
+  max_delivery_date?: string
+}
+
 const INPUT = "w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-gray-800 outline-none focus:border-gray-400 focus:ring-2 focus:ring-gray-100 transition-colors placeholder:text-gray-300 bg-white"
 const LABEL = "block text-xs font-medium text-gray-500 mb-1"
 const ERROR = "mt-1 flex items-center gap-1 text-xs text-red-500"
@@ -33,14 +43,22 @@ const ERROR = "mt-1 flex items-center gap-1 text-xs text-red-500"
 export default function CheckoutPage() {
   const router = useRouter()
   const { user } = useAuth()
-  const { items, getSubtotal, getTax, getTotal, getShippingCost } = useCart()
+  const { items } = useCart()
 
   const selectedItems = useMemo(() => items.filter(i => i.selected !== false), [items])
+  const subtotal = useMemo(() => selectedItems.reduce((s, i) => s + i.line_total, 0), [selectedItems])
+  const isFreeDelivery = subtotal >= FREE_DELIVERY_THRESHOLD
 
   const [loading, setLoading] = useState(false)
   const [step, setStep] = useState(1)
   const [errors, setErrors] = useState<Partial<Record<keyof ShippingData, string>>>({})
   const [paymentMethod, setPaymentMethod] = useState<'switch' | 'stripe' | 'pay_later'>('switch')
+
+  // Shipping rate state
+  const [shippingRates, setShippingRates] = useState<ShippingRate[]>([])
+  const [selectedRate, setSelectedRate] = useState<ShippingRate | null>(null)
+  const [loadingRates, setLoadingRates] = useState(false)
+  const [ratesFallback, setRatesFallback] = useState(false)
 
   const [shipping, setShipping] = useState<ShippingData>({
     full_name: '',
@@ -55,6 +73,17 @@ export default function CheckoutPage() {
 
   const [savedAddresses, setSavedAddresses] = useState<any[]>([])
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null)
+
+  // Compute effective shipping cost
+  const shippingCost = useMemo(() => {
+    if (isFreeDelivery) return 0
+    if (selectedRate) return selectedRate.total_price
+    if (ratesFallback) return FLAT_SHIPPING_RATE
+    return 0 // while loading
+  }, [isFreeDelivery, selectedRate, ratesFallback])
+
+  const vatAmount = useMemo(() => subtotal * 0.15, [subtotal])
+  const orderTotal = useMemo(() => subtotal + vatAmount + shippingCost, [subtotal, vatAmount, shippingCost])
 
   useEffect(() => {
     if (user) {
@@ -106,9 +135,7 @@ export default function CheckoutPage() {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name } = e.target
     let value = e.target.value
-    // Phone: only digits, +, spaces, dashes, parentheses
     if (name === 'phone') value = value.replace(/[^0-9+\-\s()]/g, '')
-    // Postal code: only digits
     if (name === 'postal_code') value = value.replace(/[^0-9]/g, '')
     setShipping(prev => ({ ...prev, [name]: value }))
     if (errors[name as keyof ShippingData]) {
@@ -142,26 +169,78 @@ export default function CheckoutPage() {
     return true
   }
 
+  const fetchShippingRates = async () => {
+    if (isFreeDelivery) {
+      setShippingRates([])
+      setSelectedRate(null)
+      return
+    }
+    setLoadingRates(true)
+    setShippingRates([])
+    setSelectedRate(null)
+    setRatesFallback(false)
+    try {
+      const res = await fetch('/api/courier/gobob/quote', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ shippingAddress: shipping, cartSubtotal: subtotal }),
+      })
+      const data = await res.json()
+      if (data.fallback || !data.rates?.length) {
+        setRatesFallback(true)
+      } else {
+        const sorted: ShippingRate[] = [...data.rates].sort((a, b) => a.total_price - b.total_price)
+        setShippingRates(sorted)
+        setSelectedRate(sorted[0]) // auto-select cheapest
+      }
+    } catch {
+      setRatesFallback(true)
+    } finally {
+      setLoadingRates(false)
+    }
+  }
+
+  const handleContinue = async () => {
+    if (!validateStep1()) return
+    window.scrollTo({ top: 0 })
+    await fetchShippingRates()
+    setStep(2)
+  }
+
   const handlePlaceOrder = async () => {
     if (!user) {
       toast.error('Please log in to complete your purchase')
       return
     }
+
+    if (!isFreeDelivery && !selectedRate && !ratesFallback) {
+      toast.error('Please select a shipping method')
+      return
+    }
+
     setLoading(true)
     try {
       const supabase = createClient()
+
+      // Determine service type for Bob Go booking
+      const gobobServiceType = selectedRate
+        ? `${selectedRate.provider_slug}|${selectedRate.service_level_code}`
+        : null
+
       const { data: order, error: orderError } = await supabase
         .from('orders')
         .insert({
           user_id: user.id,
           order_number: `ORD-${Math.random().toString(36).substring(2, 9).toUpperCase()}`,
           status: 'pending_payment',
-          subtotal: getSubtotal(),
-          tax: getTax(),
-          shipping_cost: getShippingCost(),
-          total: getTotal(),
+          subtotal,
+          tax: vatAmount,
+          shipping_cost: shippingCost,
+          total: orderTotal,
           shipping_address: shipping,
           billing_address: shipping,
+          gobob_service_type: gobobServiceType,
+          gobob_quoted_rate: selectedRate?.total_price ?? null,
         })
         .select()
         .single()
@@ -241,7 +320,6 @@ export default function CheckoutPage() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-2xl font-semibold text-gray-900">Checkout</h1>
-          {/* Steps */}
           <div className="mt-4 flex items-center gap-2 text-sm">
             {['Shipping', 'Review & Pay'].map((label, i) => {
               const num = i + 1
@@ -336,8 +414,8 @@ export default function CheckoutPage() {
                         {errors.address_line1 && <p className={ERROR}><AlertCircle className="h-3 w-3" /> {errors.address_line1}</p>}
                       </div>
                       <div className="sm:col-span-2">
-                        <label className={LABEL}>Apartment / Suite (optional)</label>
-                        <input name="address_line2" placeholder="Unit 4" value={shipping.address_line2} onChange={handleInputChange} className={INPUT} />
+                        <label className={LABEL}>Suburb / Unit (optional)</label>
+                        <input name="address_line2" placeholder="Strydompark / Unit 4" value={shipping.address_line2} onChange={handleInputChange} className={INPUT} />
                       </div>
                       <div>
                         <label className={LABEL}>City *</label>
@@ -369,10 +447,15 @@ export default function CheckoutPage() {
                     <ShieldCheck className="h-4 w-4 text-green-500" /> SSL encrypted checkout
                   </p>
                   <button
-                    onClick={() => { if (validateStep1()) { window.scrollTo({ top: 0 }); setStep(2) } }}
-                    className="flex items-center gap-2 rounded-lg bg-red-600 px-6 py-2.5 text-sm font-medium text-white hover:bg-red-700 transition-colors"
+                    onClick={handleContinue}
+                    disabled={loadingRates}
+                    className="flex items-center gap-2 rounded-lg bg-red-600 px-6 py-2.5 text-sm font-medium text-white hover:bg-red-700 transition-colors disabled:opacity-60"
                   >
-                    Continue <ArrowRight className="h-4 w-4" />
+                    {loadingRates ? (
+                      <><div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" /> Getting rates…</>
+                    ) : (
+                      <>Continue <ArrowRight className="h-4 w-4" /></>
+                    )}
                   </button>
                 </div>
               </>
@@ -405,7 +488,7 @@ export default function CheckoutPage() {
                   </div>
                 </div>
 
-                {/* Shipping summary */}
+                {/* Shipping address summary */}
                 <div className="rounded-xl border border-gray-200 bg-white p-6">
                   <div className="flex items-center justify-between mb-3">
                     <h2 className="text-sm font-semibold text-gray-700">Shipping To</h2>
@@ -418,6 +501,66 @@ export default function CheckoutPage() {
                     {shipping.address_line1}{shipping.address_line2 ? `, ${shipping.address_line2}` : ''}, {shipping.city}, {shipping.province} {shipping.postal_code}
                   </p>
                 </div>
+
+                {/* Shipping method selection */}
+                {!isFreeDelivery && (
+                  <div className="rounded-xl border border-gray-200 bg-white p-6">
+                    <h2 className="mb-4 text-sm font-semibold text-gray-700 flex items-center gap-2">
+                      <Package className="h-4 w-4 text-gray-400" /> Shipping Method
+                    </h2>
+
+                    {loadingRates ? (
+                      <div className="flex items-center gap-2 py-4 text-sm text-gray-500">
+                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-200 border-t-gray-500" />
+                        Fetching shipping rates…
+                      </div>
+                    ) : ratesFallback ? (
+                      <div className="rounded-lg border border-red-200 bg-red-50 p-3 flex items-start gap-3">
+                        <div className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-red-600 bg-red-600">
+                          <div className="h-1.5 w-1.5 rounded-full bg-white" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-800">Standard Delivery</p>
+                          <p className="text-xs text-gray-500">Estimated 3–5 business days</p>
+                        </div>
+                        <span className="ml-auto text-sm font-semibold text-gray-900">{formatCurrency(FLAT_SHIPPING_RATE)}</span>
+                      </div>
+                    ) : shippingRates.length > 0 ? (
+                      <div className="space-y-2">
+                        {shippingRates.map(rate => {
+                          const isSelected = selectedRate?.id === rate.id
+                          return (
+                          <button
+                            key={rate.id}
+                            type="button"
+                            onClick={() => setSelectedRate(rate)}
+                            className={cn(
+                              'w-full flex items-center gap-3 rounded-lg border p-3 text-left text-sm transition-colors',
+                              isSelected ? 'border-red-600 bg-red-50' : 'border-gray-200 hover:border-gray-300'
+                            )}
+                          >
+                            <div className={cn(
+                              'flex h-4 w-4 shrink-0 items-center justify-center rounded-full border',
+                              isSelected ? 'border-red-600 bg-red-600' : 'border-gray-300'
+                            )}>
+                              {isSelected && <div className="h-1.5 w-1.5 rounded-full bg-white" />}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-gray-800">{rate.service_name}</p>
+                              <p className="text-xs text-gray-400">
+                                {rate.provider_slug}
+                                {rate.min_delivery_date && rate.max_delivery_date
+                                  ? ` · ${new Date(rate.min_delivery_date).toLocaleDateString('en-ZA', { day: 'numeric', month: 'short' })}–${new Date(rate.max_delivery_date).toLocaleDateString('en-ZA', { day: 'numeric', month: 'short' })}`
+                                  : ''}
+                              </p>
+                            </div>
+                            <span className="text-sm font-semibold text-gray-900">{formatCurrency(rate.total_price)}</span>
+                          </button>
+                        )})}
+                      </div>
+                    ) : null}
+                  </div>
+                )}
 
                 {/* Payment method */}
                 <div className="rounded-xl border border-gray-200 bg-white p-6">
@@ -455,7 +598,7 @@ export default function CheckoutPage() {
 
                 <button
                   onClick={handlePlaceOrder}
-                  disabled={loading}
+                  disabled={loading || (!isFreeDelivery && !selectedRate && !ratesFallback)}
                   className="w-full flex items-center justify-center gap-2 rounded-lg bg-red-600 py-3 text-sm font-medium text-white hover:bg-red-700 transition-colors disabled:opacity-50"
                 >
                   {loading ? (
@@ -463,7 +606,7 @@ export default function CheckoutPage() {
                   ) : paymentMethod === 'pay_later' ? (
                     <><ArrowRight className="h-4 w-4" /> Place Order (Pay Later)</>
                   ) : (
-                    <><CreditCard className="h-4 w-4" /> Pay {formatCurrency(getTotal())}</>
+                    <><CreditCard className="h-4 w-4" /> Pay {formatCurrency(orderTotal)}</>
                   )}
                 </button>
 
@@ -481,26 +624,34 @@ export default function CheckoutPage() {
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between text-gray-600">
                   <span>Subtotal ({selectedItems.length} item{selectedItems.length !== 1 ? 's' : ''})</span>
-                  <span>{formatCurrency(getSubtotal())}</span>
+                  <span>{formatCurrency(subtotal)}</span>
                 </div>
                 <div className="flex justify-between text-gray-600">
                   <span>VAT (15%)</span>
-                  <span>{formatCurrency(getTax())}</span>
+                  <span>{formatCurrency(vatAmount)}</span>
                 </div>
                 <div className="flex justify-between text-gray-600">
                   <span>Shipping</span>
-                  {getShippingCost() === 0
-                    ? <span className="text-green-600 font-medium">Free</span>
-                    : <span>{formatCurrency(getShippingCost())}</span>
-                  }
+                  {isFreeDelivery ? (
+                    <span className="text-green-600 font-medium">Free</span>
+                  ) : step === 1 ? (
+                    <span className="text-gray-400 italic text-xs">calculated next</span>
+                  ) : loadingRates ? (
+                    <span className="text-gray-400 italic text-xs">loading…</span>
+                  ) : (
+                    <span>{formatCurrency(shippingCost)}</span>
+                  )}
                 </div>
                 <div className="mt-3 border-t border-gray-100 pt-3 flex justify-between font-semibold text-gray-900">
                   <span>Total</span>
-                  <span>{formatCurrency(getTotal())}</span>
+                  <span>{step === 1 ? formatCurrency(subtotal + vatAmount) : formatCurrency(orderTotal)}</span>
                 </div>
+                {step === 1 && !isFreeDelivery && (
+                  <p className="text-xs text-gray-400 italic">+ shipping (calculated on next step)</p>
+                )}
               </div>
 
-              {getShippingCost() === 0 && (
+              {isFreeDelivery && (
                 <p className="mt-4 rounded-md bg-green-50 border border-green-100 px-3 py-2 text-xs text-green-700">
                   🎉 You qualify for free delivery!
                 </p>

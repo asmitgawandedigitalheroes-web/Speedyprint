@@ -12,6 +12,9 @@ import { FeaturedWork } from '@/components/home/FeaturedWork'
 import { CTABand } from '@/components/home/CTABand'
 import { PopularProducts } from '@/components/home/PopularProducts'
 import { BlogSection } from '@/components/home/BlogSection'
+import LivePricingDemo from '@/components/home/LivePricingDemo'
+import AccountConvenience from '@/components/home/AccountConvenience'
+import TrackingShowcase from '@/components/home/TrackingShowcase'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { BlogPost } from '@/types'
 import {
@@ -244,6 +247,8 @@ export default async function HomePage() {
 
 
 
+      <LivePricingDemo />
+
       {/* ── 4. WHY SPEEDY ────────────────────────────────────────────── */}
       <section className="bg-brand-secondary py-20 lg:py-28">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -275,6 +280,9 @@ export default async function HomePage() {
 
       {/* ── 4. HOW IT WORKS ──────────────────────────────────────────── */}
       <HowItWorks />
+
+      <AccountConvenience />
+      <TrackingShowcase />
 
       {/* ── 5. FEATURED WORK ─────────────────────────────────────────── */}
       <FeaturedWork />
