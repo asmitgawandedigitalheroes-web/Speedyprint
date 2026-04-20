@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Tag, Hash, Bike, Stamp, Trophy, Zap, ArrowRight } from 'lucide-react'
+import { Tag, Hash, Bike, Stamp, Trophy, Zap, ArrowRight, Printer } from 'lucide-react'
 
 const PRODUCTS = [
   {
@@ -19,6 +19,14 @@ const PRODUCTS = [
     icon: Hash,
     color: 'bg-red-500/10',
     iconColor: 'text-red-500',
+  },
+  {
+    name: 'Print',
+    description: 'Business cards, flyers and posters',
+    href: '/products?division=print',
+    icon: Printer,
+    color: 'bg-emerald-500/10',
+    iconColor: 'text-emerald-500',
   },
   {
     name: 'MTB Boards',

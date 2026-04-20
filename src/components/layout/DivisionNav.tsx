@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Tag, Hash, Bike, Stamp, Zap, Trophy } from 'lucide-react'
+import { Tag, Hash, Bike, Stamp, Zap, Trophy, Printer } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 // ── Division definitions ─────────────────────────────────────────────────────
@@ -10,6 +10,7 @@ const DIVISIONS = [
   { href: '/labels',       label: 'Labels',       shortLabel: 'Labels',  Icon: Tag    },
   { href: '/race-numbers', label: 'Race Numbers',  shortLabel: 'Racing',  Icon: Hash   },
   { href: '/mtb-boards',   label: 'MTB Boards',    shortLabel: 'MTB',     Icon: Bike   },
+  { href: '/products?division=print', label: 'Print', shortLabel: 'Print', Icon: Printer },
   { href: '/stamps',       label: 'Stamps',        shortLabel: 'Stamps',  Icon: Stamp  },
   { href: '/laser',        label: 'Laser',         shortLabel: 'Laser',   Icon: Zap    },
   { href: '/trophies',     label: 'Trophies',      shortLabel: 'Trophies',Icon: Trophy },
@@ -29,8 +30,8 @@ export function DivisionNav() {
       <div
         className={cn(
           'mx-auto max-w-7xl',
-          // mobile: grid so all 6 fit side-by-side
-          'grid grid-cols-6',
+          // mobile: grid so all 7 fit side-by-side
+          'grid grid-cols-7',
           // tablet+: switch to flex row
           'sm:flex sm:overflow-x-auto sm:scroll-smooth',
           'px-2 sm:px-6 lg:px-8',

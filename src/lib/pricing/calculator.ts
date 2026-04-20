@@ -24,15 +24,47 @@ export function calculatePrice(
   const activeRules = rules.filter((r) => r.is_active)
   const breakdown: PriceBreakdown[] = []
   let unitPrice = 0
+  const quantity = params.quantity || 1
 
-  // 1. Find base price
-  const baseRule = activeRules
-    .filter((r) => r.rule_type === 'base_price')
-    .sort((a, b) => a.display_order - b.display_order)[0]
+  // Resolve applicable quantity break up-front so we know if it's fixed_price
+  const quantityRules = activeRules
+    .filter((r) => r.rule_type === 'quantity_break')
+    .sort((a, b) => {
+      const minA = (a.conditions as { min_qty?: number }).min_qty ?? 0
+      const minB = (b.conditions as { min_qty?: number }).min_qty ?? 0
+      return minA - minB
+    })
 
-  if (baseRule) {
-    unitPrice = baseRule.price_value
-    breakdown.push({ label: 'Base price', amount: baseRule.price_value })
+  let appliedQtyBreak: PricingRule | null = null
+  for (const rule of quantityRules) {
+    const cond = rule.conditions as { min_qty?: number; max_qty?: number }
+    const minQty = cond.min_qty ?? 0
+    const maxQty = cond.max_qty ?? Infinity
+    if (quantity >= minQty && quantity <= maxQty) {
+      appliedQtyBreak = rule
+    }
+  }
+
+  const isFixedPrice =
+    appliedQtyBreak !== null &&
+    (appliedQtyBreak.conditions as { discount_type?: string }).discount_type !== 'percentage'
+
+  // 1. Base price — use fixed_price break value if applicable, else base_price rule
+  if (isFixedPrice && appliedQtyBreak) {
+    unitPrice = appliedQtyBreak.price_value
+    breakdown.push({
+      label: `Base price (qty ${quantity})`,
+      amount: appliedQtyBreak.price_value,
+    })
+  } else {
+    const baseRule = activeRules
+      .filter((r) => r.rule_type === 'base_price')
+      .sort((a, b) => a.display_order - b.display_order)[0]
+
+    if (baseRule) {
+      unitPrice = baseRule.price_value
+      breakdown.push({ label: 'Base price', amount: baseRule.price_value })
+    }
   }
 
   // 2. Apply size tier adjustment
@@ -58,28 +90,58 @@ export function calculatePrice(
   const heightMm = params.height_mm ? Number(params.height_mm) : null
   if (widthMm && heightMm) {
     const areaMm2 = widthMm * heightMm
-    const matchedArea = sizeRules
-      .filter((r) => {
-        const cond = r.conditions as { min_area_mm2?: number; max_area_mm2?: number }
-        return cond.min_area_mm2 !== undefined || cond.max_area_mm2 !== undefined
-      })
+
+    // per_area_m2: price_value is R/m², unit price = rate × area_m²
+    // Rules with more condition keys are more specific and take priority.
+    const perAreaRules = activeRules.filter((r) => r.rule_type === 'per_area_m2')
+    const perAreaRule = perAreaRules
       .sort((a, b) => {
-        const minA = (a.conditions as { min_area_mm2?: number }).min_area_mm2 ?? 0
-        const minB = (b.conditions as { min_area_mm2?: number }).min_area_mm2 ?? 0
-        return minA - minB
+        // More specific rules (more condition keys) come first
+        const aKeys = Object.keys(a.conditions as object).filter((k) => k !== 'description').length
+        const bKeys = Object.keys(b.conditions as object).filter((k) => k !== 'description').length
+        return bKeys - aKeys
       })
       .find((r) => {
-        const cond = r.conditions as { min_area_mm2?: number; max_area_mm2?: number }
-        const min = cond.min_area_mm2 ?? 0
-        const max = cond.max_area_mm2 ?? Infinity
-        return areaMm2 >= min && areaMm2 <= max
+        const cond = r.conditions as Record<string, string>
+        return Object.entries(cond)
+          .filter(([k]) => k !== 'description')
+          .every(([k, v]) => params[k] === v)
       })
-    if (matchedArea) {
-      unitPrice += matchedArea.price_value
-      breakdown.push({
-        label: `Size: ${widthMm}×${heightMm} mm`,
-        amount: matchedArea.price_value,
-      })
+    if (perAreaRule) {
+      const areaM2 = areaMm2 / 1_000_000
+      const areaPrice = Math.round(perAreaRule.price_value * areaM2 * 100) / 100
+      unitPrice = areaPrice
+      const areaEntry = { label: `Price (${widthMm}×${heightMm}mm @ R${perAreaRule.price_value}/m²)`, amount: areaPrice }
+      if (breakdown.length > 0) {
+        breakdown[breakdown.length - 1] = areaEntry
+      } else {
+        breakdown.push(areaEntry)
+      }
+    } else {
+      // Stepped area size tier (legacy)
+      const matchedArea = sizeRules
+        .filter((r) => {
+          const cond = r.conditions as { min_area_mm2?: number; max_area_mm2?: number }
+          return cond.min_area_mm2 !== undefined || cond.max_area_mm2 !== undefined
+        })
+        .sort((a, b) => {
+          const minA = (a.conditions as { min_area_mm2?: number }).min_area_mm2 ?? 0
+          const minB = (b.conditions as { min_area_mm2?: number }).min_area_mm2 ?? 0
+          return minA - minB
+        })
+        .find((r) => {
+          const cond = r.conditions as { min_area_mm2?: number; max_area_mm2?: number }
+          const min = cond.min_area_mm2 ?? 0
+          const max = cond.max_area_mm2 ?? Infinity
+          return areaMm2 >= min && areaMm2 <= max
+        })
+      if (matchedArea) {
+        unitPrice += matchedArea.price_value
+        breakdown.push({
+          label: `Size: ${widthMm}×${heightMm} mm`,
+          amount: matchedArea.price_value,
+        })
+      }
     }
   }
 
@@ -101,21 +163,19 @@ export function calculatePrice(
     }
   }
 
-  // 4. Apply finish addon
-  if (params.finish) {
-    const finishRules = activeRules.filter(
-      (r) => r.rule_type === 'finish_addon'
-    )
-    const matchedFinish = finishRules.find((r) => {
-      const cond = r.conditions as { finish?: string }
-      return cond.finish === params.finish
-    })
-    if (matchedFinish) {
-      unitPrice += matchedFinish.price_value
+  // 4. Apply finish addon — matches any single condition key against params
+  // Supports conditions like {"finish":"Gloss"}, {"lamination":"Matt"}, {"finishing":"Gloss Lamination"}
+  const finishRules = activeRules.filter((r) => r.rule_type === 'finish_addon')
+  for (const rule of finishRules) {
+    const cond = rule.conditions as Record<string, string>
+    const condKey = Object.keys(cond).find((k) => k !== 'description')
+    if (condKey && params[condKey] === cond[condKey]) {
+      unitPrice += rule.price_value
       breakdown.push({
-        label: `Finish: ${params.finish}`,
-        amount: matchedFinish.price_value,
+        label: `${cond[condKey]}`,
+        amount: rule.price_value,
       })
+      break // only apply one finish addon
     }
   }
 
@@ -135,30 +195,9 @@ export function calculatePrice(
     }
   }
 
-  // 6. Apply quantity break discounts (price overrides or percentage discounts)
-  const quantity = params.quantity || 1
-  const quantityRules = activeRules
-    .filter((r) => r.rule_type === 'quantity_break')
-    .sort((a, b) => {
-      const minA = (a.conditions as { min_qty?: number }).min_qty ?? 0
-      const minB = (b.conditions as { min_qty?: number }).min_qty ?? 0
-      return minA - minB
-    })
-
-  let appliedQtyBreak: PricingRule | null = null
-  for (const rule of quantityRules) {
-    const cond = rule.conditions as { min_qty?: number; max_qty?: number }
-    const minQty = cond.min_qty ?? 0
-    const maxQty = cond.max_qty ?? Infinity
-    if (quantity >= minQty && quantity <= maxQty) {
-      appliedQtyBreak = rule
-    }
-  }
-
-  if (appliedQtyBreak) {
-    const cond = appliedQtyBreak.conditions as {
-      discount_type?: 'percentage' | 'fixed_price'
-    }
+  // 6. Apply percentage quantity discount (fixed_price already applied in step 1)
+  if (appliedQtyBreak && !isFixedPrice) {
+    const cond = appliedQtyBreak.conditions as { discount_type?: 'percentage' | 'fixed_price' }
     if (cond.discount_type === 'percentage') {
       const discount = unitPrice * (appliedQtyBreak.price_value / 100)
       unitPrice -= discount
@@ -166,16 +205,6 @@ export function calculatePrice(
         label: `Quantity discount (${appliedQtyBreak.price_value}%)`,
         amount: -discount,
       })
-    } else {
-      // fixed_price: the price_value IS the new unit price
-      const diff = appliedQtyBreak.price_value - unitPrice
-      if (diff !== 0) {
-        unitPrice = appliedQtyBreak.price_value
-        breakdown.push({
-          label: `Quantity price (${quantity}+)`,
-          amount: diff,
-        })
-      }
     }
   }
 

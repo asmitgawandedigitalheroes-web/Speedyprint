@@ -10,9 +10,12 @@ export const metadata: Metadata = {
 }
 
 const TEMPLATES = [
+  { name: 'Business Card Template', file: '/templates/business-card-template.svg', download: 'Speedy-Print-Business-Card-Template.svg', note: '90×50mm — with bleed, trim & safe zone guides' },
+  { name: 'Coffee Cup Sleeve Template', file: '/templates/coffee-cup-sleeve-template.svg', download: 'Speedy-Print-Coffee-Cup-Sleeve-Template.svg', note: '270×70mm — wrap sleeve with layout zones' },
   { name: 'A4 Label Sheet Template', file: '/templates/a4-label-template.svg', download: 'Speedy-Print-A4-Label-Template.svg', note: 'A4 (210×297mm) — bleed & safe zone guides included' },
   { name: '100×50mm Label Template', file: '/templates/100x50mm-label-template.svg', download: 'Speedy-Print-100x50mm-Label-Template.svg', note: 'Standard product label size — with bleed & trim marks' },
-  { name: 'Race Number Template', file: '/templates/race-number-template.svg', download: 'Speedy-Print-Race-Number-Template.svg', note: '200×150mm — standard bib size with layout zones' },
+  { name: 'Race Number Template (Standard)', file: '/templates/race-number-standard-template.svg', download: 'Speedy-Print-Race-Number-Standard-Template.svg', note: '148×210mm — standard bib size with layout zones' },
+  { name: 'Race Number Template (Small)', file: '/templates/race-number-template.svg', download: 'Speedy-Print-Race-Number-Template.svg', note: '200×150mm — small bib size with layout zones' },
   { name: 'MTB Board Template', file: '/templates/mtb-board-template.svg', download: 'Speedy-Print-MTB-Board-Template.svg', note: '250×200mm — Correx board with bleed & safe zone' },
 ]
 

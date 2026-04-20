@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Speedy Print | Race Number (Standard) Artwork Template
+     Final size: 148 × 210 mm  |  Bleed: 3 mm all sides  |  Safe zone: 3 mm inside trim
+     Total artboard (with bleed): 154 × 216 mm
+     Colour mode: CMYK  |  Resolution: 300 DPI minimum  |  Fonts: Outlined/Embedded
+-->
+<svg xmlns="http://www.w3.org/2000/svg"
+     width="154mm" height="216mm"
+     viewBox="0 0 154 216"
+     font-family="Arial, Helvetica, sans-serif">
+
+  <!-- ░░░ BLEED AREA ░░░ -->
+  <rect x="0" y="0" width="154" height="216" fill="#FFE8EA"/>
+  <text x="1" y="5" font-size="3" fill="#CC2233" font-weight="bold">BLEED AREA — extend all backgrounds 3mm beyond this edge</text>
+
+  <!-- ░░░ TRIM LINE ░░░ -->
+  <rect x="3" y="3" width="148" height="210" fill="white" stroke="#000000" stroke-width="0.3" stroke-dasharray="4,2"/>
+  <text x="4.5" y="9" font-size="3" fill="#333">TRIM LINE — final cut edge (148 × 210 mm)</text>
+
+  <!-- ░░░ SAFE ZONE ░░░ -->
+  <rect x="6" y="6" width="142" height="204" fill="#F8FAFF" stroke="#2563EB" stroke-width="0.35" stroke-dasharray="3,2"/>
+  <text x="7.5" y="13" font-size="3" fill="#2563EB">SAFE ZONE — all critical text, logos and bib number must stay inside</text>
+
+  <!-- ░░░ CROP MARKS ░░░ -->
+  <line x1="0" y1="3" x2="2.5" y2="3" stroke="#000" stroke-width="0.2"/>
+  <line x1="3" y1="0" x2="3" y2="2.5" stroke="#000" stroke-width="0.2"/>
+  <line x1="151.5" y1="3" x2="154" y2="3" stroke="#000" stroke-width="0.2"/>
+  <line x1="151" y1="0" x2="151" y2="2.5" stroke="#000" stroke-width="0.2"/>
+  <line x1="0" y1="213" x2="2.5" y2="213" stroke="#000" stroke-width="0.2"/>
+  <line x1="3" y1="213.5" x2="3" y2="216" stroke="#000" stroke-width="0.2"/>
+  <line x1="151.5" y1="213" x2="154" y2="213" stroke="#000" stroke-width="0.2"/>
+  <line x1="151" y1="213.5" x2="151" y2="216" stroke="#000" stroke-width="0.2"/>
+
+  <!-- ░░░ RACE NUMBER PLACEHOLDER ZONES ░░░ -->
+  <!-- Sponsor row top -->
+  <rect x="10" y="18" width="55" height="20" fill="#EEEEEE" stroke="#CCCCCC" stroke-width="0.5" stroke-dasharray="2,1"/>
+  <text x="37" y="29" text-anchor="middle" font-size="4" fill="#AAAAAA">SPONSOR 1</text>
+  <rect x="89" y="18" width="55" height="20" fill="#EEEEEE" stroke="#CCCCCC" stroke-width="0.5" stroke-dasharray="2,1"/>
+  <text x="116" y="29" text-anchor="middle" font-size="4" fill="#AAAAAA">SPONSOR 2</text>
+
+  <!-- Main bib number area -->
+  <rect x="20" y="48" width="114" height="90" fill="#EEEEEE" stroke="#CCCCCC" stroke-width="0.5" stroke-dasharray="2,1"/>
+  <text x="77" y="100" text-anchor="middle" font-size="48" fill="#CCCCCC" font-weight="bold">123</text>
+  <text x="77" y="114" text-anchor="middle" font-size="4" fill="#AAAAAA">BIB NUMBER (variable per athlete)</text>
+
+  <!-- Athlete name area -->
+  <rect x="10" y="148" width="134" height="18" fill="#EEEEEE" stroke="#CCCCCC" stroke-width="0.5" stroke-dasharray="2,1"/>
+  <text x="77" y="159" text-anchor="middle" font-size="7" fill="#CCCCCC">ATHLETE NAME</text>
+
+  <!-- Eyelets hint -->
+  <circle cx="20" cy="65" r="5" fill="none" stroke="#AAAAAA" stroke-width="0.5" stroke-dasharray="2,1"/>
+  <text x="20" y="77" text-anchor="middle" font-size="3" fill="#AAAAAA">eyelet</text>
+  <circle cx="134" cy="65" r="5" fill="none" stroke="#AAAAAA" stroke-width="0.5" stroke-dasharray="2,1"/>
+  <text x="134" y="77" text-anchor="middle" font-size="3" fill="#AAAAAA">eyelet</text>
+
+  <!-- ░░░ NOTES BANNER ░░░ -->
+  <rect x="6" y="176" width="142" height="28" fill="white" stroke="#E5E7EB" stroke-width="0.3"/>
+  <text x="10" y="182" font-size="3.2" fill="#111827" font-weight="bold">SPEEDY PRINT — RACE NUMBER TEMPLATE  |  148 × 210 mm (Standard)</text>
+  <rect x="10" y="185" width="5" height="3.5" fill="#FFE8EA" stroke="#CC2233" stroke-width="0.3"/>
+  <text x="17" y="188" font-size="2.8" fill="#444">Bleed (3mm)</text>
+  <rect x="55" y="185" width="5" height="3.5" fill="none" stroke="#000" stroke-width="0.4" stroke-dasharray="2,1"/>
+  <text x="62" y="188" font-size="2.8" fill="#444">Trim line</text>
+  <rect x="100" y="185" width="5" height="3.5" fill="none" stroke="#2563EB" stroke-width="0.4" stroke-dasharray="2,1"/>
+  <text x="107" y="188" font-size="2.8" fill="#444">Safe zone (3mm inside trim)</text>
+  <text x="10" y="193" font-size="2.5" fill="#666">Min. 300 DPI at print size  |  CMYK colour mode  |  All fonts outlined or embedded in PDF</text>
+  <text x="10" y="198" font-size="2.5" fill="#888">speedy-print.co.za</text>
+</svg>
