@@ -26,7 +26,9 @@ export function calculatePrice(
   let unitPrice = 0
   const quantity = params.quantity || 1
 
-  // Resolve applicable quantity break up-front so we know if it's fixed_price
+  // Resolve applicable quantity break — prefer rules with extra matching conditions (e.g. print_option)
+  // over generic qty-only rules, so print-option-specific pricing overrides the default.
+  const QTY_META_KEYS = new Set(['min_qty', 'max_qty', 'discount_type', 'description'])
   const quantityRules = activeRules
     .filter((r) => r.rule_type === 'quantity_break')
     .sort((a, b) => {
@@ -36,12 +38,20 @@ export function calculatePrice(
     })
 
   let appliedQtyBreak: PricingRule | null = null
+  let appliedQtyBreakSpecificity = -1
   for (const rule of quantityRules) {
-    const cond = rule.conditions as { min_qty?: number; max_qty?: number }
-    const minQty = cond.min_qty ?? 0
-    const maxQty = cond.max_qty ?? Infinity
-    if (quantity >= minQty && quantity <= maxQty) {
+    const cond = rule.conditions as Record<string, unknown>
+    const minQty = (cond.min_qty as number) ?? 0
+    const maxQty = (cond.max_qty as number) ?? Infinity
+    if (quantity < minQty || quantity > maxQty) continue
+    // Check extra conditions beyond qty range
+    const extraKeys = Object.keys(cond).filter(k => !QTY_META_KEYS.has(k))
+    const extraMatch = extraKeys.every(k => params[k] === cond[k])
+    if (!extraMatch) continue
+    // Prefer more specific (more matching condition keys)
+    if (extraKeys.length >= appliedQtyBreakSpecificity) {
       appliedQtyBreak = rule
+      appliedQtyBreakSpecificity = extraKeys.length
     }
   }
 
