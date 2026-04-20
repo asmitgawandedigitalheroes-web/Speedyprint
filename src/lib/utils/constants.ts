@@ -24,7 +24,8 @@ export const HEADER_PRODUCTS = [
   { href: '/labels', label: 'Labels', description: 'Custom labels, stickers, wristbands & car magnets', icon: 'Tag' },
   { href: '/race-numbers', label: 'Race Numbers', description: 'Professional race numbers & event tags', icon: 'Hash' },
   { href: '/mtb-boards', label: 'MTB & Boards', description: 'MTB boards, bike flaps & Correx boards', icon: 'Bike' },
-  { href: '/stamps', label: 'Stamps', description: 'Self-inking, pre-inked & traditional stamps', icon: 'Printer' },
+  { href: '/products?division=print', label: 'Print', description: 'Business cards, flyers, posters & sleeves', icon: 'Printer' },
+  { href: '/stamps', label: 'Stamps', description: 'Self-inking, pre-inked & traditional stamps', icon: 'Stamp' },
   { href: '/laser', label: 'Laser & NFC', description: 'Laser-cut signs, acrylic, gifts & NFC stands', icon: 'Zap' },
   { href: '/trophies', label: 'Trophies', description: 'Awards, medals, plaques & recognition', icon: 'Trophy' },
 ]
@@ -121,7 +122,7 @@ export const PRODUCT_FAMILIES = [
     description: 'Flyers, business cards, brochures, certificates, note pads, stamps, and event printing.',
     imageUrl: '/images/products/self-inking-stamps.png',
     icon: 'Printer',
-    products: ['Flyers', 'Business Cards', 'Brochures & Catalogues', 'Certificates', 'Note Pads', 'Self-Inking Stamps', 'Envelopes', 'Event Printing'],
+    products: ['Flyers', 'Business Cards', 'Poster Calendars', 'Brochures & Catalogues', 'Certificates', 'Note Pads', 'Self-Inking Stamps', 'Envelopes', 'Coffee Cup Sleeves', 'Event Printing'],
     divisionKey: 'print',
   },
   {
@@ -136,10 +137,10 @@ export const PRODUCT_FAMILIES = [
   {
     key: 'signs-display',
     name: 'Signs & Display',
-    description: 'Coffee cup sleeves, branded packaging, and award trophies.',
+    description: 'Branded packaging and award trophies.',
     imageUrl: '/images/products/coffee-cup-sleeves.png',
     icon: 'Layout',
-    products: ['Coffee Cup Sleeves', 'Award Trophies'],
+    products: ['Award Trophies'],
     divisionKey: 'trophies',
   },
 ]

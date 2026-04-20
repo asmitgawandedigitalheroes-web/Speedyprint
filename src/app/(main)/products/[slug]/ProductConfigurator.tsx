@@ -149,14 +149,16 @@ export function ProductConfigurator({
     if (!isNaN(num)) setCustomHeight(String(Math.min(max, Math.max(min, num))))
   }
 
-  // Build the full params passed to pricing (include dimensions + sponsors)
+  // Build the full params passed to pricing (include dimensions + sponsors + template size_key)
   const allParams = useMemo(() => {
     const p: Record<string, string> = { ...paramValues }
     if (dimensionConstraints && customWidth) p.width_mm = customWidth
     if (dimensionConstraints && customHeight) p.height_mm = customHeight
     Object.entries(sponsorValues).forEach(([k, v]) => { if (v) p[k] = v })
+    const sizeKey = selectedTemplate?.template_json?.size_key
+    if (typeof sizeKey === 'string') p.size = sizeKey
     return p
-  }, [paramValues, dimensionConstraints, customWidth, customHeight, sponsorValues])
+  }, [paramValues, dimensionConstraints, customWidth, customHeight, sponsorValues, selectedTemplate])
 
   const isEventsProduct = division === 'race-numbers' || division === 'mtb-boards'
 

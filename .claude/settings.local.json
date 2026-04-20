@@ -62,7 +62,16 @@
       "Bash(python.exe --version)",
       "Bash('/c/Users/Vikram Gondane/AppData/Local/Programs/Python/Python313/python' -c ':*)",
       "Bash(\"/c/Users/Vikram Gondane/AppData/Local/Programs/Python/Python313/python\" -m pip install pandas openpyxl -q)",
-      "Bash(grep -c \"DO \\\\$\\\\$\" supabase/migrations/20260417_excel_catalogue_sync.sql)"
+      "Bash(grep -c \"DO \\\\$\\\\$\" supabase/migrations/20260417_excel_catalogue_sync.sql)",
+      "Bash(del \"C:\\\\Users\\\\Vikram Gondane\\\\OneDrive\\\\Desktop\\\\Asmit\\\\cluade projects\\\\New folder\\\\Speedyprint\\\\src\\\\app\\\\\\(main\\)\\\\print\\\\page.tsx\")",
+      "Bash(xargs grep *)",
+      "Bash(cat supabase/.temp/pooler-url)",
+      "Bash(cat supabase/.temp/project-ref)",
+      "Bash(cat supabase/.temp/linked-project.json)",
+      "Bash(node -e ' *)",
+      "Bash(supabase db *)",
+      "Bash(curl -s -X POST http://localhost:64386/api/products/11111111-1111-1111-1111-111111111105/price -H 'Content-Type: application/json' -d '{\"quantity\":1000,\"params\":{\"size\":\"Small \\\\xe2\\\\x80\\\\x94 150mm \\\\xc3\\\\x97 150mm\"}}')",
+      "Bash(curl -s -X POST http://localhost:64386/api/products/11111111-1111-1111-1111-111111111105/price -H 'Content-Type: application/json' -d '{\"quantity\":1000,\"params\":{}}')"
     ]
   }
 }
