@@ -37,23 +37,41 @@ export function ParameterSelector({
             )}
           </Label>
 
-          {param.param_type === 'select' && (
-            <Select
-              value={values[param.param_key] ?? ''}
-              onValueChange={(val) => onChange(param.param_key, val)}
-            >
-              <SelectTrigger id={param.param_key} className="w-full">
-                <SelectValue placeholder={`Select ${param.param_label}`} />
-              </SelectTrigger>
-              <SelectContent>
-                {(param.options as string[]).map((option) => (
-                  <SelectItem key={option} value={option}>
-                    {option}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
+          {param.param_type === 'select' && (() => {
+            // Support conditional options: {_depends_on: "key", "val1": [...], ...}
+            const rawOptions = param.options
+            let selectOptions: string[]
+            if (
+              rawOptions &&
+              !Array.isArray(rawOptions) &&
+              typeof rawOptions === 'object' &&
+              '_depends_on' in (rawOptions as object)
+            ) {
+              const condOpts = rawOptions as Record<string, unknown>
+              const depKey = condOpts['_depends_on'] as string
+              const depVal = values[depKey] ?? ''
+              selectOptions = (condOpts[depVal] as string[]) ?? (condOpts['_default'] as string[]) ?? []
+            } else {
+              selectOptions = rawOptions as string[]
+            }
+            return (
+              <Select
+                value={values[param.param_key] ?? ''}
+                onValueChange={(val) => onChange(param.param_key, val)}
+              >
+                <SelectTrigger id={param.param_key} className="w-full">
+                  <SelectValue placeholder={`Select ${param.param_label}`} />
+                </SelectTrigger>
+                <SelectContent>
+                  {selectOptions.map((option) => (
+                    <SelectItem key={option} value={option}>
+                      {option}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )
+          })()}
 
           {param.param_type === 'range' && (() => {
             const opts = param.options as unknown as {
