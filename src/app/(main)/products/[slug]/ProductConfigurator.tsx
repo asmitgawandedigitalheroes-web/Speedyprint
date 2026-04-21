@@ -126,7 +126,24 @@ export function ProductConfigurator({
   }
 
   function handleParamChange(key: string, value: string) {
-    setParamValues((prev) => ({ ...prev, [key]: value }))
+    setParamValues((prev) => {
+      const next = { ...prev, [key]: value }
+      // Reset any params whose conditional options depend on this key
+      for (const param of parameters) {
+        const raw = param.options
+        if (
+          raw && !Array.isArray(raw) && typeof raw === 'object' &&
+          (raw as Record<string, unknown>)['_depends_on'] === key
+        ) {
+          const condOpts = raw as Record<string, unknown>
+          const newOptions = (condOpts[value] as string[]) ?? (condOpts['_default'] as string[]) ?? []
+          if (!newOptions.includes(next[param.param_key])) {
+            next[param.param_key] = newOptions[0] ?? ''
+          }
+        }
+      }
+      return next
+    })
   }
 
   function handleQuantityChange(delta: number) {
