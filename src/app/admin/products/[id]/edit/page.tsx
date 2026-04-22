@@ -35,6 +35,8 @@ const PRICING_RULE_TYPES: { value: PricingRuleType; label: string }[] = [
   { value: 'material_addon', label: 'Material Add-on' },
   { value: 'option_addon', label: 'Option Add-on' },
   { value: 'finish_addon', label: 'Finish Add-on' },
+  { value: 'per_area_m2', label: 'Per Area (m²)' },
+  { value: 'minimum_order', label: 'Minimum Order Value' },
 ]
 
 interface TemplateForm {
@@ -951,7 +953,7 @@ export default function AdminProductEditPage({
 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <Label className="text-xs">Price Value (INR)</Label>
+                    <Label className="text-xs">Price Value (R)</Label>
                     <Input
                       type="number"
                       step="0.01"
