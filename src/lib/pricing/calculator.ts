@@ -8,7 +8,10 @@ export interface PriceBreakdown {
 export interface PriceResult {
   unitPrice: number
   subtotal: number
+  realSubtotal: number
   breakdown: PriceBreakdown[]
+  minimumApplied?: boolean
+  minimumValue?: number
 }
 
 export function calculatePrice(
@@ -221,15 +224,25 @@ export function calculatePrice(
   // Ensure non-negative
   unitPrice = Math.max(0, unitPrice)
 
-  const subtotal = unitPrice * quantity
+  const realSubtotal = Math.round(unitPrice * quantity * 100) / 100
+
+  // Apply minimum order value if configured
+  const minimumRule = activeRules.find((r) => r.rule_type === 'minimum_order')
+  const minimumValue = minimumRule ? minimumRule.price_value : null
+  const minimumApplied = minimumValue !== null && realSubtotal < minimumValue
+  const subtotal = minimumApplied && minimumValue !== null ? minimumValue : realSubtotal
+
   breakdown.push({
-    label: `Subtotal (${quantity} x ${unitPrice.toFixed(2)})`,
-    amount: subtotal,
+    label: `Subtotal (${quantity} × R${unitPrice.toFixed(2)})`,
+    amount: realSubtotal,
   })
 
   return {
     unitPrice: Math.round(unitPrice * 100) / 100,
     subtotal: Math.round(subtotal * 100) / 100,
+    realSubtotal,
     breakdown,
+    minimumApplied,
+    minimumValue: minimumValue ?? undefined,
   }
 }
