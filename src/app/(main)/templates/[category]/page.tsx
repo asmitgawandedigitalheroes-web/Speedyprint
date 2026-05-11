@@ -3,8 +3,11 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { notFound } from 'next/navigation'
 import { SITE_NAME, V2_DIVISIONS } from '@/lib/utils/constants'
+import { unstable_cache } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { ProductGroup, ProductTemplate } from '@/types'
+
+export const revalidate = 3600
 
 interface PageProps {
   params: Promise<{ category: string }>
@@ -14,29 +17,31 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { category } = await params
   const division = V2_DIVISIONS.find((d) => d.key === category)
 
-  if (!division) return { title: `Templates | ${SITE_NAME}` }
+  if (!division) return { title: 'Templates' }
 
   return {
-    title: `${division.name} Templates | ${SITE_NAME}`,
+    title: `${division.name} Templates`,
     description: `Browse ${division.name.toLowerCase()} templates. Design online with our free design wizard.`,
   }
 }
-
-export const dynamic = 'force-dynamic'
 
 interface TemplateWithGroup extends ProductTemplate {
   product_group: ProductGroup
 }
 
-async function getTemplates(): Promise<TemplateWithGroup[]> {
-  const supabase = createAdminClient()
-  const { data } = await supabase
-    .from('product_templates')
-    .select('*, product_group:product_groups(*)')
-    .eq('is_active', true)
-    .order('created_at', { ascending: false })
-  return (data as TemplateWithGroup[]) || []
-}
+const getTemplates = unstable_cache(
+  async (): Promise<TemplateWithGroup[]> => {
+    const supabase = createAdminClient()
+    const { data } = await supabase
+      .from('product_templates')
+      .select('*, product_group:product_groups(*)')
+      .eq('is_active', true)
+      .order('created_at', { ascending: false })
+    return (data as TemplateWithGroup[]) || []
+  },
+  ['templates-by-category'],
+  { revalidate: 3600, tags: ['products'] }
+)
 
 export default async function TemplateCategoryPage({ params }: PageProps) {
   const { category } = await params

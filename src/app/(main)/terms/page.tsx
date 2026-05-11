@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { SITE_NAME } from '@/lib/utils/constants'
 
 export const metadata: Metadata = {
-  title: `Terms of Service | ${SITE_NAME}`,
+  title: 'Terms of Service',
   description: 'SpeedyPrint terms of service and conditions of use.',
 }
 

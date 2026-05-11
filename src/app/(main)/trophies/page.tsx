@@ -4,12 +4,30 @@ import Image from 'next/image'
 import { CheckCircle2, ArrowRight, Award, Users, Star, Layers } from 'lucide-react'
 import { SITE_NAME } from '@/lib/utils/constants'
 import { ComplexQuoteForm } from '@/components/order/ComplexQuoteForm'
-import { createClient } from '@/lib/supabase/server'
+import { unstable_cache } from 'next/cache'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { ProductCard } from '@/components/products/ProductCard'
 import type { ProductGroup } from '@/types'
 
+export const revalidate = 3600
+
+const getTrophyProducts = unstable_cache(
+  async () => {
+    const supabase = createAdminClient()
+    const { data } = await supabase
+      .from('product_groups')
+      .select('*')
+      .eq('division', 'trophies')
+      .eq('is_active', true)
+      .order('display_order', { ascending: true })
+    return (data ?? []) as ProductGroup[]
+  },
+  ['division-products-trophies'],
+  { revalidate: 3600, tags: ['products'] }
+)
+
 export const metadata: Metadata = {
-  title: `Trophies & Awards | ${SITE_NAME}`,
+  title: 'Trophies & Awards',
   description:
     'Custom trophies, engraved plaques, medallions, corporate awards and certificate frames. Engraving included. 7–10 day turnaround. Corporate bulk pricing available.',
 }
@@ -22,14 +40,7 @@ const TRUST_POINTS = [
 ]
 
 export default async function TrophiesPage() {
-  const supabase = await createClient()
-  const { data: products } = await supabase
-    .from('product_groups')
-    .select('*')
-    .eq('division', 'trophies')
-    .eq('is_active', true)
-    .order('display_order', { ascending: true })
-  const productList = (products ?? []) as ProductGroup[]
+  const productList = await getTrophyProducts()
 
   return (
     <div className="bg-white">

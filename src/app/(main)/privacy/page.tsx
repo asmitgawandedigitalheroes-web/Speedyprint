@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { SITE_NAME } from '@/lib/utils/constants'
 
 export const metadata: Metadata = {
-  title: `Privacy Policy | ${SITE_NAME}`,
+  title: 'Privacy Policy',
   description: 'Speedy Print Suite privacy policy — how we collect, use, and protect your personal information.',
 }
 

@@ -5,14 +5,19 @@ import { Card, CardContent } from '@/components/ui/card'
 import { DIVISIONS } from '@/lib/utils/constants'
 import type { ProductGroup } from '@/types'
 
-// Removed divisionGradients for clean, flat UI
+interface PricingRule {
+  rule_type: string
+  price_value: number
+  conditions: Record<string, unknown>
+}
 
 interface ProductCardProps {
-  product: ProductGroup
+  product: ProductGroup & { pricing_rules?: PricingRule[] }
 }
 
 export function ProductCard({ product }: ProductCardProps) {
   const division = DIVISIONS.find((d) => d.key === product.division)
+  const basePrice = product.pricing_rules?.find((r) => r.rule_type === 'base_price')?.price_value
 
   return (
     <Link href={`/products/${product.slug}`} className="group block h-full">
@@ -60,6 +65,11 @@ export function ProductCard({ product }: ProductCardProps) {
           {product.description && (
             <p className="mt-auto text-base leading-relaxed text-slate-500 line-clamp-2">
               {product.description}
+            </p>
+          )}
+          {basePrice !== undefined && (
+            <p className="mt-4 text-sm font-semibold text-brand-primary">
+              From R{basePrice.toFixed(2)} per unit
             </p>
           )}
         </div>

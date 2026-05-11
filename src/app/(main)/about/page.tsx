@@ -3,7 +3,7 @@ import { SITE_NAME, SITE_URL } from '@/lib/utils/constants'
 import { Check } from 'lucide-react'
 
 export const metadata: Metadata = {
-  title: `About ${SITE_NAME} | Custom Printing in South Africa`,
+  title: { absolute: `About ${SITE_NAME} | Custom Printing in South Africa` },
   description:
     "Learn about Speedy Print Suite — South Africa's precision printing platform with six specialized divisions serving small businesses, makers, and event organisers.",
   alternates: {

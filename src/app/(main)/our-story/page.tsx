@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { SITE_NAME } from '@/lib/utils/constants'
 
 export const metadata: Metadata = {
-  title: `Our story | ${SITE_NAME}`,
+  title: 'Our story',
   description: 'Learn about Speedy’s journey from a small printing workshop to South Africa’s trusted printing partner for businesses and makers.',
 }
 

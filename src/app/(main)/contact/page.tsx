@@ -101,6 +101,11 @@ export default function ContactPage() {
 
           {/* Contact form */}
           <div className="lg:col-span-2">
+            {/* Response time promise */}
+            <div className="mb-6 flex items-center gap-2 rounded-md border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-800">
+              <Clock className="h-4 w-4 shrink-0 text-blue-600" />
+              <span>We typically respond within <strong>4 office hours</strong> (Mon–Fri, 08:00–16:30 SAST).</span>
+            </div>
             {submitted ? (
               <div className="rounded-md border border-green-200 bg-green-50 p-10 text-center">
                 <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-md bg-green-100">
@@ -108,7 +113,7 @@ export default function ContactPage() {
                 </div>
                 <h2 className="mt-4 font-heading text-2xl font-bold text-brand-text">Message sent</h2>
                 <p className="mt-2 text-brand-text-muted">
-                  Thanks for reaching out. We&apos;ll get back to you within 24 hours.
+                  Thanks for reaching out. We typically respond within 4 office hours (Mon–Fri, 08:00–16:30).
                 </p>
                 <button
                   onClick={() => { setSubmitted(false); setForm({ name: '', email: '', subject: '', message: '' }) }}

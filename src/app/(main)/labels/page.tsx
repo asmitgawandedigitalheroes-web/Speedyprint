@@ -3,12 +3,30 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { CheckCircle2, ArrowRight, Tag, Layers, Zap, Shield } from 'lucide-react'
 import { SITE_NAME } from '@/lib/utils/constants'
-import { createClient } from '@/lib/supabase/server'
+import { unstable_cache } from 'next/cache'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { ProductCard } from '@/components/products/ProductCard'
 import type { ProductGroup } from '@/types'
 
+export const revalidate = 3600
+
+const getLabelProducts = unstable_cache(
+  async () => {
+    const supabase = createAdminClient()
+    const { data } = await supabase
+      .from('product_groups')
+      .select('*')
+      .eq('division', 'labels')
+      .eq('is_active', true)
+      .order('display_order', { ascending: true })
+    return (data ?? []) as ProductGroup[]
+  },
+  ['division-products-labels'],
+  { revalidate: 3600, tags: ['products'] }
+)
+
 export const metadata: Metadata = {
-  title: `Labels, Stickers & Wristbands | ${SITE_NAME}`,
+  title: 'Labels, Stickers & Wristbands',
   description:
     'Custom labels, stickers, wristbands and product packaging — 300+ materials, waterproof options, fast 3–5 day turnaround. Digital proof included.',
 }
@@ -21,14 +39,7 @@ const TRUST_POINTS = [
 ]
 
 export default async function LabelsPage() {
-  const supabase = await createClient()
-  const { data: products } = await supabase
-    .from('product_groups')
-    .select('*')
-    .eq('division', 'labels')
-    .eq('is_active', true)
-    .order('display_order', { ascending: true })
-  const productList = (products ?? []) as ProductGroup[]
+  const productList = await getLabelProducts()
 
   return (
     <div className="bg-white">

@@ -1,16 +1,17 @@
 'use client'
 
-import { useEffect, useState, Suspense } from 'react'
-import { useSearchParams, useRouter } from 'next/navigation'
+import { useEffect, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { CheckCircle2, Package, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
 import { useCart } from '@/hooks/useCart'
+import { useAuth } from '@/hooks/useAuth'
 
 function SuccessPageContent() {
   const searchParams = useSearchParams()
   const orderId = searchParams.get('order_id')
-  const router = useRouter()
   const { clearCart } = useCart()
+  const { user } = useAuth()
 
   // BUG-009 FIX: Clear cart here — only after Stripe redirects back to this page.
   // This ensures the cart is preserved if the user abandons Stripe or their payment fails.
@@ -40,12 +41,21 @@ function SuccessPageContent() {
         </p>
 
         <div className="space-y-3">
-          <Link
-            href={`/account/orders/${orderId}`}
-            className="flex w-full items-center justify-center gap-2 rounded-lg bg-brand-primary py-3 text-sm font-semibold text-white transition hover:bg-brand-primary-dark shadow-md hover:shadow-lg"
-          >
-            <Package className="h-4 w-4" /> View Order Status
-          </Link>
+          {user ? (
+            <Link
+              href={`/account/orders/${orderId}`}
+              className="flex w-full items-center justify-center gap-2 rounded-lg bg-brand-primary py-3 text-sm font-semibold text-white transition hover:bg-brand-primary-dark shadow-md hover:shadow-lg"
+            >
+              <Package className="h-4 w-4" /> View Order Status
+            </Link>
+          ) : (
+            <Link
+              href={`/track-order`}
+              className="flex w-full items-center justify-center gap-2 rounded-lg bg-brand-primary py-3 text-sm font-semibold text-white transition hover:bg-brand-primary-dark shadow-md hover:shadow-lg"
+            >
+              <Package className="h-4 w-4" /> Track Your Order
+            </Link>
+          )}
           <Link
             href="/products"
             className="flex w-full items-center justify-center gap-2 rounded-lg bg-white border border-gray-200 py-3 text-sm font-medium text-brand-text hover:bg-gray-50 transition"

@@ -2,30 +2,34 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import Image from 'next/image'
 import { SITE_NAME, V2_DIVISIONS } from '@/lib/utils/constants'
+import { unstable_cache } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { ProductGroup, ProductTemplate } from '@/types'
 
+export const revalidate = 3600
+
 export const metadata: Metadata = {
-  // BUG-023 FIX: Use just the page name — the root layout template appends '| SpeedyPrint'.
   title: 'Design Templates',
   description: 'Browse our library of professional print templates. Design online using our free design wizard.',
 }
-
-export const dynamic = 'force-dynamic'
 
 interface TemplateWithGroup extends ProductTemplate {
   product_group: ProductGroup
 }
 
-async function getTemplates(): Promise<TemplateWithGroup[]> {
-  const supabase = createAdminClient()
-  const { data } = await supabase
-    .from('product_templates')
-    .select('*, product_group:product_groups(*)')
-    .eq('is_active', true)
-    .order('created_at', { ascending: false })
-  return (data as TemplateWithGroup[]) || []
-}
+const getTemplates = unstable_cache(
+  async (): Promise<TemplateWithGroup[]> => {
+    const supabase = createAdminClient()
+    const { data } = await supabase
+      .from('product_templates')
+      .select('*, product_group:product_groups(*)')
+      .eq('is_active', true)
+      .order('created_at', { ascending: false })
+    return (data as TemplateWithGroup[]) || []
+  },
+  ['templates-all'],
+  { revalidate: 3600, tags: ['products'] }
+)
 
 export default async function TemplatesPage() {
   const templates = await getTemplates()
