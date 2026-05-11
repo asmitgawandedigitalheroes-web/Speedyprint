@@ -4,7 +4,7 @@
 // so admins can update the brand name without a code deploy.
 export const SITE_NAME = 'Speedy Print'
 export const SITE_DESCRIPTION = 'Premium custom print and fabrication solutions for business, events and brands — South Africa\'s complete print suite.'
-export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://speedyprint.co.za'
+export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || 'https://speedyprint.co.za').replace(/\/$/, '')
 
 export const VAT_RATE = 0.15 // 15% South African VAT
 export const CURRENCY = 'ZAR'
@@ -15,9 +15,10 @@ export const DIVISIONS = [
   { key: 'labels' as const, name: 'Labels', description: 'Custom labels, stickers, and product packaging', icon: 'Tag' },
   { key: 'race-numbers' as const, name: 'Race Numbers', description: 'Professional race bibs and event numbering', icon: 'Hash' },
   { key: 'mtb-boards' as const, name: 'MTB Boards', description: 'Mountain bike number boards and cycling accessories', icon: 'Bike' },
+  { key: 'stamps' as const, name: 'Stamps', description: 'Self-inking, pre-inked and traditional rubber stamps', icon: 'Stamp' },
   { key: 'laser' as const, name: 'Laser', description: 'Laser-cut and engraved signage and gifts', icon: 'Zap' },
   { key: 'trophies' as const, name: 'Trophies', description: 'Award trophies, medals, and recognition products', icon: 'Trophy' },
-  { key: 'print' as const, name: 'Print', description: 'Stamps, sleeves, and general commercial printing', icon: 'Printer' },
+  { key: 'print' as const, name: 'Print', description: 'Sleeves, flyers, and general commercial printing', icon: 'Printer' },
 ]
 
 export const HEADER_PRODUCTS = [

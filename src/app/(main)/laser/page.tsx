@@ -4,12 +4,30 @@ import Image from 'next/image'
 import { CheckCircle2, ArrowRight, Zap, Layers, Star } from 'lucide-react'
 import { SITE_NAME } from '@/lib/utils/constants'
 import { ComplexQuoteForm } from '@/components/order/ComplexQuoteForm'
-import { createClient } from '@/lib/supabase/server'
+import { unstable_cache } from 'next/cache'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { ProductCard } from '@/components/products/ProductCard'
 import type { ProductGroup } from '@/types'
 
+export const revalidate = 3600
+
+const getLaserProducts = unstable_cache(
+  async () => {
+    const supabase = createAdminClient()
+    const { data } = await supabase
+      .from('product_groups')
+      .select('*')
+      .eq('division', 'laser')
+      .eq('is_active', true)
+      .order('display_order', { ascending: true })
+    return (data ?? []) as ProductGroup[]
+  },
+  ['division-products-laser'],
+  { revalidate: 3600, tags: ['products'] }
+)
+
 export const metadata: Metadata = {
-  title: `Laser Engraving & Cutting | ${SITE_NAME}`,
+  title: 'Laser Engraving & Cutting',
   description:
     'Custom laser engraving and cutting on wood, acrylic, metal and more. Keyrings, perspex signage, personalised gifts — 3–5 day turnaround.',
 }
@@ -22,14 +40,7 @@ const TRUST_POINTS = [
 ]
 
 export default async function LaserPage() {
-  const supabase = await createClient()
-  const { data: products } = await supabase
-    .from('product_groups')
-    .select('*')
-    .eq('division', 'laser')
-    .eq('is_active', true)
-    .order('display_order', { ascending: true })
-  const productList = (products ?? []) as ProductGroup[]
+  const productList = await getLaserProducts()
 
   return (
     <div className="bg-white">

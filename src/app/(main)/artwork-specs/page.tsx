@@ -4,7 +4,7 @@ import { CheckCircle2, XCircle, AlertTriangle, Download, FileText, Image as Imag
 import { SITE_NAME } from '@/lib/utils/constants'
 
 export const metadata: Metadata = {
-  title: `Artwork & Print Specifications | ${SITE_NAME}`,
+  title: 'Artwork & Print Specifications',
   description:
     'File formats, resolution requirements, colour mode, bleed, safe zones, and font guidelines for submitting print-ready artwork to Speedy Print.',
 }

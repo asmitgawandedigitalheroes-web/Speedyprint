@@ -270,7 +270,11 @@ How they heard about us: ${form.referral || '—'}
         <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
           <div className="mb-10 border-b border-gray-200 pb-6">
             <h2 className="font-heading text-2xl font-bold text-brand-text">Request a bulk quote</h2>
-            <p className="mt-2 text-brand-text-muted">Fill in the form below and we&apos;ll get back to you with a quote within 1 business day.</p>
+            <p className="mt-2 text-brand-text-muted">Fill in the form below and we&apos;ll get back to you with a tailored quote.</p>
+            <div className="mt-4 flex items-center gap-2 rounded-md border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-800">
+              <Clock className="h-4 w-4 shrink-0 text-blue-600" />
+              <span>We typically respond within <strong>4 office hours</strong> (Mon–Fri, 08:00–16:30 SAST).</span>
+            </div>
           </div>
 
           {submitted ? (

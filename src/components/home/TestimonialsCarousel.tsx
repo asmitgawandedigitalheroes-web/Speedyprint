@@ -63,25 +63,8 @@ export function TestimonialsCarousel() {
               <span className="text-brand-primary">Industry Leaders</span>
             </h2>
             <p className="mt-4 text-brand-text-muted leading-relaxed">
-              Join the 5,000+ brands that rely on our editorial-grade production daily.
+              Businesses, schools, event organisers and clubs across South Africa trust us for their print needs.
             </p>
-
-            {/* Avatars / social proof */}
-            <div className="mt-6 flex items-center gap-3">
-              <div className="flex -space-x-2">
-                {['bg-brand-primary', 'bg-brand-secondary', 'bg-brand-accent'].map((bg, i) => (
-                  <div
-                    key={i}
-                    className={`h-8 w-8 rounded-full ${bg} border-2 border-white flex items-center justify-center`}
-                  >
-                    <span className="text-[10px] font-bold text-white">
-                      {['SP', 'AB', 'CD'][i]}
-                    </span>
-                  </div>
-                ))}
-              </div>
-              <span className="text-sm text-brand-text-muted">+4.9k more</span>
-            </div>
 
             {/* Navigation */}
             {testimonials.length > perSlide && (
@@ -137,9 +120,7 @@ export function TestimonialsCarousel() {
 
                       {/* Review */}
                       <p className="mt-4 flex-1 text-sm leading-relaxed text-brand-text-muted italic">
-                        &ldquo;{t.review_text.length > 180
-                          ? `${t.review_text.substring(0, 180)}...`
-                          : t.review_text}&rdquo;
+                        &ldquo;{t.review_text}&rdquo;
                       </p>
 
                       {/* Author */}

@@ -1,22 +1,27 @@
 import type { Metadata } from 'next'
 import { Star } from 'lucide-react'
 import { SITE_NAME } from '@/lib/utils/constants'
+import { unstable_cache } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { Testimonial } from '@/types'
 import Link from 'next/link'
 
+export const revalidate = 3600
+
 export const metadata: Metadata = {
-  title: `Testimonials | ${SITE_NAME}`,
+  title: 'Testimonials',
   description: 'Read what our customers say about our custom print solutions. Real reviews from businesses across South Africa.',
 }
 
-export const dynamic = 'force-dynamic'
-
-async function getTestimonials(): Promise<Testimonial[]> {
-  const supabase = createAdminClient()
-  const { data } = await supabase.from('testimonials').select('*').order('created_at', { ascending: false })
-  return (data as Testimonial[]) || []
-}
+const getTestimonials = unstable_cache(
+  async (): Promise<Testimonial[]> => {
+    const supabase = createAdminClient()
+    const { data } = await supabase.from('testimonials').select('*').order('created_at', { ascending: false })
+    return (data as Testimonial[]) || []
+  },
+  ['testimonials-all'],
+  { revalidate: 3600, tags: ['testimonials'] }
+)
 
 export default async function TestimonialsPage() {
   const testimonials = await getTestimonials()

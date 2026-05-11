@@ -16,47 +16,58 @@ import {
   ChevronRight,
   UserCheck
 } from 'lucide-react'
+import { unstable_cache } from 'next/cache'
 import { SITE_NAME, SITE_URL } from '@/lib/utils/constants'
 import { sanitizeHtml } from '@/lib/utils/sanitize'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { BlogCard } from '@/components/blog/BlogCard'
 import type { BlogPost } from '@/types'
 
+export const revalidate = 3600
+
 interface PageProps {
   params: Promise<{ slug: string }>
 }
 
-async function getPost(slug: string): Promise<BlogPost | null> {
-  const supabase = createAdminClient()
-  const { data } = await supabase
-    .from('blog_posts')
-    .select('*')
-    .eq('slug', slug)
-    .eq('published', true)
-    .single()
-  return data as BlogPost | null
-}
+const getPost = unstable_cache(
+  async (slug: string): Promise<BlogPost | null> => {
+    const supabase = createAdminClient()
+    const { data } = await supabase
+      .from('blog_posts')
+      .select('*')
+      .eq('slug', slug)
+      .eq('published', true)
+      .single()
+    return data as BlogPost | null
+  },
+  ['blog-post'],
+  { revalidate: 3600, tags: ['blog'] }
+)
 
-async function getRelatedPosts(excludeId: string): Promise<BlogPost[]> {
-  const supabase = createAdminClient()
-  const { data } = await supabase
-    .from('blog_posts')
-    .select('*')
-    .eq('published', true)
-    .neq('id', excludeId)
-    .limit(3)
-    .order('published_at', { ascending: false })
-  return (data as BlogPost[]) || []
-}
+const getRelatedPosts = unstable_cache(
+  async (excludeId: string): Promise<BlogPost[]> => {
+    const supabase = createAdminClient()
+    const { data } = await supabase
+      .from('blog_posts')
+      .select('*')
+      .eq('published', true)
+      .neq('id', excludeId)
+      .limit(3)
+      .order('published_at', { ascending: false })
+    return (data as BlogPost[]) || []
+  },
+  ['blog-related'],
+  { revalidate: 3600, tags: ['blog'] }
+)
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params
   const post = await getPost(slug)
 
-  if (!post) return { title: `Post Not Found | ${SITE_NAME}` }
+  if (!post) return { title: 'Post Not Found' }
 
   return {
-    title: `${post.title} | ${SITE_NAME}`,
+    title: post.title,
     description: post.excerpt || post.title,
     openGraph: {
       title: post.title,
@@ -67,8 +78,6 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     },
   }
 }
-
-export const dynamic = 'force-dynamic'
 
 export default async function BlogPostPage({ params }: PageProps) {
   const { slug } = await params

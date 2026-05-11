@@ -3,12 +3,30 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { CheckCircle2, ArrowRight, Zap, RefreshCw, Layers, Stamp } from 'lucide-react'
 import { SITE_NAME } from '@/lib/utils/constants'
-import { createClient } from '@/lib/supabase/server'
+import { unstable_cache } from 'next/cache'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { ProductCard } from '@/components/products/ProductCard'
 import type { ProductGroup } from '@/types'
 
+export const revalidate = 3600
+
+const getStampProducts = unstable_cache(
+  async () => {
+    const supabase = createAdminClient()
+    const { data } = await supabase
+      .from('product_groups')
+      .select('*')
+      .eq('division', 'stamps')
+      .eq('is_active', true)
+      .order('display_order', { ascending: true })
+    return (data ?? []) as ProductGroup[]
+  },
+  ['division-products-stamps'],
+  { revalidate: 3600, tags: ['products'] }
+)
+
 export const metadata: Metadata = {
-  title: `Custom Stamps | ${SITE_NAME}`,
+  title: 'Custom Stamps',
   description:
     'Self-inking and traditional rubber stamps. Custom business stamps, address stamps, signature stamps — 2–3 day turnaround. Replacement ink available.',
 }
@@ -21,14 +39,7 @@ const TRUST_POINTS = [
 ]
 
 export default async function StampsPage() {
-  const supabase = await createClient()
-  const { data: products } = await supabase
-    .from('product_groups')
-    .select('*')
-    .eq('division', 'stamps')
-    .eq('is_active', true)
-    .order('display_order', { ascending: true })
-  const productList = (products ?? []) as ProductGroup[]
+  const productList = await getStampProducts()
 
   return (
     <div className="bg-white">

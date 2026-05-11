@@ -141,6 +141,41 @@ function OrderStepper({ status }: { status: string }) {
   )
 }
 
+// ─── Delivery estimate ────────────────────────────────────────────────────────
+
+function addWorkingDays(start: Date, days: number): Date {
+  const result = new Date(start)
+  let added = 0
+  while (added < days) {
+    result.setDate(result.getDate() + 1)
+    const dow = result.getDay()
+    if (dow !== 0 && dow !== 6) added++
+  }
+  return result
+}
+
+function getDeliveryEstimate(status: string, createdAt: string): string | null {
+  if (['delivered', 'completed', 'cancelled'].includes(status)) return null
+  const created = new Date(createdAt)
+  let low: Date, high: Date
+  if (status === 'shipped') {
+    low  = addWorkingDays(new Date(), 1)
+    high = addWorkingDays(new Date(), 3)
+  } else if (status === 'ready_to_ship') {
+    low  = addWorkingDays(created, 6)
+    high = addWorkingDays(created, 9)
+  } else if (status === 'in_production') {
+    low  = addWorkingDays(created, 7)
+    high = addWorkingDays(created, 11)
+  } else {
+    low  = addWorkingDays(created, 8)
+    high = addWorkingDays(created, 13)
+  }
+  const fmt = (d: Date) =>
+    d.toLocaleDateString('en-ZA', { day: 'numeric', month: 'short' })
+  return `${fmt(low)} – ${fmt(high)}`
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function TrackOrderPage() {
@@ -314,6 +349,21 @@ export default function TrackOrderPage() {
                   <OrderStepper status={result.status} />
                 </div>
               )}
+
+              {/* Estimated delivery */}
+              {(() => {
+                const estimate = getDeliveryEstimate(result.status, result.created_at)
+                if (!estimate) return null
+                return (
+                  <div className="flex items-center gap-3 border-b border-gray-100 px-6 py-4 bg-brand-bg/50">
+                    <Truck className="h-4 w-4 shrink-0 text-brand-primary" />
+                    <div>
+                      <span className="text-xs font-semibold uppercase tracking-widest text-brand-text-muted">Estimated delivery</span>
+                      <p className="text-sm font-semibold text-brand-text">{estimate}</p>
+                    </div>
+                  </div>
+                )
+              })()}
 
               {/* Items */}
               <div className="px-6 py-5">

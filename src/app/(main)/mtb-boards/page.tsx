@@ -4,12 +4,30 @@ import Image from 'next/image'
 import { CheckCircle2, ArrowRight, Upload, Shield, Layers, Mountain } from 'lucide-react'
 import { SITE_NAME } from '@/lib/utils/constants'
 import { CsvUpload } from '@/components/order/CsvUpload'
-import { createClient } from '@/lib/supabase/server'
+import { unstable_cache } from 'next/cache'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { ProductCard } from '@/components/products/ProductCard'
 import type { ProductGroup } from '@/types'
 
+export const revalidate = 3600
+
+const getMtbProducts = unstable_cache(
+  async () => {
+    const supabase = createAdminClient()
+    const { data } = await supabase
+      .from('product_groups')
+      .select('*')
+      .eq('division', 'mtb-boards')
+      .eq('is_active', true)
+      .order('display_order', { ascending: true })
+    return (data ?? []) as ProductGroup[]
+  },
+  ['division-products-mtb-boards'],
+  { revalidate: 3600, tags: ['products'] }
+)
+
 export const metadata: Metadata = {
-  title: `MTB Boards & Correx Printing | ${SITE_NAME}`,
+  title: 'MTB Boards & Correx Printing',
   description:
     'Mountain bike number boards and correx cycling accessories. CSV variable data upload for events. Weatherproof materials. 5–7 day turnaround.',
 }
@@ -22,14 +40,7 @@ const TRUST_POINTS = [
 ]
 
 export default async function MtbBoardsPage() {
-  const supabase = await createClient()
-  const { data: products } = await supabase
-    .from('product_groups')
-    .select('*')
-    .eq('division', 'mtb-boards')
-    .eq('is_active', true)
-    .order('display_order', { ascending: true })
-  const productList = (products ?? []) as ProductGroup[]
+  const productList = await getMtbProducts()
 
   return (
     <div className="bg-white">

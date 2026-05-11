@@ -66,7 +66,7 @@ export async function generateMetadata({ params }: ProductPageProps) {
 
   if (!data) return { title: 'Product Not Found' }
 
-  const title = `${data.name} | Order Online | ${SITE_NAME}`
+  const title = `${data.name} | Order Online`
   const description = data.description ?? `Design and order custom ${data.name} online from ${SITE_NAME}. Fast turnaround, production-ready quality.`
   const url = `${SITE_URL}/products/${slug}`
   const image = data.image_url ? `${SITE_URL}${data.image_url}` : `${SITE_URL}/images/speedyprint-logo.png`
