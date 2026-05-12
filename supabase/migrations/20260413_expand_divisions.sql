@@ -187,7 +187,7 @@ BEGIN
     VALUES (v_grp, 'Triathlon Pack', '1× bib (200×200mm) + 2× helmet stickers (80×50mm) + 1× bike plate (200×120mm)', 200, 200, 2, 3, 300, true); END IF;
 
   INSERT INTO template_parameters (product_template_id, param_key, param_label, param_type, options, default_value, display_order)
-  SELECT pt.id, 'material', 'Material', 'select', '["TEX21", "Ecoflex", "Tyvek"]', 'TEX21', 1
+  SELECT pt.id, 'material', 'Material', 'select', '["TEX21", "Ecoflex"]', 'TEX21', 1
   FROM product_templates pt WHERE pt.product_group_id = v_grp
   AND NOT EXISTS (SELECT 1 FROM template_parameters WHERE product_template_id = pt.id AND param_key = 'material');
 
@@ -211,7 +211,7 @@ BEGIN
   IF NOT EXISTS (SELECT 1 FROM product_groups WHERE slug = 'running-bibs') THEN
     INSERT INTO product_groups (name, slug, division, description, is_active, display_order, image_url)
     VALUES ('Running Bibs', 'running-bibs', 'race-numbers',
-            'Lightweight running race bibs in Ecoflex or Tyvek. Full-colour sponsor branding, unique race numbers, and name personalisation available.',
+            'Lightweight running race bibs in Ecoflex or TEX21. Full-colour sponsor branding, unique race numbers, and name personalisation available.',
             true, 31, '/images/products/race-bibs.png');
   END IF;
   SELECT id INTO v_grp FROM product_groups WHERE slug = 'running-bibs';
@@ -224,7 +224,7 @@ BEGIN
     VALUES (v_grp, 'Large Running Bib', '230mm × 200mm — marathon/ultra bib', 230, 200, 2, 3, 300, true); END IF;
 
   INSERT INTO template_parameters (product_template_id, param_key, param_label, param_type, options, default_value, display_order)
-  SELECT pt.id, 'material', 'Material', 'select', '["Ecoflex", "Tyvek", "TEX21"]', 'Ecoflex', 1
+  SELECT pt.id, 'material', 'Material', 'select', '["Ecoflex", "TEX21"]', 'Ecoflex', 1
   FROM product_templates pt WHERE pt.product_group_id = v_grp
   AND NOT EXISTS (SELECT 1 FROM template_parameters WHERE product_template_id = pt.id AND param_key = 'material');
 
