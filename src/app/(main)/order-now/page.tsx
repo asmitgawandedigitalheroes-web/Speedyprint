@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { Suspense } from 'react'
+import { redirect } from 'next/navigation'
 import { SITE_NAME, WHATSAPP_URL } from '@/lib/utils/constants'
 import { QuickOrderForm } from '@/components/order/QuickOrderForm'
 import { Loader2, Phone, MessageCircle, Mail, Info } from 'lucide-react'
@@ -11,6 +12,14 @@ export const metadata: Metadata = {
     'Configure and order custom labels and stickers. Choose your size, material, finish, and quantity. Instant pricing with free delivery on orders over R500.',
 }
 
+const DIVISION_REDIRECTS: Record<string, string> = {
+  'race-numbers': '/race-numbers',
+  'mtb-boards': '/mtb',
+  'stamps': '/stamps',
+  'laser': '/laser',
+  'trophies': '/trophies',
+}
+
 interface PageProps {
   searchParams: Promise<{
     w?: string
@@ -18,12 +27,12 @@ interface PageProps {
     q?: string
     m?: string
     d?: string
+    division?: string
   }>
 }
 
 async function OrderFormWrapper({ searchParams }: PageProps) {
   const params = await searchParams
-
   return (
     <div className="space-y-8">
       <QuickOrderForm
@@ -39,6 +48,11 @@ async function OrderFormWrapper({ searchParams }: PageProps) {
 }
 
 export default async function OrderNowPage(props: PageProps) {
+  const params = await props.searchParams
+  if (params.division && DIVISION_REDIRECTS[params.division]) {
+    redirect(DIVISION_REDIRECTS[params.division])
+  }
+
   return (
     <div className="bg-brand-bg min-h-screen">
       {/* Page header */}
