@@ -69,10 +69,10 @@ export default async function TrophiesPage() {
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
-                href="/bulk-orders"
+                href="/request-quote?division=trophies"
                 className="inline-flex items-center gap-2 rounded-md bg-brand-primary px-6 py-3 text-sm font-semibold text-white transition hover:bg-brand-primary-dark"
               >
-                Request Bulk Quote <ArrowRight className="h-4 w-4" />
+                Get an Instant Quote <ArrowRight className="h-4 w-4" />
               </Link>
               <Link
                 href="/contact"
@@ -137,12 +137,12 @@ export default async function TrophiesPage() {
           <h2 className="font-heading text-3xl font-bold text-white">Planning an awards ceremony?</h2>
           <p className="mt-3 text-white/60">We handle bulk trophy orders for events, schools, and corporate programmes.</p>
           <div className="mt-8 flex flex-wrap justify-center gap-4">
-            <a
-              href="#quote"
+            <Link
+              href="/request-quote?division=trophies"
               className="inline-flex items-center gap-2 rounded-md bg-brand-primary px-7 py-3 text-sm font-semibold text-white transition hover:bg-brand-primary-dark"
             >
-              Request a Quote <ArrowRight className="h-4 w-4" />
-            </a>
+              Get an Instant Quote <ArrowRight className="h-4 w-4" />
+            </Link>
             <Link
               href="/contact"
               className="inline-flex items-center gap-2 rounded-md border border-white/30 px-7 py-3 text-sm font-semibold text-white transition hover:border-white hover:bg-white/10"

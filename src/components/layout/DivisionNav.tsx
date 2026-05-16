@@ -10,7 +10,7 @@ const DIVISIONS = [
   { href: '/labels',       label: 'Labels',       shortLabel: 'Labels',  Icon: Tag    },
   { href: '/race-numbers', label: 'Race Numbers',  shortLabel: 'Racing',  Icon: Hash   },
   { href: '/mtb-boards',   label: 'MTB Boards',    shortLabel: 'MTB',     Icon: Bike   },
-  { href: '/products?division=print', label: 'Print', shortLabel: 'Print', Icon: Printer },
+  { href: '/print', label: 'Print', shortLabel: 'Print', Icon: Printer },
   { href: '/stamps',       label: 'Stamps',        shortLabel: 'Stamps',  Icon: Stamp  },
   { href: '/laser',        label: 'Laser',         shortLabel: 'Laser',   Icon: Zap    },
   { href: '/trophies',     label: 'Trophies',      shortLabel: 'Trophies',Icon: Trophy },

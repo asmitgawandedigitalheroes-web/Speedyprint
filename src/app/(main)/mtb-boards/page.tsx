@@ -4,6 +4,7 @@ import Image from 'next/image'
 import { CheckCircle2, ArrowRight, Upload, Shield, Layers, Mountain } from 'lucide-react'
 import { SITE_NAME } from '@/lib/utils/constants'
 import { CsvUpload } from '@/components/order/CsvUpload'
+import { ComplexQuoteForm } from '@/components/order/ComplexQuoteForm'
 import { unstable_cache } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { ProductCard } from '@/components/products/ProductCard'
@@ -69,7 +70,7 @@ export default async function MtbBoardsPage() {
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
-                href="/order-now?division=mtb-boards"
+                href="/request-quote?division=mtb-boards"
                 className="inline-flex items-center gap-2 rounded-md bg-brand-primary px-6 py-3 text-sm font-semibold text-white transition hover:bg-brand-primary-dark"
               >
                 Get an Instant Quote <ArrowRight className="h-4 w-4" />
@@ -154,6 +155,17 @@ export default async function MtbBoardsPage() {
         </div>
       </section>
 
+      {/* Quote Form */}
+      <section id="quote" className="py-16">
+        <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
+          <div className="mb-10 border-b border-gray-200 pb-6">
+            <h2 className="font-heading text-2xl font-bold text-brand-text">Request an MTB boards quote</h2>
+            <p className="mt-2 text-brand-text-muted">Fill in the form and we&apos;ll get back to you within 1 business day.</p>
+          </div>
+          <ComplexQuoteForm defaultProductType="MTB Boards" />
+        </div>
+      </section>
+
       {/* Bottom CTA */}
       <section className="bg-brand-secondary py-14">
         <div className="mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8">
@@ -161,7 +173,7 @@ export default async function MtbBoardsPage() {
           <p className="mt-3 text-white/60">We&apos;ll handle the boards so you can focus on the race.</p>
           <div className="mt-8 flex flex-wrap justify-center gap-4">
             <Link
-              href="/order-now?division=mtb-boards"
+              href="/request-quote?division=mtb-boards"
               className="inline-flex items-center gap-2 rounded-md bg-brand-primary px-7 py-3 text-sm font-semibold text-white transition hover:bg-brand-primary-dark"
             >
               Get an Instant Quote <ArrowRight className="h-4 w-4" />

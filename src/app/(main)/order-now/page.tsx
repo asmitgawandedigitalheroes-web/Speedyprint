@@ -13,11 +13,11 @@ export const metadata: Metadata = {
 }
 
 const DIVISION_REDIRECTS: Record<string, string> = {
-  'race-numbers': '/race-numbers',
-  'mtb-boards': '/mtb',
-  'stamps': '/stamps',
-  'laser': '/laser',
-  'trophies': '/trophies',
+  'race-numbers': '/request-quote?division=race-numbers',
+  'mtb-boards': '/request-quote?division=mtb-boards',
+  'stamps': '/request-quote?division=stamps',
+  'laser': '/request-quote?division=laser',
+  'trophies': '/request-quote?division=trophies',
 }
 
 interface PageProps {
