@@ -23,7 +23,7 @@ const PRODUCTS = [
   {
     name: 'Print',
     description: 'Business cards, flyers and posters',
-    href: '/products?division=print',
+    href: '/print',
     icon: Printer,
     color: 'bg-emerald-500/10',
     iconColor: 'text-emerald-500',

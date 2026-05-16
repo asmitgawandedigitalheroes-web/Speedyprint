@@ -50,8 +50,8 @@ export default async function LaserPage() {
           <div className="max-w-2xl">
             <div className="mb-6">
               <Image
-                src="/images/speedy-print-logo.png"
-                alt="Speedy Print"
+                src="/images/speedy-laser-logo.png"
+                alt="Speedy Laser"
                 width={220}
                 height={80}
                 className="h-20 w-auto"
@@ -69,7 +69,7 @@ export default async function LaserPage() {
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
-                href="/order-now?division=laser"
+                href="/request-quote?division=laser"
                 className="inline-flex items-center gap-2 rounded-md bg-brand-primary px-6 py-3 text-sm font-semibold text-white transition hover:bg-brand-primary-dark"
               >
                 Get an Instant Quote <ArrowRight className="h-4 w-4" />
@@ -137,12 +137,12 @@ export default async function LaserPage() {
           <h2 className="font-heading text-3xl font-bold text-white">Have a custom engraving project?</h2>
           <p className="mt-3 text-white/60">We handle complex shapes, bulk runs, and corporate gifting programmes.</p>
           <div className="mt-8 flex flex-wrap justify-center gap-4">
-            <a
-              href="#quote"
+            <Link
+              href="/request-quote?division=laser"
               className="inline-flex items-center gap-2 rounded-md bg-brand-primary px-7 py-3 text-sm font-semibold text-white transition hover:bg-brand-primary-dark"
             >
               Get a Quote <ArrowRight className="h-4 w-4" />
-            </a>
+            </Link>
             <Link
               href="/contact"
               className="inline-flex items-center gap-2 rounded-md border border-white/30 px-7 py-3 text-sm font-semibold text-white transition hover:border-white hover:bg-white/10"

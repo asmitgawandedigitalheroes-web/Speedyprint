@@ -36,7 +36,7 @@ const REFERRAL_SOURCES = ['Google', 'Social Media', 'Word of Mouth', 'Returning 
 
 const PRODUCT_SIZES: Record<string, string[]> = {
   'Labels': ['25×25mm', '50×50mm', '100×100mm', '100×50mm', '200×100mm', '200×150mm', 'Custom'],
-  'Race Numbers': ['210×150mm', '210×148mm (A5)', '200×200mm', '250×200mm', 'Custom'],
+  'Race Numbers': ['Standard — 148mm × 210mm', 'Small — 150mm × 150mm', 'Large — 200mm × 210mm', 'Custom'],
   'MTB Boards': ['300×200mm', '400×300mm', '500×400mm', 'Custom'],
   'Laser Engraving': ['50×25mm', '100×50mm', '150×100mm', '200×150mm', 'Custom'],
   'Stamps': ['30×30mm', '40×40mm', '50×50mm', '70×40mm', 'Custom'],
@@ -44,12 +44,12 @@ const PRODUCT_SIZES: Record<string, string[]> = {
 }
 
 const PRODUCT_MATERIALS: Record<string, string[]> = {
-  'Labels': ['White Vinyl', 'Clear Vinyl', 'Silver Vinyl', 'Gloss Paper', 'Kraft Paper'],
-  'Race Numbers': ['Ecoflex', 'TEX21', 'Waterproof Synthetic'],
+  'Labels': ['White Vinyl', 'Grey Back Vinyl', 'Clear Vinyl', 'Polylaser Adhesive', 'Paper Adhesive'],
+  'Race Numbers': ['Ecoflex', 'TEX21'],
   'MTB Boards': ['Corrugated Plastic', 'Foamboard', 'Aluminium Composite'],
   'Laser Engraving': ['Acrylic', 'Wood', 'Anodised Aluminium', 'Leather'],
-  'Stamps': ['Pre-inked', 'Self-inking', 'Rubber'],
-  'Trophies': ['Resin', 'Crystal', 'Metal', 'Wood'],
+  'Stamps': ['Self-inking', 'Pre-inked', 'Rubber Mount'],
+  'Trophies': ['Resin', 'Crystal', 'Metal', 'Timber'],
 }
 
 export default function BulkOrdersPage() {

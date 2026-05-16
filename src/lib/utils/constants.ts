@@ -25,7 +25,7 @@ export const HEADER_PRODUCTS = [
   { href: '/labels', label: 'Labels', description: 'Custom labels, stickers, wristbands & car magnets', icon: 'Tag' },
   { href: '/race-numbers', label: 'Race Numbers', description: 'Professional race numbers & event tags', icon: 'Hash' },
   { href: '/mtb-boards', label: 'MTB & Boards', description: 'MTB boards, bike flaps & Correx boards', icon: 'Bike' },
-  { href: '/products?division=print', label: 'Print', description: 'Business cards, flyers, posters & sleeves', icon: 'Printer' },
+  { href: '/print', label: 'Print', description: 'Business cards, flyers, posters & sleeves', icon: 'Printer' },
   { href: '/stamps', label: 'Stamps', description: 'Self-inking, pre-inked & traditional stamps', icon: 'Stamp' },
   { href: '/laser', label: 'Laser & NFC', description: 'Laser-cut signs, acrylic, gifts & NFC stands', icon: 'Zap' },
   { href: '/trophies', label: 'Trophies', description: 'Awards, medals, plaques & recognition', icon: 'Trophy' },
