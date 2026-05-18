@@ -4,12 +4,30 @@ import Image from 'next/image'
 import { CheckCircle2, ArrowRight, Award, Users, Star, Layers } from 'lucide-react'
 import { SITE_NAME } from '@/lib/utils/constants'
 import { ComplexQuoteForm } from '@/components/order/ComplexQuoteForm'
-import { createClient } from '@/lib/supabase/server'
+import { unstable_cache } from 'next/cache'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { ProductCard } from '@/components/products/ProductCard'
 import type { ProductGroup } from '@/types'
 
+export const revalidate = 3600
+
+const getTrophyProducts = unstable_cache(
+  async () => {
+    const supabase = createAdminClient()
+    const { data } = await supabase
+      .from('product_groups')
+      .select('*')
+      .eq('division', 'trophies')
+      .eq('is_active', true)
+      .order('display_order', { ascending: true })
+    return (data ?? []) as ProductGroup[]
+  },
+  ['division-products-trophies'],
+  { revalidate: 3600, tags: ['products'] }
+)
+
 export const metadata: Metadata = {
-  title: `Trophies & Awards | ${SITE_NAME}`,
+  title: 'Trophies & Awards',
   description:
     'Custom trophies, engraved plaques, medallions, corporate awards and certificate frames. Engraving included. 7–10 day turnaround. Corporate bulk pricing available.',
 }
@@ -22,14 +40,7 @@ const TRUST_POINTS = [
 ]
 
 export default async function TrophiesPage() {
-  const supabase = await createClient()
-  const { data: products } = await supabase
-    .from('product_groups')
-    .select('*')
-    .eq('division', 'trophies')
-    .eq('is_active', true)
-    .order('display_order', { ascending: true })
-  const productList = (products ?? []) as ProductGroup[]
+  const productList = await getTrophyProducts()
 
   return (
     <div className="bg-white">
@@ -58,10 +69,10 @@ export default async function TrophiesPage() {
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
-                href="/bulk-orders"
+                href="/request-quote?division=trophies"
                 className="inline-flex items-center gap-2 rounded-md bg-brand-primary px-6 py-3 text-sm font-semibold text-white transition hover:bg-brand-primary-dark"
               >
-                Request Bulk Quote <ArrowRight className="h-4 w-4" />
+                Get an Instant Quote <ArrowRight className="h-4 w-4" />
               </Link>
               <Link
                 href="/contact"
@@ -126,12 +137,12 @@ export default async function TrophiesPage() {
           <h2 className="font-heading text-3xl font-bold text-white">Planning an awards ceremony?</h2>
           <p className="mt-3 text-white/60">We handle bulk trophy orders for events, schools, and corporate programmes.</p>
           <div className="mt-8 flex flex-wrap justify-center gap-4">
-            <a
-              href="#quote"
+            <Link
+              href="/request-quote?division=trophies"
               className="inline-flex items-center gap-2 rounded-md bg-brand-primary px-7 py-3 text-sm font-semibold text-white transition hover:bg-brand-primary-dark"
             >
-              Request a Quote <ArrowRight className="h-4 w-4" />
-            </a>
+              Get an Instant Quote <ArrowRight className="h-4 w-4" />
+            </Link>
             <Link
               href="/contact"
               className="inline-flex items-center gap-2 rounded-md border border-white/30 px-7 py-3 text-sm font-semibold text-white transition hover:border-white hover:bg-white/10"

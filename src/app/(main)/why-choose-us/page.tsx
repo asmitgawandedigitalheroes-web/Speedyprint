@@ -4,7 +4,7 @@ import { SITE_NAME } from '@/lib/utils/constants'
 import Link from 'next/link'
 
 export const metadata: Metadata = {
-  title: `Why choose us | ${SITE_NAME}`,
+  title: 'Why choose us',
   description: 'Discover why thousands of South African businesses trust Speedy for their custom print and fabrication needs.',
 }
 

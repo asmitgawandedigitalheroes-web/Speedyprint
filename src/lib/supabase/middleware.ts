@@ -51,8 +51,13 @@ export async function updateSession(request: NextRequest) {
 
   // pathname is already defined at the top
 
-  // Protect /account and /checkout routes
-  if (pathname.startsWith('/account') || pathname.startsWith('/checkout')) {
+  // Auth-alias routes live under /account but must be publicly accessible
+  const AUTH_ALIASES = ['/account/sign-up', '/account/sign-in']
+  const isAuthAlias = AUTH_ALIASES.includes(pathname)
+
+  // Protect /account routes (but not the public sign-up/sign-in aliases)
+  // /checkout is intentionally public — guests can checkout without an account
+  if (pathname.startsWith('/account') && !isAuthAlias) {
     if (!user) {
       const url = request.nextUrl.clone()
       url.pathname = '/login'

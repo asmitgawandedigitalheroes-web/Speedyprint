@@ -12,7 +12,7 @@ interface AuthState {
   isAuthenticated: boolean
   setUser: (user: Profile | null) => void
   login: (email: string, password: string) => Promise<{ error: string | null; emailNotConfirmed?: boolean }>
-  register: (email: string, password: string, fullName: string, companyName?: string) => Promise<{ error: string | null; emailConfirmationRequired?: boolean }>
+  register: (email: string, password: string, fullName: string, companyName?: string, marketingOptIn?: boolean) => Promise<{ error: string | null; emailConfirmationRequired?: boolean }>
   logout: () => Promise<void>
   resetPassword: (email: string) => Promise<{ error: string | null }>
   updatePassword: (newPassword: string) => Promise<{ error: string | null }>
@@ -69,7 +69,7 @@ export const useAuth = create<AuthState>()(
         return { error: null }
       },
 
-      register: async (email, password, fullName, companyName) => {
+      register: async (email, password, fullName, companyName, marketingOptIn = false) => {
         set({ isLoading: true })
         const supabase = createClient()
 
@@ -99,18 +99,31 @@ export const useAuth = create<AuthState>()(
 
         if (data.user) {
           // Email confirmation pending — session is null until user confirms
+          // Still persist consent fields now; profile row exists from the auth trigger
           if (!data.session) {
+            await supabase
+              .from('profiles')
+              .update({
+                full_name: fullName,
+                ...(companyName ? { company_name: companyName } : {}),
+                marketing_opt_in: marketingOptIn,
+                terms_accepted_at: new Date().toISOString(),
+              })
+              .eq('id', data.user.id)
             set({ isLoading: false })
             return { error: null, emailConfirmationRequired: true }
           }
 
-          // Update profile with company name if provided
-          if (companyName) {
-            await supabase
-              .from('profiles')
-              .update({ company_name: companyName, full_name: fullName })
-              .eq('id', data.user.id)
-          }
+          // Update profile with registration metadata
+          await supabase
+            .from('profiles')
+            .update({
+              full_name: fullName,
+              ...(companyName ? { company_name: companyName } : {}),
+              marketing_opt_in: marketingOptIn,
+              terms_accepted_at: new Date().toISOString(),
+            })
+            .eq('id', data.user.id)
 
           const { data: profile } = await supabase
             .from('profiles')

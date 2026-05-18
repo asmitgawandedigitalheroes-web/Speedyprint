@@ -1,27 +1,32 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import Image from 'next/image'
+import { unstable_cache } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { BlogCard } from '@/components/blog/BlogCard'
 import { ArrowRight, Filter, Sparkles, Newspaper, PenTool, Lightbulb, Zap, ChevronRight } from 'lucide-react'
 import type { BlogPost } from '@/types'
+
+export const revalidate = 3600
 
 export const metadata: Metadata = {
   title: 'Insights & Resources | SpeedyPrint',
   description: 'Professional guides, industry trends, and technical printing advice from the experts at SpeedyPrint South Africa.',
 }
 
-export const dynamic = 'force-dynamic'
-
-async function getBlogPosts(): Promise<BlogPost[]> {
-  const supabase = createAdminClient()
-  const { data } = await supabase
-    .from('blog_posts')
-    .select('*')
-    .eq('published', true)
-    .order('published_at', { ascending: false })
-  return (data as BlogPost[]) || []
-}
+const getBlogPosts = unstable_cache(
+  async (): Promise<BlogPost[]> => {
+    const supabase = createAdminClient()
+    const { data } = await supabase
+      .from('blog_posts')
+      .select('*')
+      .eq('published', true)
+      .order('published_at', { ascending: false })
+    return (data as BlogPost[]) || []
+  },
+  ['blog-posts-all'],
+  { revalidate: 3600, tags: ['blog'] }
+)
 
 const CATEGORIES = [
   { label: 'All Insights', icon: Newspaper, active: true },

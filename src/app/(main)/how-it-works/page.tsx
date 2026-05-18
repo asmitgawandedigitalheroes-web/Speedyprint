@@ -4,7 +4,7 @@ import { Layout, Upload, CheckCircle2, Truck, ArrowRight, FileText, Mail, Phone 
 import { SITE_NAME } from '@/lib/utils/constants'
 
 export const metadata: Metadata = {
-  title: `How It Works | ${SITE_NAME}`,
+  title: 'How It Works',
   description:
     'From choosing a product to delivery at your door — how ordering from Speedy Print works in four simple steps.',
 }

@@ -22,6 +22,8 @@ export default function RegisterPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
+  const [acceptedTerms, setAcceptedTerms] = useState(false)
+  const [marketingOptIn, setMarketingOptIn] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
 
   const [isSuccess, setIsSuccess] = useState(false)
@@ -30,6 +32,7 @@ export default function RegisterPage() {
     const e: Record<string, string> = {}
     if (!fullName.trim()) e.fullName = 'Full name is required'
     if (!email.trim()) e.email = 'Email is required'
+    if (!acceptedTerms) e.terms = 'You must accept the Terms of Service and Privacy Policy to continue'
     if (password.length < 8) {
       e.password = 'Password must be at least 8 characters'
     } else if (password.length > 15) {
@@ -51,7 +54,7 @@ export default function RegisterPage() {
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
     if (!validate()) return
-    const { error, emailConfirmationRequired } = await register(email, password, fullName.trim(), companyName.trim() || undefined)
+    const { error, emailConfirmationRequired } = await register(email, password, fullName.trim(), companyName.trim() || undefined, marketingOptIn)
     if (error) { toast.error(error); return }
     if (emailConfirmationRequired) {
       setIsSuccess(true)
@@ -144,6 +147,44 @@ export default function RegisterPage() {
           <PasswordInput id="confirmPassword" placeholder="Re-enter your password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required autoComplete="new-password" disabled={isLoading} />
           {errors.confirmPassword && <p className="text-xs text-red-500">{errors.confirmPassword}</p>}
         </div>
+
+        {/* Terms & Privacy — required */}
+        <div className="space-y-1.5">
+          <label className="flex items-start gap-2.5 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={acceptedTerms}
+              onChange={(e) => setAcceptedTerms(e.target.checked)}
+              disabled={isLoading}
+              className="mt-0.5 h-4 w-4 shrink-0 rounded border-gray-300 accent-brand-primary"
+            />
+            <span className="text-sm text-brand-text-muted">
+              I accept the{' '}
+              <Link href="/terms" target="_blank" className="font-medium text-brand-primary underline underline-offset-2 hover:no-underline">
+                Terms of Service
+              </Link>{' '}
+              and{' '}
+              <Link href="/privacy" target="_blank" className="font-medium text-brand-primary underline underline-offset-2 hover:no-underline">
+                Privacy Policy
+              </Link>
+            </span>
+          </label>
+          {errors.terms && <p className="text-xs text-red-500">{errors.terms}</p>}
+        </div>
+
+        {/* Marketing opt-in — optional */}
+        <label className="flex items-start gap-2.5 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={marketingOptIn}
+            onChange={(e) => setMarketingOptIn(e.target.checked)}
+            disabled={isLoading}
+            className="mt-0.5 h-4 w-4 shrink-0 rounded border-gray-300 accent-brand-primary"
+          />
+          <span className="text-sm text-brand-text-muted">
+            Send me design tips and exclusive offers <span className="text-xs text-brand-text-muted">(optional)</span>
+          </span>
+        </label>
 
         <Button type="submit" className="w-full bg-brand-primary hover:bg-brand-primary-dark text-white gap-2" disabled={isLoading}>
           {isLoading ? (

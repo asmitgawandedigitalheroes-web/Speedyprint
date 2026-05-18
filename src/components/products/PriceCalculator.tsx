@@ -9,12 +9,14 @@ interface PriceCalculatorProps {
   productGroupId: string
   selectedParams: Record<string, string>
   quantity: number
+  onPriceUpdate?: (result: PriceResult) => void
 }
 
 export function PriceCalculator({
   productGroupId,
   selectedParams,
   quantity,
+  onPriceUpdate,
 }: PriceCalculatorProps) {
   const [price, setPrice] = useState<PriceResult | null>(null)
   const [updating, setUpdating] = useState(false)
@@ -43,6 +45,7 @@ export function PriceCalculator({
       } else {
         priceRef.current = data.price
         setPrice(data.price)
+        onPriceUpdate?.(data.price)
       }
     } catch {
       setError('Failed to calculate price')
@@ -117,11 +120,21 @@ export function PriceCalculator({
       <Separator />
 
       <div className="flex items-center justify-between">
-        <span className="text-base font-semibold text-brand-text">Subtotal</span>
+        <span className="text-base font-semibold text-brand-text">Total</span>
         <span className="text-xl font-bold text-brand-primary">
-          {formatCurrency(price!.subtotal)}
+          {formatCurrency(price!.realSubtotal)}
         </span>
       </div>
+
+      {price!.minimumApplied && (
+        <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2">
+          <p className="text-xs text-amber-800">
+            A minimum order of{' '}
+            <span className="font-semibold">{formatCurrency(price!.minimumValue!)}</span>{' '}
+            applies — increase your size or quantity to proceed.
+          </p>
+        </div>
+      )}
 
       <p className="text-xs text-brand-text-muted">Excl. VAT. Shipping calculated at checkout.</p>
     </div>

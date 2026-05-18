@@ -15,6 +15,7 @@ import { BlogSection } from '@/components/home/BlogSection'
 import LivePricingDemo from '@/components/home/LivePricingDemo'
 import AccountConvenience from '@/components/home/AccountConvenience'
 import TrackingShowcase from '@/components/home/TrackingShowcase'
+import { unstable_cache } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { BlogPost } from '@/types'
 import {
@@ -32,7 +33,7 @@ import {
 export const revalidate = 3600
 
 export const metadata: Metadata = {
-  title: `${SITE_NAME} | Fast Custom Print Solutions for South Africa`,
+  title: { absolute: `${SITE_NAME} | Fast Custom Print Solutions for South Africa` },
   description:
     'Order labels, race numbers, MTB boards, stamps, trophies, and laser-cut products. Fast turnaround, premium quality, and nationwide delivery.',
   alternates: { canonical: SITE_URL },
@@ -75,16 +76,20 @@ const WHY_US = [
   },
 ]
 
-async function getLatestPosts(): Promise<BlogPost[]> {
-  const supabase = createAdminClient()
-  const { data } = await supabase
-    .from('blog_posts')
-    .select('*')
-    .eq('published', true)
-    .order('published_at', { ascending: false })
-    .limit(3)
-  return (data as BlogPost[]) || []
-}
+const getLatestPosts = unstable_cache(
+  async (): Promise<BlogPost[]> => {
+    const supabase = createAdminClient()
+    const { data } = await supabase
+      .from('blog_posts')
+      .select('*')
+      .eq('published', true)
+      .order('published_at', { ascending: false })
+      .limit(3)
+    return (data as BlogPost[]) || []
+  },
+  ['homepage-latest-posts'],
+  { revalidate: 3600, tags: ['blog'] }
+)
 
 export default async function HomePage() {
   const latestPosts = await getLatestPosts()
@@ -200,7 +205,7 @@ export default async function HomePage() {
 
                   {/* Business Cards / Stationery */}
                   <Link
-                    href="/labels"
+                    href="/products?division=print"
                     className="group relative block aspect-square overflow-hidden rounded-2xl bg-white shadow-xl ring-1 ring-black/5 transition-transform duration-300 hover:-translate-y-1 hover:shadow-2xl"
                   >
                     <Image
@@ -216,7 +221,7 @@ export default async function HomePage() {
 
                   {/* Coffee Sleeves */}
                   <Link
-                    href="/labels"
+                    href="/products?division=print"
                     className="group relative block aspect-[4/5] overflow-hidden rounded-2xl bg-white shadow-xl ring-1 ring-black/5 transition-transform duration-300 hover:-translate-y-1 hover:shadow-2xl"
                   >
                     <Image

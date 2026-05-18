@@ -1,9 +1,28 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/server'
+import { unstable_cache } from 'next/cache'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { ProductCard } from '@/components/products/ProductCard'
 import { DIVISIONS, SITE_URL } from '@/lib/utils/constants'
 import type { Division, ProductGroup } from '@/types'
+
+export const revalidate = 3600
+
+const getProducts = unstable_cache(
+  async (division?: string) => {
+    const supabase = createAdminClient()
+    let query = supabase
+      .from('product_groups')
+      .select('*, pricing_rules(rule_type, price_value, conditions)')
+      .eq('is_active', true)
+      .order('display_order', { ascending: true })
+    if (division) query = query.eq('division', division)
+    const { data, error } = await query
+    return { data: data ?? [], error }
+  },
+  ['products-listing'],
+  { revalidate: 3600, tags: ['products'] }
+)
 
 interface ProductsPageProps {
   searchParams: Promise<{ division?: string }>
@@ -19,17 +38,7 @@ export const metadata: Metadata = {
 export default async function ProductsPage({ searchParams }: ProductsPageProps) {
   const { division } = await searchParams
   const activeDivision = division as Division | undefined
-  const supabase = await createClient()
-
-  let query = supabase
-    .from('product_groups')
-    .select('*')
-    .eq('is_active', true)
-    .order('display_order', { ascending: true })
-
-  if (activeDivision) query = query.eq('division', activeDivision)
-
-  const { data: products, error } = await query
+  const { data: products, error } = await getProducts(activeDivision)
 
   return (
     <div className="bg-white">

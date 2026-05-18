@@ -4,12 +4,31 @@ import Image from 'next/image'
 import { CheckCircle2, ArrowRight, Timer, Upload, Shield, Layers } from 'lucide-react'
 import { SITE_NAME } from '@/lib/utils/constants'
 import { CsvUpload } from '@/components/order/CsvUpload'
-import { createClient } from '@/lib/supabase/server'
+import { ComplexQuoteForm } from '@/components/order/ComplexQuoteForm'
+import { unstable_cache } from 'next/cache'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { ProductCard } from '@/components/products/ProductCard'
 import type { ProductGroup } from '@/types'
 
+export const revalidate = 3600
+
+const getRaceProducts = unstable_cache(
+  async () => {
+    const supabase = createAdminClient()
+    const { data } = await supabase
+      .from('product_groups')
+      .select('*')
+      .eq('division', 'race-numbers')
+      .eq('is_active', true)
+      .order('display_order', { ascending: true })
+    return (data ?? []) as ProductGroup[]
+  },
+  ['division-products-race-numbers'],
+  { revalidate: 3600, tags: ['products'] }
+)
+
 export const metadata: Metadata = {
-  title: `Race Numbers & Event Tags | ${SITE_NAME}`,
+  title: 'Race Numbers & Event Tags',
   description:
     'Professional race bibs, triathlon numbers, cycling race plates and event lanyards. CSV upload for bulk events. Waterproof & tear-resistant. 5–7 day turnaround.',
 }
@@ -22,14 +41,7 @@ const TRUST_POINTS = [
 ]
 
 export default async function RaceNumbersPage() {
-  const supabase = await createClient()
-  const { data: products } = await supabase
-    .from('product_groups')
-    .select('*')
-    .eq('division', 'race-numbers')
-    .eq('is_active', true)
-    .order('display_order', { ascending: true })
-  const productList = (products ?? []) as ProductGroup[]
+  const productList = await getRaceProducts()
 
   return (
     <div className="bg-white">
@@ -58,7 +70,7 @@ export default async function RaceNumbersPage() {
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link
-                href="/order-now?division=race-numbers"
+                href="/request-quote?division=race-numbers"
                 className="inline-flex items-center gap-2 rounded-md bg-brand-primary px-6 py-3 text-sm font-semibold text-white transition hover:bg-brand-primary-dark"
               >
                 Get an Instant Quote <ArrowRight className="h-4 w-4" />
@@ -144,6 +156,17 @@ export default async function RaceNumbersPage() {
         </div>
       </section>
 
+      {/* Quote Form */}
+      <section id="quote" className="py-16">
+        <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
+          <div className="mb-10 border-b border-gray-200 pb-6">
+            <h2 className="font-heading text-2xl font-bold text-brand-text">Request a race numbers quote</h2>
+            <p className="mt-2 text-brand-text-muted">Fill in the form and we&apos;ll get back to you within 1 business day.</p>
+          </div>
+          <ComplexQuoteForm defaultProductType="Race Numbers" />
+        </div>
+      </section>
+
       {/* Bottom CTA */}
       <section className="bg-brand-secondary py-14">
         <div className="mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8">
@@ -151,7 +174,7 @@ export default async function RaceNumbersPage() {
           <p className="mt-3 text-white/60">Tell us the details and we&apos;ll get you a quote within 1 business day.</p>
           <div className="mt-8 flex flex-wrap justify-center gap-4">
             <Link
-              href="/order-now?division=race-numbers"
+              href="/request-quote?division=race-numbers"
               className="inline-flex items-center gap-2 rounded-md bg-brand-primary px-7 py-3 text-sm font-semibold text-white transition hover:bg-brand-primary-dark"
             >
               Get an Instant Quote <ArrowRight className="h-4 w-4" />

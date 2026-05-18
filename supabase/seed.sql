@@ -16,7 +16,7 @@ VALUES
   ('11111111-1111-1111-1111-111111111104', 'Wooden Plaques', 'wooden-plaques', 'laser',
    'Laser-engraved wooden plaques for awards, gifts, and decor.', '/images/products/wooden-plaques.png', true, 4),
   ('11111111-1111-1111-1111-111111111105', 'Race Bibs', 'race-bibs', 'race-numbers',
-   'Professional race bibs with custom numbering. Tyvek material, waterproof, with tear-off tabs.', '/images/products/race-bibs.png', true, 5),
+   'Professional race bibs with custom numbering. Waterproof, tear-resistant, with tear-off tabs.', '/images/products/race-bibs.png', true, 5),
   ('11111111-1111-1111-1111-111111111106', 'Event Tags', 'event-tags', 'race-numbers',
    'Custom event identification tags, lanyards, and badges.', '/images/products/event-tags.png', true, 6),
   ('11111111-1111-1111-1111-111111111107', 'MTB Number Boards', 'mtb-number-boards', 'mtb-boards',
@@ -81,7 +81,7 @@ VALUES
    '["None", "Gloss Laminate", "Matte Laminate"]', 'None', 2),
   -- Race Bib
   ('33333333-3333-3333-3333-333333333305', '22222222-2222-2222-2222-222222222209', 'material', 'Material', 'select',
-   '["Tyvek", "Waterproof Synthetic"]', 'Tyvek', 1),
+   '["Ecoflex", "TEX21", "Waterproof Synthetic"]', 'Ecoflex', 1),
   ('33333333-3333-3333-3333-333333333306', '22222222-2222-2222-2222-222222222209', 'safety_pins', 'Include Safety Pins', 'select',
    '["Yes", "No"]', 'Yes', 2),
   -- Coffee Sleeve

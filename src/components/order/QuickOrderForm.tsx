@@ -59,6 +59,9 @@ export function QuickOrderForm({
   const [width, setWidth] = useState(initialWidth)
   const [height, setHeight] = useState(initialHeight)
   const [quantity, setQuantity] = useState(initialQuantity)
+  const [widthRaw, setWidthRaw] = useState(String(initialWidth))
+  const [heightRaw, setHeightRaw] = useState(String(initialHeight))
+  const [quantityRaw, setQuantityRaw] = useState(String(initialQuantity))
   const [material, setMaterial] = useState(initialMaterial)
   const [finish, setFinish] = useState('gloss')
   const [adhesion, setAdhesion] = useState('standard')
@@ -169,8 +172,13 @@ export function QuickOrderForm({
                     type="number"
                     min={10}
                     max={2000}
-                    value={width}
-                    onChange={(e) => setWidth(Number(e.target.value) || 10)}
+                    value={widthRaw}
+                    onChange={(e) => setWidthRaw(e.target.value)}
+                    onBlur={(e) => {
+                      const n = Math.min(2000, Math.max(10, Number(e.target.value) || 10))
+                      setWidth(n)
+                      setWidthRaw(String(n))
+                    }}
                     className="mt-1"
                   />
                 </div>
@@ -181,8 +189,13 @@ export function QuickOrderForm({
                     type="number"
                     min={10}
                     max={2000}
-                    value={height}
-                    onChange={(e) => setHeight(Number(e.target.value) || 10)}
+                    value={heightRaw}
+                    onChange={(e) => setHeightRaw(e.target.value)}
+                    onBlur={(e) => {
+                      const n = Math.min(2000, Math.max(10, Number(e.target.value) || 10))
+                      setHeight(n)
+                      setHeightRaw(String(n))
+                    }}
                     className="mt-1"
                   />
                 </div>
@@ -197,8 +210,13 @@ export function QuickOrderForm({
                 type="number"
                 min={1}
                 max={100000}
-                value={quantity}
-                onChange={(e) => setQuantity(Number(e.target.value) || 1)}
+                value={quantityRaw}
+                onChange={(e) => setQuantityRaw(e.target.value)}
+                onBlur={(e) => {
+                  const n = Math.min(100000, Math.max(1, Number(e.target.value) || 1))
+                  setQuantity(n)
+                  setQuantityRaw(String(n))
+                }}
                 className="mt-1"
               />
               {(() => {

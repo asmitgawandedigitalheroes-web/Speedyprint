@@ -52,8 +52,9 @@ export function ParameterSelector({
               const depVal = values[depKey] ?? ''
               selectOptions = (condOpts[depVal] as string[]) ?? (condOpts['_default'] as string[]) ?? []
             } else {
-              selectOptions = rawOptions as string[]
+              selectOptions = Array.isArray(rawOptions) ? (rawOptions as string[]) : []
             }
+            if (selectOptions.length === 0) return null
             return (
               <Select
                 value={values[param.param_key] ?? ''}

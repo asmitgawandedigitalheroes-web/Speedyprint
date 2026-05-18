@@ -1,10 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, Suspense } from 'react'
 import Image from 'next/image'
 import { cn } from '@/lib/utils'
 import { ProductConfigurator } from './ProductConfigurator'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react'
 import type {
   ProductGroup,
   ProductTemplate,
@@ -154,7 +154,12 @@ export function ProductDetailClient({
 
       {/* ── RIGHT: Configurator panel ─────────────────────────────────── */}
       <div className="lg:border-l lg:border-gray-100 lg:pl-10 xl:pl-14">
-        <div>
+        <Suspense fallback={
+          <div className="flex items-center justify-center py-16 text-brand-text-muted">
+            <Loader2 className="h-6 w-6 animate-spin mr-2" />
+            <span className="text-sm">Loading options…</span>
+          </div>
+        }>
           <ProductConfigurator
             productGroupId={product.id}
             division={division}
@@ -163,7 +168,7 @@ export function ProductDetailClient({
             onTemplateChange={handleTemplateChange}
             designId={designId}
           />
-        </div>
+        </Suspense>
       </div>
 
     </div>

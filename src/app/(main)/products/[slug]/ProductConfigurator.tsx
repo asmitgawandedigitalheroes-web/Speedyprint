@@ -19,6 +19,7 @@ import { ParameterSelector } from '@/components/products/ParameterSelector'
 import { PriceCalculator } from '@/components/products/PriceCalculator'
 import { getDimensionConstraints, getSponsorZones } from '@/types'
 import type { ProductTemplate, TemplateParameter, PricingRule, Division } from '@/types'
+import type { PriceResult } from '@/lib/pricing/calculator'
 
 interface ProductConfiguratorProps {
   productGroupId: string
@@ -68,6 +69,7 @@ export function ProductConfigurator({
 
   const router = useRouter()
   const [navigatingState, setNavigatingState] = useState<'design' | 'upload' | 'bulk' | null>(null)
+  const [minimumApplied, setMinimumApplied] = useState(false)
 
   const selectedTemplate = useMemo(
     () => templates.find((t) => t.id === selectedTemplateId),
@@ -399,13 +401,20 @@ export function ProductConfigurator({
         productGroupId={productGroupId}
         selectedParams={allParams}
         quantity={quantity}
+        onPriceUpdate={(result: PriceResult) => setMinimumApplied(result.minimumApplied ?? false)}
       />
 
       <Separator />
 
       {/* Action buttons */}
+      {minimumApplied && (
+        <div className="rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          Increase your label size or quantity to reach the{' '}
+          <span className="font-semibold">R195.00 minimum order</span> before proceeding.
+        </div>
+      )}
       <div className="flex flex-col gap-3 sm:flex-row">
-        {selectedTemplateId && (
+        {selectedTemplateId && !minimumApplied && (
           <>
             <Button
               onClick={() => {

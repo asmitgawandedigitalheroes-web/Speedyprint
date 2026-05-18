@@ -4,7 +4,7 @@ import { Truck, Zap, MapPin } from 'lucide-react'
 import { SITE_NAME, FREE_DELIVERY_THRESHOLD, FLAT_SHIPPING_RATE, CURRENCY_SYMBOL } from '@/lib/utils/constants'
 
 export const metadata: Metadata = {
-  title: `Delivery information | ${SITE_NAME}`,
+  title: 'Delivery information',
   description: 'Free delivery on orders over R500. Standard 3-5 day delivery across South Africa. Express and collection options available.',
 }
 

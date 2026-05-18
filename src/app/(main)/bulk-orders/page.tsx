@@ -34,6 +34,24 @@ const FINISH_OPTIONS = ['Gloss', 'Matte', 'Uncoated', 'Not Sure']
 const PRODUCT_TYPES = ['Labels', 'Race Numbers', 'MTB Boards', 'Laser Engraving', 'Stamps', 'Trophies', 'Mixed Pack']
 const REFERRAL_SOURCES = ['Google', 'Social Media', 'Word of Mouth', 'Returning Customer', 'Other']
 
+const PRODUCT_SIZES: Record<string, string[]> = {
+  'Labels': ['25×25mm', '50×50mm', '100×100mm', '100×50mm', '200×100mm', '200×150mm', 'Custom'],
+  'Race Numbers': ['Standard — 148mm × 210mm', 'Small — 150mm × 150mm', 'Large — 200mm × 210mm', 'Custom'],
+  'MTB Boards': ['300×200mm', '400×300mm', '500×400mm', 'Custom'],
+  'Laser Engraving': ['50×25mm', '100×50mm', '150×100mm', '200×150mm', 'Custom'],
+  'Stamps': ['30×30mm', '40×40mm', '50×50mm', '70×40mm', 'Custom'],
+  'Trophies': ['Small (up to 20cm)', 'Medium (20–35cm)', 'Large (35cm+)'],
+}
+
+const PRODUCT_MATERIALS: Record<string, string[]> = {
+  'Labels': ['White Vinyl', 'Grey Back Vinyl', 'Clear Vinyl', 'Polylaser Adhesive', 'Paper Adhesive'],
+  'Race Numbers': ['Ecoflex', 'TEX21'],
+  'MTB Boards': ['Corrugated Plastic', 'Foamboard', 'Aluminium Composite'],
+  'Laser Engraving': ['Acrylic', 'Wood', 'Anodised Aluminium', 'Leather'],
+  'Stamps': ['Self-inking', 'Pre-inked', 'Rubber Mount'],
+  'Trophies': ['Resin', 'Crystal', 'Metal', 'Timber'],
+}
+
 export default function BulkOrdersPage() {
   const [form, setForm] = useState({
     full_name: '',
@@ -270,7 +288,11 @@ How they heard about us: ${form.referral || '—'}
         <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
           <div className="mb-10 border-b border-gray-200 pb-6">
             <h2 className="font-heading text-2xl font-bold text-brand-text">Request a bulk quote</h2>
-            <p className="mt-2 text-brand-text-muted">Fill in the form below and we&apos;ll get back to you with a quote within 1 business day.</p>
+            <p className="mt-2 text-brand-text-muted">Fill in the form below and we&apos;ll get back to you with a tailored quote.</p>
+            <div className="mt-4 flex items-center gap-2 rounded-md border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-800">
+              <Clock className="h-4 w-4 shrink-0 text-blue-600" />
+              <span>We typically respond within <strong>4 office hours</strong> (Mon–Fri, 08:00–16:30 SAST).</span>
+            </div>
           </div>
 
           {submitted ? (
@@ -337,7 +359,7 @@ How they heard about us: ${form.referral || '—'}
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div>
                     <label className="mb-1.5 block text-sm font-medium text-brand-text">Product Type <span className="text-red-500">*</span></label>
-                    <select required value={form.product_type} onChange={(e) => set('product_type', e.target.value)} disabled={loading} className="w-full rounded-md border border-gray-200 px-4 py-2.5 text-sm focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary disabled:opacity-50 bg-white">
+                    <select required value={form.product_type} onChange={(e) => { set('product_type', e.target.value); set('dimensions', ''); set('material', '') }} disabled={loading} className="w-full rounded-md border border-gray-200 px-4 py-2.5 text-sm focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary disabled:opacity-50 bg-white">
                       <option value="">Select product type</option>
                       {PRODUCT_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
                     </select>
@@ -348,11 +370,25 @@ How they heard about us: ${form.referral || '—'}
                   </div>
                   <div>
                     <label className="mb-1.5 block text-sm font-medium text-brand-text">Sizes or Dimensions</label>
-                    <input type="text" placeholder="e.g. 200×150mm" value={form.dimensions} onChange={(e) => set('dimensions', e.target.value)} disabled={loading} className="w-full rounded-md border border-gray-200 px-4 py-2.5 text-sm focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary disabled:opacity-50" />
+                    {form.product_type && PRODUCT_SIZES[form.product_type] ? (
+                      <select value={form.dimensions} onChange={(e) => set('dimensions', e.target.value)} disabled={loading} className="w-full rounded-md border border-gray-200 px-4 py-2.5 text-sm focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary disabled:opacity-50 bg-white">
+                        <option value="">Select size</option>
+                        {PRODUCT_SIZES[form.product_type].map((s) => <option key={s} value={s}>{s}</option>)}
+                      </select>
+                    ) : (
+                      <input type="text" placeholder="e.g. 200×150mm" value={form.dimensions} onChange={(e) => set('dimensions', e.target.value)} disabled={loading} className="w-full rounded-md border border-gray-200 px-4 py-2.5 text-sm focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary disabled:opacity-50" />
+                    )}
                   </div>
                   <div>
                     <label className="mb-1.5 block text-sm font-medium text-brand-text">Material Preference</label>
-                    <input type="text" placeholder="e.g. Tyvek, White vinyl, Acrylic" value={form.material} onChange={(e) => set('material', e.target.value)} disabled={loading} className="w-full rounded-md border border-gray-200 px-4 py-2.5 text-sm focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary disabled:opacity-50" />
+                    {form.product_type && PRODUCT_MATERIALS[form.product_type] ? (
+                      <select value={form.material} onChange={(e) => set('material', e.target.value)} disabled={loading} className="w-full rounded-md border border-gray-200 px-4 py-2.5 text-sm focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary disabled:opacity-50 bg-white">
+                        <option value="">Select material</option>
+                        {PRODUCT_MATERIALS[form.product_type].map((m) => <option key={m} value={m}>{m}</option>)}
+                      </select>
+                    ) : (
+                      <input type="text" placeholder="e.g. White vinyl, Acrylic" value={form.material} onChange={(e) => set('material', e.target.value)} disabled={loading} className="w-full rounded-md border border-gray-200 px-4 py-2.5 text-sm focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary disabled:opacity-50" />
+                    )}
                   </div>
                   <div className="sm:col-span-2">
                     <label className="mb-1.5 block text-sm font-medium text-brand-text">Finish</label>

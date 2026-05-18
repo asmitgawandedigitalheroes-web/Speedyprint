@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
+import Link from 'next/link'
 import { z } from 'zod'
 import { useAuth } from '@/hooks/useAuth'
 import { useCart } from '@/hooks/useCart'
@@ -10,7 +11,7 @@ import { createClient } from '@/lib/supabase/client'
 import { formatCurrency } from '@/lib/utils/format'
 import { SA_PROVINCES, FLAT_SHIPPING_RATE, FREE_DELIVERY_THRESHOLD } from '@/lib/utils/constants'
 import { toast } from 'sonner'
-import { Check, ChevronDown, ShieldCheck, Truck, AlertCircle, CreditCard, ArrowRight, ChevronLeft, Package } from 'lucide-react'
+import { Check, ChevronDown, ShieldCheck, Truck, AlertCircle, CreditCard, ArrowRight, ChevronLeft, Package, UserCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const shippingSchema = z.object({
@@ -51,6 +52,8 @@ export default function CheckoutPage() {
 
   const [loading, setLoading] = useState(false)
   const [step, setStep] = useState(1)
+  const [guestEmail, setGuestEmail] = useState('')
+  const [guestEmailError, setGuestEmailError] = useState('')
   const [errors, setErrors] = useState<Partial<Record<keyof ShippingData, string>>>({})
   const [paymentMethod, setPaymentMethod] = useState<'switch' | 'stripe' | 'pay_later'>('switch')
 
@@ -201,6 +204,14 @@ export default function CheckoutPage() {
   }
 
   const handleContinue = async () => {
+    if (!user) {
+      const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(guestEmail.trim())
+      if (!emailOk) {
+        setGuestEmailError('Please enter a valid email address for your order confirmation.')
+        return
+      }
+      setGuestEmailError('')
+    }
     if (!validateStep1()) return
     window.scrollTo({ top: 0 })
     await fetchShippingRates()
@@ -208,11 +219,6 @@ export default function CheckoutPage() {
   }
 
   const handlePlaceOrder = async () => {
-    if (!user) {
-      toast.error('Please log in to complete your purchase')
-      return
-    }
-
     if (!isFreeDelivery && !selectedRate && !ratesFallback) {
       toast.error('Please select a shipping method')
       return
@@ -230,7 +236,8 @@ export default function CheckoutPage() {
       const { data: order, error: orderError } = await supabase
         .from('orders')
         .insert({
-          user_id: user.id,
+          user_id: user?.id ?? null,
+          guest_email: !user ? guestEmail.trim() : null,
           order_number: `ORD-${Math.random().toString(36).substring(2, 9).toUpperCase()}`,
           status: 'pending_payment',
           subtotal,
@@ -353,6 +360,33 @@ export default function CheckoutPage() {
 
             {step === 1 ? (
               <>
+                {/* Guest: sign-in prompt + email capture */}
+                {!user && (
+                  <div className="rounded-xl border border-gray-200 bg-white p-6 space-y-4">
+                    <div className="flex items-center gap-3">
+                      <UserCircle className="h-5 w-5 text-gray-400 shrink-0" />
+                      <div>
+                        <p className="text-sm font-semibold text-gray-800">Have an account?</p>
+                        <p className="text-xs text-gray-400">
+                          <Link href={`/login?redirect=/checkout`} className="text-red-600 underline hover:no-underline">Sign in</Link>
+                          {' '}for faster checkout and order tracking. Or continue as guest below.
+                        </p>
+                      </div>
+                    </div>
+                    <div>
+                      <label className={LABEL}>Email address (for order confirmation) *</label>
+                      <input
+                        type="email"
+                        placeholder="you@example.com"
+                        value={guestEmail}
+                        onChange={(e) => { setGuestEmail(e.target.value); setGuestEmailError('') }}
+                        className={cn(INPUT, guestEmailError && 'border-red-300')}
+                      />
+                      {guestEmailError && <p className={ERROR}><AlertCircle className="h-3 w-3" /> {guestEmailError}</p>}
+                    </div>
+                  </div>
+                )}
+
                 {/* Saved addresses */}
                 {savedAddresses.length > 0 && (
                   <div className="rounded-xl border border-gray-200 bg-white p-6">
@@ -496,7 +530,10 @@ export default function CheckoutPage() {
                       <ChevronLeft className="h-3 w-3" /> Edit
                     </button>
                   </div>
-                  <p className="text-sm text-gray-800">{shipping.full_name} &middot; {shipping.phone}</p>
+                  <p className="text-sm text-gray-800">
+                    {shipping.full_name} &middot; {shipping.phone}
+                    {!user && guestEmail && <span className="ml-2 text-gray-400">({guestEmail})</span>}
+                  </p>
                   <p className="text-sm text-gray-500 mt-0.5">
                     {shipping.address_line1}{shipping.address_line2 ? `, ${shipping.address_line2}` : ''}, {shipping.city}, {shipping.province} {shipping.postal_code}
                   </p>
