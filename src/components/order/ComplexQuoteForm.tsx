@@ -5,26 +5,52 @@ import { ArrowRight, Loader2, Send, ShieldCheck, CheckCircle2, Palette } from 'l
 import { toast } from 'sonner'
 import { ArtworkUpload } from '@/components/order/ArtworkUpload'
 
-const FINISH_OPTIONS = ['Gloss', 'Matte', 'Uncoated', 'Not Sure']
-const PRODUCT_TYPES = ['Labels', 'Race Numbers', 'MTB Boards', 'Laser Engraving', 'Stamps', 'Trophies', 'Mixed Pack']
+const FINISH_OPTIONS = ['Gloss Lamination', 'Matt Lamination', 'Uncoated', 'Not Sure']
+const PRODUCT_TYPES = [
+  'Labels',
+  'Race Numbers',
+  'Event Tags',
+  'MTB Boards',
+  'Acrylic Signs',
+  'Flyers',
+  'Coffee Cup Sleeves',
+  'Business Cards',
+  'Stamps',
+  'Laser Engraving & Cutting',
+  'Trophies',
+  'Print',
+  'Mixed Pack',
+]
 const REFERRAL_SOURCES = ['Google', 'Social Media', 'Word of Mouth', 'Returning Customer', 'Other']
 
 const PRODUCT_SIZES: Record<string, string[]> = {
-  'Labels': ['25×25mm', '50×50mm', '100×100mm', '100×50mm', '200×100mm', '200×150mm', 'Custom'],
-  'Race Numbers': ['Standard — 148mm × 210mm', 'Small — 150mm × 150mm', 'Large — 200mm × 210mm', 'Custom'],
-  'MTB Boards': ['300×200mm', '400×300mm', '500×400mm', 'Custom'],
-  'Laser Engraving': ['50×25mm', '100×50mm', '150×100mm', '200×150mm', 'Custom'],
-  'Stamps': ['30×30mm', '40×40mm', '50×50mm', '70×40mm', 'Custom'],
-  'Trophies': ['Small (up to 20cm)', 'Medium (20–35cm)', 'Large (35cm+)'],
+  'Labels': ['Custom (max 410mm × 300mm — adhesive)', 'Custom (max 700mm wide — vinyl)'],
+  'Race Numbers': ['Standard — 148mm × 210mm', 'Small — 105mm × 148mm', 'Large — 210mm × 200mm', 'Custom'],
+  'Event Tags': ['150mm × 150mm', '148mm × 105mm', '85mm × 120mm', 'Custom'],
+  'MTB Boards': ['Standard — 148mm × 210mm', 'Small — 105mm × 148mm', 'Large — 210mm × 200mm', 'Custom'],
+  'Acrylic Signs': ['3mm', '5mm', 'Custom'],
+  'Flyers': ['A4', 'A5', 'A6', 'Custom'],
+  'Coffee Cup Sleeves': ['67mm × 250mm (S / M / L / XL cups)', 'Custom'],
+  'Business Cards': ['50mm × 90mm'],
+  'Stamps': ['Please specify in notes — we’ll send a list'],
+  'Laser Engraving & Cutting': ['Keyring size (60×30mm)', 'A5 (210×148mm)', 'A4 (297×210mm)', 'A3 (420×297mm)', 'A2 (594×420mm)', 'Custom'],
+  'Trophies': ['Small (up to 20cm)', 'Medium (20–35cm)', 'Large (35cm+)', 'Custom'],
+  'Print': ['A6', 'A5', 'A4', 'A3', 'DL', 'Custom'],
 }
 
 const PRODUCT_MATERIALS: Record<string, string[]> = {
-  'Labels': ['White Vinyl', 'Grey Back Vinyl', 'Clear Vinyl', 'Polylaser Adhesive', 'Paper Adhesive'],
-  'Race Numbers': ['Ecoflex', 'TEX21'],
-  'MTB Boards': ['Corrugated Plastic', 'Foamboard', 'Aluminium Composite'],
-  'Laser Engraving': ['Acrylic', 'Wood', 'Anodised Aluminium', 'Leather'],
-  'Stamps': ['Self-inking', 'Pre-inked', 'Rubber Mount'],
-  'Trophies': ['Resin', 'Crystal', 'Metal', 'Timber'],
+  'Labels': ['1-Year White Vinyl', '3-Year Grey Back Vinyl', '1-Year Clear Vinyl', 'Polylaser Adhesive', 'Paper Adhesive'],
+  'Race Numbers': ['TEX21', 'Ecoflex'],
+  'Event Tags': ['300gsm', 'Ecoflex Board', '0.9mm ABS'],
+  'MTB Boards': ['Ecoflex Board', '0.9mm ABS'],
+  'Acrylic Signs': ['Clear', 'White', 'Black', 'Custom (on request)'],
+  'Flyers': ['80gsm Bond (Budget)', '130gsm Gloss'],
+  'Coffee Cup Sleeves': ['250gsm (White)', 'Kraft Paper (Brown)'],
+  'Business Cards': ['300gsm'],
+  'Stamps': ['Self-inking'],
+  'Laser Engraving & Cutting': ['Acrylic (Perspex)', 'Wood / Timber', 'Anodised Aluminium', 'Stainless Steel', 'Leather', 'Custom (on request)'],
+  'Trophies': ['Glass', 'Acrylic', 'Metal', 'Timber / Wood', 'Custom (on request)'],
+  'Print': ['80gsm Bond', '130gsm Gloss', '250gsm', '300gsm', 'Kraft Paper', 'Custom'],
 }
 
 interface ComplexQuoteFormProps {

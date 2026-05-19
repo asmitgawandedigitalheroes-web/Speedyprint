@@ -124,10 +124,10 @@ export default async function LaserPage() {
       <section id="quote" className="py-16">
         <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
           <div className="mb-10 border-b border-gray-200 pb-6">
-            <h2 className="font-heading text-2xl font-bold text-brand-text">Request a laser engraving quote</h2>
+            <h2 className="font-heading text-2xl font-bold text-brand-text">Request a laser engraving & cutting quote</h2>
             <p className="mt-2 text-brand-text-muted">Fill in the form and we&apos;ll get back to you within 1 business day.</p>
           </div>
-          <ComplexQuoteForm defaultProductType="Laser Engraving" />
+          <ComplexQuoteForm defaultProductType="Laser Engraving & Cutting" />
         </div>
       </section>
 

@@ -18,27 +18,27 @@ const MIN_QUANTITIES = [
   { product: 'MTB Boards', min: '50+ boards' },
   { product: 'Stamps', min: '10+ units' },
   { product: 'Trophies & Awards', min: '20+ items' },
-  { product: 'Laser Engraving', min: '25+ items' },
+  { product: 'Laser Engraving & Cutting', min: '25+ items' },
 ]
 
 const LEAD_TIMES = [
   { product: 'Labels', standard: '3–5 working days', express: '24–48 hours', capacity: 'Up to 50,000 units/week' },
   { product: 'Race Numbers', standard: '5–7 working days', express: 'Contact us', capacity: 'Up to 2,000 bibs/week' },
   { product: 'MTB Boards', standard: '5–7 working days', express: 'Contact us', capacity: 'Up to 500 boards/week' },
-  { product: 'Laser Engraving', standard: '3–5 working days', express: '—', capacity: 'Up to 200 items/week' },
+  { product: 'Laser Engraving & Cutting', standard: '3–5 working days', express: '—', capacity: 'Up to 200 items/week' },
   { product: 'Stamps', standard: '2–3 working days', express: '—', capacity: 'Up to 100 units/week' },
   { product: 'Trophies', standard: '7–10 working days', express: '—', capacity: 'Up to 100 items/week' },
 ]
 
 const FINISH_OPTIONS = ['Gloss', 'Matte', 'Uncoated', 'Not Sure']
-const PRODUCT_TYPES = ['Labels', 'Race Numbers', 'MTB Boards', 'Laser Engraving', 'Stamps', 'Trophies', 'Mixed Pack']
+const PRODUCT_TYPES = ['Labels', 'Race Numbers', 'MTB Boards', 'Laser Engraving & Cutting', 'Stamps', 'Trophies', 'Mixed Pack']
 const REFERRAL_SOURCES = ['Google', 'Social Media', 'Word of Mouth', 'Returning Customer', 'Other']
 
 const PRODUCT_SIZES: Record<string, string[]> = {
   'Labels': ['25×25mm', '50×50mm', '100×100mm', '100×50mm', '200×100mm', '200×150mm', 'Custom'],
   'Race Numbers': ['Standard — 148mm × 210mm', 'Small — 150mm × 150mm', 'Large — 200mm × 210mm', 'Custom'],
   'MTB Boards': ['300×200mm', '400×300mm', '500×400mm', 'Custom'],
-  'Laser Engraving': ['50×25mm', '100×50mm', '150×100mm', '200×150mm', 'Custom'],
+  'Laser Engraving & Cutting': ['Keyring size (60×30mm)', 'A5 (210×148mm)', 'A4 (297×210mm)', 'A3 (420×297mm)', 'A2 (594×420mm)', 'Custom'],
   'Stamps': ['30×30mm', '40×40mm', '50×50mm', '70×40mm', 'Custom'],
   'Trophies': ['Small (up to 20cm)', 'Medium (20–35cm)', 'Large (35cm+)'],
 }
@@ -47,7 +47,7 @@ const PRODUCT_MATERIALS: Record<string, string[]> = {
   'Labels': ['White Vinyl', 'Grey Back Vinyl', 'Clear Vinyl', 'Polylaser Adhesive', 'Paper Adhesive'],
   'Race Numbers': ['Ecoflex', 'TEX21'],
   'MTB Boards': ['Corrugated Plastic', 'Foamboard', 'Aluminium Composite'],
-  'Laser Engraving': ['Acrylic', 'Wood', 'Anodised Aluminium', 'Leather'],
+  'Laser Engraving & Cutting': ['Acrylic (Perspex)', 'Wood / Timber', 'Anodised Aluminium', 'Leather', 'Custom'],
   'Stamps': ['Self-inking', 'Pre-inked', 'Rubber Mount'],
   'Trophies': ['Resin', 'Crystal', 'Metal', 'Timber'],
 }

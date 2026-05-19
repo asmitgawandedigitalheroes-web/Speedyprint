@@ -8,14 +8,14 @@ import Link from 'next/link'
 export const metadata: Metadata = {
   title: 'Request a Quote — Custom Printing',
   description:
-    'Get a custom quote for race numbers, MTB boards, laser engraving, stamps, and more. Fast 24-hour turnaround on all enquiries.',
+    'Get a custom quote for race numbers, MTB boards, laser engraving & cutting, stamps, and more. Fast 24-hour turnaround on all enquiries.',
 }
 
 const DIVISION_TO_PRODUCT_TYPE: Record<string, string> = {
   'race-numbers': 'Race Numbers',
   'mtb-boards': 'MTB Boards',
   'stamps': 'Stamps',
-  'laser': 'Laser Engraving',
+  'laser': 'Laser Engraving & Cutting',
   'trophies': 'Trophies',
   'print': 'Print',
 }

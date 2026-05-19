@@ -55,7 +55,7 @@ const PRODUCT_LEAD_TIMES = [
     notes: 'Variable data CSV must be supplied with order',
   },
   {
-    range: 'Laser Engraving',
+    range: 'Laser Engraving & Cutting',
     standard: '3–5 working days',
     express: '—',
     notes: 'Custom shapes or complex engraving may extend lead time',
