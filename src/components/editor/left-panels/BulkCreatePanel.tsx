@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useState, useRef, useCallback } from 'react'
 import {
@@ -14,6 +14,8 @@ import {
   ChevronUp,
 } from 'lucide-react'
 import { useEditorStore } from '@/lib/editor/useEditorStore'
+import { addText, addImageFromURL } from '@/lib/editor/fabricUtils'
+import type { Canvas as FabricCanvas } from 'fabric'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import Papa from 'papaparse'
@@ -48,21 +50,6 @@ async function generateBarcodeDataURL(value: string): Promise<string> {
         reject(e)
       }
     })
-  })
-}
-
-/** Adds a Fabric image object from a data URL to the centre of the canvas */
-async function addImageToCanvas(canvas: any, dataUrl: string) {
-  const { fabric } = await import('fabric')
-  fabric.Image.fromURL(dataUrl, (img: any) => {
-    img.scaleToWidth(Math.min(200, canvas.getWidth() * 0.4))
-    img.set({
-      left: canvas.getWidth() / 2 - (img.getScaledWidth() / 2),
-      top: canvas.getHeight() / 2 - (img.getScaledHeight() / 2),
-    })
-    canvas.add(img)
-    canvas.setActiveObject(img)
-    canvas.renderAll()
   })
 }
 
@@ -146,30 +133,24 @@ export default function BulkCreatePanel() {
   // ── Insert serial-number placeholder text ──────────────────────────────────
   const handleInsertSerial = () => {
     if (!canvas) return
-    const { fabric } = require('fabric')
+
     const label = `${serialPrefix}{{_serial_}}`
-    const text = new fabric.Textbox(label, {
-      left: 100,
-      top: 100,
-      width: 200,
+    addText(canvas as unknown as FabricCanvas, {
+      text: label,
       fontSize: 24,
       fill: '#000000',
     })
-    canvas.add(text)
-    canvas.setActiveObject(text)
-    canvas.renderAll()
     toast.success('Serial number placeholder added', {
-      description: `"${label}" will be replaced with ${serialPrefix}${serialStart}, ${serialPrefix}${Number(serialStart) + 1}, … during batch export.`,
+      description: `"${label}" will be auto-incremented during batch export.`,
     })
   }
-
   // ── Insert QR code image ───────────────────────────────────────────────────
   const handleInsertQR = async () => {
     if (!canvas || !qrText.trim()) return
     setIsGenerating(true)
     try {
       const dataUrl = await generateQRCodeDataURL(qrText.trim())
-      await addImageToCanvas(canvas, dataUrl)
+      await addImageFromURL(canvas as unknown as FabricCanvas, dataUrl)
       toast.success('QR code added to canvas')
     } catch (e: any) {
       toast.error('Failed to generate QR code: ' + e.message)
@@ -184,7 +165,7 @@ export default function BulkCreatePanel() {
     setIsGenerating(true)
     try {
       const dataUrl = await generateBarcodeDataURL(barcodeValue.trim())
-      await addImageToCanvas(canvas, dataUrl)
+      await addImageFromURL(canvas as unknown as FabricCanvas, dataUrl)
       toast.success('Barcode added to canvas')
     } catch (e: any) {
       toast.error('Failed to generate barcode: ' + e.message)

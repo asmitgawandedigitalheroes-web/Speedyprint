@@ -34,7 +34,7 @@ export default function FinishPanel() {
         <button 
           onClick={() => useEditorStore.getState().setLeftPanel('bulk')}
           className="p-2 text-ed-text-dim hover:text-ed-text hover:bg-ed-surface-hover rounded-lg transition-colors"
-          title="Back to Bulk"
+          title="Back to Variable Data"
         >
           <Table2 size={16} />
         </button>
@@ -57,6 +57,17 @@ export default function FinishPanel() {
             >
               <Download size={14} /> Download Preview
             </button>
+          </div>
+        </div>
+
+        {/* Proof notice */}
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 flex items-start gap-3">
+          <FileText size={15} className="text-blue-500 mt-0.5 shrink-0" />
+          <div>
+            <p className="text-[11px] font-semibold text-blue-700">Proof auto-generated on order</p>
+            <p className="text-[10px] text-blue-600/80 leading-relaxed mt-0.5">
+              When you place your order, a digital proof is automatically created and sent to your email for review before printing begins.
+            </p>
           </div>
         </div>
 
@@ -101,7 +112,7 @@ export default function FinishPanel() {
           <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-4 flex items-start gap-3">
             <CheckCircle2 size={18} className="text-emerald-500 mt-0.5 shrink-0" />
             <div>
-              <p className="text-xs font-bold text-emerald-600">Bulk Ready</p>
+              <p className="text-xs font-bold text-emerald-600">Variable Data Ready</p>
               <p className="text-[10px] text-emerald-600/80 leading-relaxed mt-0.5">
                 You have {bulkData.rows.length} rows of data mapped. You can now use "Batch CSV Production" to generate all files at once.
               </p>
