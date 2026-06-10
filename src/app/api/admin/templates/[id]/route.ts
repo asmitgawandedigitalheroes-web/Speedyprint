@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { revalidateTag } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 
@@ -78,6 +79,7 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
 
     if (error) throw error
 
+    revalidateTag('products')
     return NextResponse.json({ template: data })
   } catch {
     return NextResponse.json({ error: 'Failed to update template' }, { status: 500 })
@@ -94,6 +96,7 @@ export async function DELETE(_req: NextRequest, { params }: RouteParams) {
     const { error } = await admin.from('product_templates').delete().eq('id', id)
     if (error) throw error
 
+    revalidateTag('products')
     return NextResponse.json({ success: true })
   } catch {
     return NextResponse.json({ error: 'Failed to delete template' }, { status: 500 })

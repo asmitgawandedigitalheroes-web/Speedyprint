@@ -204,6 +204,13 @@ export const useAuth = create<AuthState>()(
             set({ user: null, isAuthenticated: false, isLoading: false })
           }
         } catch (error) {
+          // Supabase uses a Web Lock to serialize session refreshes. If two requests race
+          // (e.g. two tabs, or a fast navigate + AuthProvider mount), the loser gets an
+          // AbortError. This is transient and harmless — just stop loading.
+          if (error instanceof Error && error.name === 'AbortError') {
+            set({ isLoading: false })
+            return
+          }
           console.error('Error refreshing profile:', error)
           set({ isLoading: false })
         }

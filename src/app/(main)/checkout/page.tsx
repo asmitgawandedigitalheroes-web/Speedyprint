@@ -50,6 +50,11 @@ export default function CheckoutPage() {
   const subtotal = useMemo(() => selectedItems.reduce((s, i) => s + i.line_total, 0), [selectedItems])
   const isFreeDelivery = subtotal >= FREE_DELIVERY_THRESHOLD
 
+  // Wait for Zustand persist to rehydrate from localStorage before checking cart state.
+  // On direct navigation, the store starts empty (SSR default) and populates after mount.
+  // Without this flag the redirect fires before items are loaded, sending users to /cart.
+  const [cartReady, setCartReady] = useState(false)
+
   const [loading, setLoading] = useState(false)
   const [step, setStep] = useState(1)
   const [guestEmail, setGuestEmail] = useState('')
@@ -312,11 +317,22 @@ export default function CheckoutPage() {
     }
   }
 
+  useEffect(() => { setCartReady(true) }, [])
+
   useEffect(() => {
+    if (!cartReady) return
     if ((items.length === 0 || selectedItems.length === 0) && !loading) {
       router.push('/cart')
     }
-  }, [items.length, selectedItems.length, loading, router])
+  }, [cartReady, items.length, selectedItems.length, loading, router])
+
+  if (!cartReady) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-50">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-brand-primary border-t-transparent" />
+      </div>
+    )
+  }
 
   if (items.length === 0 || selectedItems.length === 0) return null
 
