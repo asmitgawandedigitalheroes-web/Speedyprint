@@ -131,6 +131,9 @@ export default function Toolbar() {
         timestamp: Date.now()
       }
       localStorage.setItem('sp_pending_design', JSON.stringify(pendingData))
+      // Clear unsaved flag BEFORE navigating so the beforeunload guard does not
+      // show "Leave site?" — the design has been persisted to localStorage.
+      setSaveStatus('saved')
       window.location.href = `/login?redirect=${encodeURIComponent(window.location.pathname)}`
       return
     }
@@ -173,9 +176,8 @@ export default function Toolbar() {
 
       setSaveStatus('saved')
     } catch (err) {
-      console.error('Save failed:', err)
       setSaveStatus('unsaved')
-      alert(err instanceof Error ? err.message : 'Save failed. Please check your connection.')
+      toast.error(err instanceof Error ? err.message : 'Save failed. Please check your connection.')
     } finally {
       setSaving(false)
     }
