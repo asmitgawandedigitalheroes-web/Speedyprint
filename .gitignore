@@ -18,6 +18,7 @@ src/__mocks__/
 
 # next.js
 /.next/
+/.next_corrupted/
 /.swc/
 /out/
 /.next_corrupted/

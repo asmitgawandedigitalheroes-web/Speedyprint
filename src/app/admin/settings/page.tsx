@@ -104,7 +104,11 @@ export default function AdminSettingsPage() {
     }
   }
 
-  const whatsappUrl = settings.whatsapp_number ? `https://wa.me/${settings.whatsapp_number}` : ''
+  // Normalize: strip spaces/dashes, remove leading 0, ensure digits only for wa.me
+  const normalizedWhatsapp = (settings.whatsapp_number || '')
+    .replace(/[\s\-]/g, '')
+    .replace(/^0/, '27')
+  const whatsappUrl = normalizedWhatsapp ? `https://wa.me/${normalizedWhatsapp}` : ''
 
   if (loading) {
     return (

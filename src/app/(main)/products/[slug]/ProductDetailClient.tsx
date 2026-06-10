@@ -67,7 +67,7 @@ export function ProductDetailClient({
       <div>
 
         {/* Main image */}
-        <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-gray-50 ring-1 ring-gray-200">
+        <div className="relative aspect-square overflow-hidden rounded-2xl bg-gray-50 ring-1 ring-gray-200">
           {activeImage ? (
             <Image
               src={activeImage.url}

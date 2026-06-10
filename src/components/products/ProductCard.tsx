@@ -24,7 +24,7 @@ export function ProductCard({ product }: ProductCardProps) {
       <div className="flex h-full flex-col overflow-hidden rounded-[24px] border border-gray-200 bg-white transition-all duration-400 hover:border-gray-300 hover:shadow-2xl hover:shadow-black/5">
         
         {/* Product image */}
-        <div className="relative flex aspect-[4/3] w-full items-center justify-center overflow-hidden bg-gray-50/50">
+        <div className="relative flex aspect-square w-full items-center justify-center overflow-hidden bg-gray-50/50">
           {product.image_url ? (
             <div className="absolute inset-x-0 top-0 bottom-[-15%]">
               <Image
