@@ -45,7 +45,7 @@ const TABS: TabDef[] = [
   { id: 'my', label: 'My', icon: <FolderOpen size={18} />, group: 'utility' },
   // { id: 'ai', label: 'AI', icon: <Sparkles size={18} />, group: 'utility' },
   { id: 'layers', label: 'Layers', icon: <Layers size={18} />, group: 'utility' },
-  { id: 'bulk', label: 'Bulk', icon: <Database size={18} />, group: 'utility' },
+  { id: 'bulk', label: 'Var Data', icon: <Database size={18} />, group: 'utility' },
   { id: 'complete', label: 'Complete', icon: <CheckCircle2 size={18} />, group: 'utility' },
 ]
 

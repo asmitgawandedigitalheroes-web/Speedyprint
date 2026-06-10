@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { logActivity } from '@/lib/audit'
+import { sendOrderConfirmation } from '@/lib/email/resend'
+import type { Order } from '@/types'
 
 export async function GET() {
   const supabase = await createClient()
@@ -122,6 +125,47 @@ export async function POST(request: NextRequest) {
     },
     is_admin_action: false
   })
+
+  // ── Send order confirmation email ─────────────────────────────────────────
+  try {
+    const customerEmail = user.email
+    if (customerEmail) {
+      await sendOrderConfirmation(order as unknown as Order, customerEmail)
+    }
+  } catch (emailErr) {
+    // Non-fatal — log but don't fail the order creation
+    console.error('[Orders] Confirmation email error:', emailErr)
+  }
+
+  // ── Auto-create proof records for items that have a linked design ─────────
+  // This queues them as "pending" so admin can generate the PDF from the panel.
+  try {
+    const admin = createAdminClient()
+    const itemsWithDesign = orderItems.filter((item: any) => item.design_id)
+    if (itemsWithDesign.length > 0) {
+      // Fetch the created order items to get their IDs
+      const { data: createdItems } = await admin
+        .from('order_items')
+        .select('id, design_id')
+        .eq('order_id', order.id)
+        .not('design_id', 'is', null)
+
+      if (createdItems && createdItems.length > 0) {
+        const proofRows = createdItems.map((ci: any) => ({
+          order_item_id: ci.id,
+          design_id: ci.design_id,
+          version: 1,
+          proof_file_url: null,
+          proof_thumbnail_url: null,
+          status: 'pending',
+        }))
+        await admin.from('proofs').insert(proofRows)
+      }
+    }
+  } catch (proofErr) {
+    // Non-fatal — proof records can be created manually by admin
+    console.error('[Orders] Auto-proof creation error:', proofErr)
+  }
 
   return NextResponse.json(order, { status: 201 })
 }
