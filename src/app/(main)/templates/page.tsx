@@ -34,6 +34,19 @@ const getTemplates = unstable_cache(
 export default async function TemplatesPage() {
   const templates = await getTemplates()
 
+  // Group templates by product group name
+  const grouped = templates.reduce<Record<string, { groupName: string; templates: TemplateWithGroup[] }>>(
+    (acc, t) => {
+      const key = t.product_group?.id ?? 'other'
+      const name = t.product_group?.name ?? 'Other'
+      if (!acc[key]) acc[key] = { groupName: name, templates: [] }
+      acc[key].templates.push(t)
+      return acc
+    },
+    {}
+  )
+  const groups = Object.values(grouped)
+
   return (
     <div className="min-h-screen bg-white">
       {/* Page header */}
@@ -69,7 +82,7 @@ export default async function TemplatesPage() {
         </div>
       </div>
 
-      {/* Templates grid */}
+      {/* Templates — grouped by product category */}
       <section className="py-10">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           {templates.length === 0 ? (
@@ -85,38 +98,49 @@ export default async function TemplatesPage() {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {templates.map((template) => (
-                <Link
-                  key={template.id}
-                  href={`/designer/${template.id}`}
-                  className="group overflow-hidden rounded-md border border-gray-100 bg-white transition hover:border-brand-primary/30 hover:shadow-md"
-                >
-                  <div className="relative aspect-square overflow-hidden bg-brand-bg">
-                    {template.product_group?.image_url ? (
-                      <Image
-                        src={template.product_group.image_url}
-                        alt={template.name}
-                        fill
-                        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
-                        className="object-cover transition-transform group-hover:scale-105"
-                      />
-                    ) : (
-                      <div className="flex h-full items-center justify-center text-3xl text-brand-text-muted">🎨</div>
-                    )}
+            <div className="space-y-12">
+              {groups.map(({ groupName, templates: groupTemplates }) => (
+                <div key={groupName}>
+                  <div className="mb-5 flex items-center gap-3">
+                    <div className="h-1 w-6 bg-brand-primary shrink-0" />
+                    <h2 className="font-heading text-lg font-bold text-brand-text">{groupName}</h2>
+                    <span className="text-sm text-brand-text-muted">({groupTemplates.length})</span>
                   </div>
-                  <div className="p-4">
-                    <h3 className="font-heading text-sm font-semibold text-brand-text group-hover:text-brand-primary transition">
-                      {template.name}
-                    </h3>
-                    <p className="mt-1 text-xs text-brand-text-muted">
-                      {template.print_width_mm}×{template.print_height_mm}mm
-                    </p>
-                    <p className="mt-2 text-xs font-medium text-brand-primary">
-                      Design now →
-                    </p>
+                  <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                    {groupTemplates.map((template) => (
+                      <Link
+                        key={template.id}
+                        href={`/designer/${template.id}`}
+                        className="group overflow-hidden rounded-md border border-gray-100 bg-white transition hover:border-brand-primary/30 hover:shadow-md"
+                      >
+                        <div className="relative aspect-square overflow-hidden bg-brand-bg">
+                          {template.product_group?.image_url ? (
+                            <Image
+                              src={template.product_group.image_url}
+                              alt={template.name}
+                              fill
+                              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                              className="object-cover transition-transform group-hover:scale-105"
+                            />
+                          ) : (
+                            <div className="flex h-full items-center justify-center text-3xl text-brand-text-muted">🎨</div>
+                          )}
+                        </div>
+                        <div className="p-4">
+                          <h3 className="font-heading text-sm font-semibold text-brand-text group-hover:text-brand-primary transition">
+                            {template.name}
+                          </h3>
+                          <p className="mt-1 text-xs text-brand-text-muted">
+                            {template.print_width_mm}×{template.print_height_mm}mm
+                          </p>
+                          <p className="mt-2 text-xs font-medium text-brand-primary">
+                            Design now →
+                          </p>
+                        </div>
+                      </Link>
+                    ))}
                   </div>
-                </Link>
+                </div>
               ))}
             </div>
           )}

@@ -382,7 +382,7 @@ export function Header() {
                 <ShoppingCart className="h-[1.125rem] w-[1.125rem]" />
                 {itemCount > 0 && (
                   <Badge className="absolute -right-1.5 -top-1.5 flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-brand-primary px-1 text-[10px] font-bold text-white ring-2 ring-white" id="cart-badge">
-                    {itemCount > 99 ? '99+' : itemCount}
+                    {itemCount > 999 ? '999+' : itemCount}
                   </Badge>
                 )}
                 <span className="sr-only">Cart</span>

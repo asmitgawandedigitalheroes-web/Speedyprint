@@ -173,13 +173,13 @@ export default function CartPage() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-brand-text-muted">Shipping</span>
-                  <span className="text-brand-text-muted">At checkout</span>
+                  <span className="text-xs italic text-brand-text-muted">Calculated at checkout</span>
                 </div>
               </div>
               <div className="my-4 h-px bg-gray-100" />
               <div className="flex justify-between">
                 <span className="font-semibold text-brand-text">Total</span>
-                <span className="font-heading text-xl font-bold text-brand-primary">{formatCurrency(getTotal())}</span>
+                <span className="font-heading text-xl font-bold text-brand-primary">{formatCurrency(getSubtotal() + getTax())}</span>
               </div>
               <Link
                 href={selectedCount > 0 ? "/checkout" : "#"}

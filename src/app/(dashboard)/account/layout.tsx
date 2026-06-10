@@ -12,11 +12,12 @@ import type { Order } from '@/types'
 
 /* ── Breadcrumb map ── */
 const ROUTE_LABELS: Record<string, string> = {
-  '/account':         'Dashboard',
-  '/account/orders':  'My Orders',
-  '/account/proofs':  'Proof Approvals',
-  '/account/designs': 'Saved Designs',
-  '/account/profile': 'Profile Settings',
+  '/account':           'Dashboard',
+  '/account/orders':    'My Orders',
+  '/account/proofs':    'Proof Approvals',
+  '/account/designs':   'Saved Designs',
+  '/account/profile':   'Profile Settings',
+  '/account/addresses': 'Address Book',
 }
 
 function TopBar() {
@@ -138,13 +139,18 @@ export default function AccountLayout({
   children: React.ReactNode
 }) {
   const router = useRouter()
-  const { user, isAuthenticated } = useAuth()
+  const { user, isAuthenticated, isLoading } = useAuth()
   const [hydrated, setHydrated] = useState(false)
 
   useEffect(() => { setHydrated(true) }, [])
 
   useEffect(() => {
     if (!hydrated) return
+    // Wait for AuthProvider's refreshProfile() to finish before deciding to redirect.
+    // isAuthenticated starts as false (not persisted), so without this guard the layout
+    // would redirect to /login before auth resolves — the middleware then sends logged-in
+    // users back to /account, causing a loop that drops sub-page URLs to /account.
+    if (isLoading) return
     if (!isAuthenticated) {
       router.replace('/login')
       return
@@ -153,10 +159,10 @@ export default function AccountLayout({
     if (user?.role === 'admin' || user?.role === 'production_staff') {
       router.replace('/admin')
     }
-  }, [hydrated, isAuthenticated, user, router])
+  }, [hydrated, isLoading, isAuthenticated, user, router])
 
-  /* Show spinner while hydrating or redirecting */
-  if (!hydrated || !isAuthenticated) {
+  /* Show spinner while hydrating or auth is still resolving */
+  if (!hydrated || isLoading) {
     return (
       <div className="flex h-screen items-center justify-center bg-brand-secondary">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-brand-primary border-t-transparent" />
