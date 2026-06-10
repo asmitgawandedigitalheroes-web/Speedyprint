@@ -90,9 +90,8 @@ function ProofVersionCard({
             setBlobUrl(url)
           }
         })
-        .catch((err) => {
+        .catch(() => {
           if (active) {
-            console.error('[ProofPreview] Proxy fetch failed:', err)
             setPreviewError('Failed to load preview. Please use the external link button.')
           }
         })

@@ -25,6 +25,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
+import { toast } from 'sonner'
 import { formatCurrency, formatDate, formatDateTime } from '@/lib/utils/format'
 import { ORDER_STATUS_LABELS } from '@/lib/utils/constants'
 import type { Profile, UserRole, OrderStatus } from '@/types'
@@ -93,8 +94,8 @@ export default function AdminUserDetailPage({
           country: p.country ?? 'South Africa',
           role: p.role ?? 'customer',
         })
-      } catch (err) {
-        console.error('User fetch error:', err)
+      } catch {
+        toast.error('Failed to load user')
       } finally {
         setLoading(false)
       }
@@ -118,11 +119,10 @@ export default function AdminUserDetailPage({
         setSaved(true)
         setTimeout(() => setSaved(false), 3000)
       } else {
-        alert('Failed to save changes')
+        toast.error('Failed to save changes')
       }
-    } catch (err) {
-      console.error('Save error:', err)
-      alert('Failed to save changes')
+    } catch {
+      toast.error('Failed to save changes')
     } finally {
       setSaving(false)
     }

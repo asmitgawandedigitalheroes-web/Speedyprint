@@ -60,6 +60,7 @@ import type {
   OrderStatusHistory,
 } from '@/types'
 import { AdminProofPanel } from '@/components/admin/ProofPanel'
+import { toast } from 'sonner'
 
 interface OrderDetail extends Omit<Order, 'profile'> {
   profile: Profile | null
@@ -131,8 +132,7 @@ export default function AdminOrderDetailPage({
       const filesRes = await fetch(`/api/admin/orders/${id}/files`)
       if (filesRes.ok) setFiles(await filesRes.json())
     } catch (err) {
-      console.error('Production generation error:', err)
-      alert('Failed to generate production files')
+      toast.error('Failed to generate production files')
     } finally {
       setGeneratingProduction(false)
     }
@@ -144,7 +144,7 @@ export default function AdminOrderDetailPage({
       const res = await fetch(`/api/admin/orders/${id}/files`, { method: 'POST' })
       if (!res.ok) {
         const data = await res.json()
-        alert(`Failed to generate ZIP: ${data.error || 'Unknown error'}`)
+        toast.error(`Failed to generate ZIP: ${data.error || 'Unknown error'}`)
         return
       }
       const blob = await res.blob()
@@ -177,9 +177,8 @@ export default function AdminOrderDetailPage({
         setCsvJobData({ headers: data.headers, rows: data.rows, filename: data.filename, totalRows: data.pagination.total })
         setCsvViewerOpen(true)
       }
-    } catch (err) {
-      console.error('CSV load error:', err)
-      alert('Failed to load CSV data')
+    } catch {
+      toast.error('Failed to load CSV data')
     }
   }
 
@@ -192,8 +191,8 @@ export default function AdminOrderDetailPage({
       setHistory(data.history ?? [])
       setAdminNotes(data.order?.admin_notes ?? '')
       setTrackingNumber(data.order?.tracking_number ?? '')
-    } catch (err) {
-      console.error('Order detail fetch error:', err)
+    } catch {
+      toast.error('Failed to load order')
     } finally {
       setLoading(false)
     }
@@ -209,8 +208,8 @@ export default function AdminOrderDetailPage({
           const data = await res.json()
           setFiles(data)
         }
-      } catch (err) {
-        console.error('Files fetch error:', err)
+      } catch {
+        // non-critical — files panel will show empty
       }
     }
     fetchFiles()
@@ -246,8 +245,8 @@ export default function AdminOrderDetailPage({
       if (res.ok) {
         setOrder((prev) => (prev ? { ...prev, admin_notes: adminNotes } : prev))
       }
-    } catch (err) {
-      console.error('Save notes error:', err)
+    } catch {
+      toast.error('Failed to save notes')
     } finally {
       setSavingNotes(false)
     }
@@ -266,8 +265,8 @@ export default function AdminOrderDetailPage({
           prev ? { ...prev, tracking_number: trackingNumber } : prev
         )
       }
-    } catch (err) {
-      console.error('Save tracking error:', err)
+    } catch {
+      toast.error('Failed to save tracking number')
     } finally {
       setSavingTracking(false)
     }
@@ -300,8 +299,8 @@ export default function AdminOrderDetailPage({
 
       setShipDialogOpen(false)
       await fetchOrder()
-    } catch (err) {
-      console.error('Ship error:', err)
+    } catch {
+      toast.error('Failed to mark as shipped')
     } finally {
       setShipping(false)
     }
@@ -331,7 +330,7 @@ export default function AdminOrderDetailPage({
         })
 
         if (!targetItemId) {
-          alert('No proof found to send. Please generate a proof first.')
+          toast.error('No proof found to send. Please generate a proof first.')
           return
         }
 
@@ -352,11 +351,10 @@ export default function AdminOrderDetailPage({
         setTimeout(() => setEmailSuccess(null), 3000)
       } else {
         const data = await res.json()
-        alert(`Failed to send email: ${data.error || 'Unknown error'}`)
+        toast.error(`Failed to send email: ${data.error || 'Unknown error'}`)
       }
-    } catch (err) {
-      console.error('Email send error:', err)
-      alert('Failed to send email')
+    } catch {
+      toast.error('Failed to send email')
     } finally {
       setSendingEmail(null)
     }
@@ -962,7 +960,7 @@ export default function AdminOrderDetailPage({
                         </td>
                         <td className="px-4 py-3 text-right">
                           <div className="flex items-center justify-end gap-1">
-                            {item.design && item.product_template_id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(item.product_template_id) && (
+                            {item.design && item.product_template_id && (
                               <Button
                                 size="sm"
                                 variant="ghost"

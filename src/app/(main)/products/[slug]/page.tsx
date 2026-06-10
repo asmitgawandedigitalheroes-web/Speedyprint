@@ -355,11 +355,11 @@ export default async function ProductPage({ params, searchParams: searchParamsPr
                   className="group rounded-xl border border-gray-100 bg-gray-50 p-4 transition-all hover:border-brand-primary/30 hover:shadow-md"
                 >
                   {r.image_url ? (
-                    <div className="relative mb-3 aspect-[4/3] overflow-hidden rounded-lg bg-white">
+                    <div className="relative mb-3 aspect-square overflow-hidden rounded-lg bg-white">
                       <img src={r.image_url} alt={r.name} className="h-full w-full object-cover object-center" />
                     </div>
                   ) : (
-                    <div className="mb-3 flex aspect-[4/3] items-center justify-center rounded-lg bg-white text-3xl font-bold text-gray-100">
+                    <div className="mb-3 flex aspect-square items-center justify-center rounded-lg bg-white text-3xl font-bold text-gray-100">
                       {r.name.charAt(0)}
                     </div>
                   )}

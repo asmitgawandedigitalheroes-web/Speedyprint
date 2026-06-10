@@ -17,6 +17,7 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { formatDateTime, formatTimeAgo } from '@/lib/utils/format'
+import { cn } from '@/lib/utils'
 import Link from 'next/link'
 
 export default function AuditLogsPage() {
@@ -268,6 +269,3 @@ export default function AuditLogsPage() {
   )
 }
 
-function cn(...classes: (string | undefined | null | false)[]): string {
-  return classes.filter(Boolean).join(' ')
-}

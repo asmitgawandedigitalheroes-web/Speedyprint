@@ -26,6 +26,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog'
 import type { ProductTemplate, ProductGroup } from '@/types'
+import { toast } from 'sonner'
 
 type TemplateRow = ProductTemplate & { product_group: Pick<ProductGroup, 'id' | 'name' | 'division'> | null }
 type ViewMode = 'grid' | 'list'
@@ -58,7 +59,7 @@ export default function AdminTemplatesPage() {
       const data = await res.json()
       setTemplates(data.templates ?? [])
     } catch {
-      console.error('Templates fetch error')
+      toast.error('Failed to load templates')
     } finally {
       setLoading(false)
     }
@@ -71,7 +72,7 @@ export default function AdminTemplatesPage() {
         if (!res.ok) return
         const data = await res.json()
         setGroups((data.products ?? []).map((p: ProductGroup) => ({ id: p.id, name: p.name })))
-      } catch { /* silent */ }
+      } catch { toast.error('Failed to load product groups') }
     }
     fetchGroups()
   }, [])
@@ -430,8 +431,8 @@ export default function AdminTemplatesPage() {
         </div>
       ) : (
         /* ── List view ── */
-        <div className="overflow-hidden rounded-xl border bg-white shadow-sm">
-          <table className="w-full text-sm">
+        <div className="overflow-x-auto rounded-xl border bg-white shadow-sm">
+          <table className="w-full min-w-[700px] text-sm">
             <thead>
               <tr className="border-b bg-gray-50/80">
                 <th className="px-5 py-3.5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Template</th>
