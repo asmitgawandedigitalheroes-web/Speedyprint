@@ -2,7 +2,6 @@
 
 import { useState, useCallback, useEffect } from 'react'
 import { Search, Loader2 } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
 import { useEditorStore, computeCanvasDimensions } from '@/lib/editor/useEditorStore'
 import type { ProductTemplate, ProductGroup } from '@/types'
 
@@ -100,23 +99,23 @@ export default function TemplatesPanel() {
   const canvas = useEditorStore((s) => s.canvas)
   const setTemplate = useEditorStore((s) => s.setTemplate)
 
-  // Fetch product templates that belong to a product group
+  // Fetch product templates via the API route (uses admin client to bypass RLS)
   useEffect(() => {
-    const supabase = createClient()
-
     async function fetchTemplates() {
       setLoading(true)
-      const { data, error } = await supabase
-        .from('product_templates')
-        .select('*, product_group:product_groups!inner(*)')
-        .eq('is_active', true)
-        .eq('product_groups.is_active', true)
-        .order('created_at', { ascending: true })
-
-      if (!error && data) {
-        setTemplates(data as TemplateWithGroup[])
+      try {
+        const res = await fetch('/api/templates')
+        if (res.ok) {
+          const data = await res.json()
+          setTemplates(data as TemplateWithGroup[])
+        } else {
+          console.error('[TemplatesPanel] fetch error:', res.status)
+        }
+      } catch (err) {
+        console.error('[TemplatesPanel] network error:', err)
+      } finally {
+        setLoading(false)
       }
-      setLoading(false)
     }
 
     fetchTemplates()
