@@ -465,20 +465,6 @@ export function Header() {
                 </SheetTitle>
               </SheetHeader>
 
-              {/* Mobile Search */}
-              <form onSubmit={handleSearch} className="mt-4 flex gap-2">
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search products..."
-                  className="flex-1 rounded-md border px-3 py-2 text-sm focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary"
-                />
-                <Button type="submit" size="sm" className="bg-brand-primary text-white hover:bg-brand-primary-dark">
-                  <Search className="h-4 w-4" />
-                </Button>
-              </form>
-
               <nav className="mt-6 flex flex-col gap-1">
                 {NAV_ITEMS.map((item) =>
                   item.children ? (
@@ -626,6 +612,21 @@ export function Header() {
                     Chat on WhatsApp
                   </a>
                 </div>
+
+                {/* Mobile Search — at the bottom so keyboard doesn't cover nav links */}
+                <div className="my-6 h-px bg-gray-100" />
+                <form onSubmit={handleSearch} className="px-3 pb-2 flex gap-2">
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search products..."
+                    className="flex-1 rounded-md border px-3 py-2 text-sm focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary"
+                  />
+                  <Button type="submit" size="sm" className="bg-brand-primary text-white hover:bg-brand-primary-dark">
+                    <Search className="h-4 w-4" />
+                  </Button>
+                </form>
               </nav>
             </SheetContent>
           </Sheet>
