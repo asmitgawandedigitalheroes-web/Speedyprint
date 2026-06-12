@@ -141,18 +141,16 @@ export default function AccountLayout({
   const router = useRouter()
   const { user, isAuthenticated, isLoading } = useAuth()
   const [hydrated, setHydrated] = useState(false)
+  const [showAuthPopup, setShowAuthPopup] = useState(false)
 
   useEffect(() => { setHydrated(true) }, [])
 
   useEffect(() => {
     if (!hydrated) return
-    // Wait for AuthProvider's refreshProfile() to finish before deciding to redirect.
-    // isAuthenticated starts as false (not persisted), so without this guard the layout
-    // would redirect to /login before auth resolves — the middleware then sends logged-in
-    // users back to /account, causing a loop that drops sub-page URLs to /account.
     if (isLoading) return
     if (!isAuthenticated) {
-      router.replace('/login')
+      // Show the popup before redirecting — user must acknowledge first
+      setShowAuthPopup(true)
       return
     }
     // Admin / production staff belong in the admin panel
@@ -166,6 +164,35 @@ export default function AccountLayout({
     return (
       <div className="flex h-screen items-center justify-center bg-brand-secondary">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-brand-primary border-t-transparent" />
+      </div>
+    )
+  }
+
+  /* Auth required popup — shown before redirect to login */
+  if (showAuthPopup) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-brand-secondary">
+        <div className="mx-4 w-full max-w-sm rounded-2xl bg-white p-8 shadow-xl shadow-black/10 border border-gray-100">
+          <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-brand-primary/10">
+            <svg className="h-6 w-6 text-brand-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+          </div>
+          <h2 className="mb-2 text-lg font-bold text-gray-900">Sign in required</h2>
+          <p className="mb-6 text-sm text-gray-500">
+            You need a Speedy Print account to access your dashboard, orders, and designs. Please sign in or create a free account to continue.
+          </p>
+          <button
+            onClick={() => {
+              // Use a full page navigation so the route change isn't affected by
+              // component re-renders triggered by setShowAuthPopup(false).
+              window.location.href = '/login?redirect=/account'
+            }}
+            className="w-full rounded-lg bg-brand-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-primary/90 transition-colors"
+          >
+            Go to Sign In
+          </button>
+        </div>
       </div>
     )
   }

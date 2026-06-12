@@ -95,14 +95,19 @@ export default function TemplatesPanel() {
   const [search, setSearch] = useState('')
   const [templates, setTemplates] = useState<TemplateWithGroup[]>([])
   const [loading, setLoading] = useState(true)
+  const [fetchError, setFetchError] = useState(false)
+  const [retryCount, setRetryCount] = useState(0)
 
   const canvas = useEditorStore((s) => s.canvas)
   const setTemplate = useEditorStore((s) => s.setTemplate)
+  // The template that was set when the designer was opened (locked order type)
+  const currentTemplate = useEditorStore((s) => s.template)
 
   // Fetch product templates via the API route (uses admin client to bypass RLS)
   useEffect(() => {
     async function fetchTemplates() {
       setLoading(true)
+      setFetchError(false)
       try {
         const res = await fetch('/api/templates')
         if (res.ok) {
@@ -110,19 +115,26 @@ export default function TemplatesPanel() {
           setTemplates(data as TemplateWithGroup[])
         } else {
           console.error('[TemplatesPanel] fetch error:', res.status)
+          setFetchError(true)
         }
       } catch (err) {
         console.error('[TemplatesPanel] network error:', err)
+        setFetchError(true)
       } finally {
         setLoading(false)
       }
     }
 
     fetchTemplates()
-  }, [])
+  }, [retryCount])
 
-  // Filter by search
+  // Filter by current product's group first, then by search
+  // This prevents showing label templates when designing a flyer, etc.
   const filtered = templates.filter((t) => {
+    // If there's a loaded template, only show templates from the same product group
+    if (currentTemplate?.product_group_id && t.product_group_id !== currentTemplate.product_group_id) {
+      return false
+    }
     if (!search) return true
     const q = search.toLowerCase()
     return (
@@ -149,7 +161,17 @@ export default function TemplatesPanel() {
   const handleApply = useCallback(
     (tmpl: ProductTemplate) => {
       if (!canvas) return
-      setTemplate(tmpl)
+
+      // BUG FIX: If the incoming template belongs to a different product group than the
+      // currently loaded one, update canvas dimensions only — do NOT call setTemplate, which
+      // would change the order type stored in the designer session.
+      const isSameGroup =
+        !currentTemplate?.product_group_id ||
+        tmpl.product_group_id === currentTemplate.product_group_id
+
+      if (isSameGroup) {
+        setTemplate(tmpl)
+      }
 
       // Compute pixel dimensions and resize the artboard
       const dims = computeCanvasDimensions(tmpl)
@@ -209,6 +231,17 @@ export default function TemplatesPanel() {
           <div className="flex flex-col items-center justify-center py-12 text-ed-text-dim">
             <Loader2 size={24} className="animate-spin mb-2" />
             <p className="text-xs">Loading templates...</p>
+          </div>
+        ) : fetchError ? (
+          <div className="flex flex-col items-center justify-center py-12 text-center px-3">
+            <p className="text-xs text-red-500 font-medium mb-1">Could not load templates</p>
+            <p className="text-[10px] text-ed-text-dim mb-3">Check your connection and try again.</p>
+            <button
+              onClick={() => setRetryCount((n) => n + 1)}
+              className="text-[10px] font-medium text-ed-accent hover:underline"
+            >
+              Retry
+            </button>
           </div>
         ) : groups.length === 0 ? (
           <p className="text-xs text-ed-text-dim text-center py-8">

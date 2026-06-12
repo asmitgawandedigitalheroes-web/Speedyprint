@@ -50,9 +50,9 @@ export default function CheckoutPage() {
   const subtotal = useMemo(() => selectedItems.reduce((s, i) => s + i.line_total, 0), [selectedItems])
   const isFreeDelivery = subtotal >= FREE_DELIVERY_THRESHOLD
 
-  // Wait for Zustand persist to rehydrate from localStorage before checking cart state.
-  // On direct navigation, the store starts empty (SSR default) and populates after mount.
-  // Without this flag the redirect fires before items are loaded, sending users to /cart.
+  // Wait for Zustand v5 persist to finish async rehydration before checking cart state.
+  // In Zustand v5, persist.onFinishHydration fires AFTER localStorage is read,
+  // preventing a premature empty-cart redirect on direct navigation.
   const [cartReady, setCartReady] = useState(false)
 
   const [loading, setLoading] = useState(false)
@@ -60,7 +60,8 @@ export default function CheckoutPage() {
   const [guestEmail, setGuestEmail] = useState('')
   const [guestEmailError, setGuestEmailError] = useState('')
   const [errors, setErrors] = useState<Partial<Record<keyof ShippingData, string>>>({})
-  const [paymentMethod, setPaymentMethod] = useState<'switch' | 'stripe' | 'pay_later'>('switch')
+  const [paymentMethod, setPaymentMethod] = useState<'switch' | 'stripe'>('switch')
+  const [collectFromOffice, setCollectFromOffice] = useState(false)
 
   // Shipping rate state
   const [shippingRates, setShippingRates] = useState<ShippingRate[]>([])
@@ -84,11 +85,12 @@ export default function CheckoutPage() {
 
   // Compute effective shipping cost
   const shippingCost = useMemo(() => {
+    if (collectFromOffice) return 0
     if (isFreeDelivery) return 0
     if (selectedRate) return selectedRate.total_price
     if (ratesFallback) return FLAT_SHIPPING_RATE
     return 0 // while loading
-  }, [isFreeDelivery, selectedRate, ratesFallback])
+  }, [collectFromOffice, isFreeDelivery, selectedRate, ratesFallback])
 
   const vatAmount = useMemo(() => subtotal * 0.15, [subtotal])
   const orderTotal = useMemo(() => subtotal + vatAmount + shippingCost, [subtotal, vatAmount, shippingCost])
@@ -178,7 +180,7 @@ export default function CheckoutPage() {
   }
 
   const fetchShippingRates = async () => {
-    if (isFreeDelivery) {
+    if (collectFromOffice || isFreeDelivery) {
       setShippingRates([])
       setSelectedRate(null)
       return
@@ -224,7 +226,7 @@ export default function CheckoutPage() {
   }
 
   const handlePlaceOrder = async () => {
-    if (!isFreeDelivery && !selectedRate && !ratesFallback) {
+    if (!collectFromOffice && !isFreeDelivery && !selectedRate && !ratesFallback) {
       toast.error('Please select a shipping method')
       return
     }
@@ -278,11 +280,6 @@ export default function CheckoutPage() {
       const { error: itemsError } = await supabase.from('order_items').insert(orderItems)
       if (itemsError) throw itemsError
 
-      if (paymentMethod === 'pay_later') {
-        router.push(`/checkout/success?order_id=${order.id}`)
-        return
-      }
-
       const endpoint = paymentMethod === 'switch' ? '/api/checkout/switch' : '/api/checkout/stripe'
       const response = await fetch(endpoint, {
         method: 'POST',
@@ -317,7 +314,19 @@ export default function CheckoutPage() {
     }
   }
 
-  useEffect(() => { setCartReady(true) }, [])
+  useEffect(() => {
+    // Zustand v5 persist is async — wait for rehydration before checking cart state.
+    if ((useCart as any).persist?.hasHydrated?.()) {
+      setCartReady(true)
+      return
+    }
+    // Subscribe to hydration completion if the API is available
+    const unsub = (useCart as any).persist?.onFinishHydration?.(() => setCartReady(true))
+    if (unsub) return () => unsub()
+    // Fallback: 50ms is enough for Zustand's async rehydration (one Promise.resolve tick)
+    const timer = setTimeout(() => setCartReady(true), 50)
+    return () => clearTimeout(timer)
+  }, [])
 
   useEffect(() => {
     if (!cartReady) return
@@ -555,13 +564,36 @@ export default function CheckoutPage() {
                   </p>
                 </div>
 
-                {/* Shipping method selection */}
-                {!isFreeDelivery && (
-                  <div className="rounded-xl border border-gray-200 bg-white p-6">
-                    <h2 className="mb-4 text-sm font-semibold text-gray-700 flex items-center gap-2">
-                      <Package className="h-4 w-4 text-gray-400" /> Shipping Method
-                    </h2>
+                {/* Delivery method selection */}
+                <div className="rounded-xl border border-gray-200 bg-white p-6">
+                  <h2 className="mb-4 text-sm font-semibold text-gray-700 flex items-center gap-2">
+                    <Package className="h-4 w-4 text-gray-400" /> Delivery Method
+                  </h2>
 
+                  {/* Collection from Office option */}
+                  <button
+                    type="button"
+                    onClick={() => setCollectFromOffice((v) => !v)}
+                    className={cn(
+                      'w-full flex items-center gap-3 rounded-lg border p-3 text-left text-sm transition-colors mb-3',
+                      collectFromOffice ? 'border-red-600 bg-red-50' : 'border-gray-200 hover:border-gray-300'
+                    )}
+                  >
+                    <div className={cn(
+                      'flex h-4 w-4 shrink-0 items-center justify-center rounded-full border',
+                      collectFromOffice ? 'border-red-600 bg-red-600' : 'border-gray-300'
+                    )}>
+                      {collectFromOffice && <div className="h-1.5 w-1.5 rounded-full bg-white" />}
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-medium text-gray-800">Collection from Office</p>
+                      <p className="text-xs text-gray-400">13 Langwa Street, Strydompark, Randburg — Free</p>
+                    </div>
+                    <span className="text-sm font-semibold text-green-600">Free</span>
+                  </button>
+
+                  {!collectFromOffice && !isFreeDelivery && (
+                    <>
                     {loadingRates ? (
                       <div className="flex items-center gap-2 py-4 text-sm text-gray-500">
                         <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-200 border-t-gray-500" />
@@ -612,17 +644,17 @@ export default function CheckoutPage() {
                         )})}
                       </div>
                     ) : null}
-                  </div>
-                )}
+                    </>
+                  )}
+                </div>
 
                 {/* Payment method */}
                 <div className="rounded-xl border border-gray-200 bg-white p-6">
                   <h2 className="mb-4 text-sm font-semibold text-gray-700">Payment Method</h2>
                   <div className="space-y-2">
                     {([
-                      { id: 'switch', label: 'Switch', description: 'South African payment gateway' },
-                      { id: 'stripe', label: 'Card (Stripe)', description: 'Credit or debit card' },
-                      { id: 'pay_later', label: 'Pay Later / Proforma Invoice', description: 'We will send you an invoice — pay before production starts' },
+                      { id: 'switch', label: 'EFT (STITCH)', description: 'Instant EFT via STITCH — South African payment gateway' },
+                      { id: 'stripe', label: 'Card (Credit/Debit)', description: 'Secure card payment via Stripe' },
                     ] as const).map(method => (
                       <button
                         key={method.id}
@@ -651,13 +683,11 @@ export default function CheckoutPage() {
 
                 <button
                   onClick={handlePlaceOrder}
-                  disabled={loading || (!isFreeDelivery && !selectedRate && !ratesFallback)}
+                  disabled={loading || (!collectFromOffice && !isFreeDelivery && !selectedRate && !ratesFallback)}
                   className="w-full flex items-center justify-center gap-2 rounded-lg bg-red-600 py-3 text-sm font-medium text-white hover:bg-red-700 transition-colors disabled:opacity-50"
                 >
                   {loading ? (
                     <><div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" /> Processing...</>
-                  ) : paymentMethod === 'pay_later' ? (
-                    <><ArrowRight className="h-4 w-4" /> Place Order (Pay Later)</>
                   ) : (
                     <><CreditCard className="h-4 w-4" /> Pay {formatCurrency(orderTotal)}</>
                   )}

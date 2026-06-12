@@ -28,6 +28,7 @@ interface ProductConfiguratorProps {
   pricingRules: PricingRule[]
   onTemplateChange?: (templateId: string) => void
   designId?: string
+  productSlug?: string
 }
 
 export function ProductConfigurator({
@@ -36,6 +37,7 @@ export function ProductConfigurator({
   templates,
   onTemplateChange: onTemplateChangeCallback,
   designId: propDesignId,
+  productSlug,
 }: ProductConfiguratorProps) {
   const searchParams = useSearchParams()
   const designId = propDesignId || searchParams.get('design')
@@ -59,6 +61,18 @@ export function ProductConfigurator({
     return defaults
   })
   const [quantity, setQuantity] = useState(1)
+  const [vinylMaterial, setVinylMaterial] = useState('white-vinyl-1yr')
+  const [labelCombo, setLabelCombo] = useState(false)
+
+  const isVinylProduct = productSlug?.toLowerCase().includes('vinyl') ?? false
+  const isCoffeeSleeve = productSlug?.toLowerCase().includes('coffee') || productSlug?.toLowerCase().includes('sleeve') || templates.some(t => t.print_width_mm === 270 && t.print_height_mm === 70)
+
+  const VINYL_MATERIALS = [
+    { value: 'white-vinyl-1yr', label: 'White vinyl (1 year)' },
+    { value: 'grey-back-vinyl-3yr', label: 'Grey back vinyl (3 year)' },
+    { value: 'clear-vinyl-1yr', label: 'Clear vinyl (1 year)' },
+    { value: 'removable-vinyl', label: 'Removable vinyl' },
+  ]
 
   // Adjustable dimensions state
   const [customWidth, setCustomWidth] = useState<string>('')
@@ -297,7 +311,51 @@ export function ProductConfigurator({
         </>
       )}
 
-      {/* Parameter selectors */}
+      {/* Vinyl material selector */}
+      {isVinylProduct && (
+        <>
+          <Separator />
+          <div className="space-y-3">
+            <h3 className="text-sm font-semibold uppercase tracking-wider text-brand-text-muted">
+              Material
+            </h3>
+            <div className="space-y-2">
+              {VINYL_MATERIALS.map((mat) => (
+                <label
+                  key={mat.value}
+                  className={`flex items-center gap-3 cursor-pointer rounded-lg border p-3 transition-colors ${
+                    vinylMaterial === mat.value
+                      ? 'border-brand-primary bg-brand-primary/5'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="vinyl-material"
+                    value={mat.value}
+                    checked={vinylMaterial === mat.value}
+                    onChange={() => setVinylMaterial(mat.value)}
+                    className="accent-brand-primary"
+                  />
+                  <span className="text-sm text-brand-text">{mat.label}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Coffee sleeve — static size display only (270×70mm) */}
+      {isCoffeeSleeve && (
+        <>
+          <Separator />
+          <div className="rounded-lg bg-brand-bg px-4 py-3 text-sm text-brand-text">
+            <span className="font-semibold">Size:</span> 270 × 70 mm
+          </div>
+        </>
+      )}
+
+      {/* Parameter selectors — skip size selector for coffee sleeves */}
       {parameters.length > 0 && (
         <>
           <Separator />
@@ -306,7 +364,7 @@ export function ProductConfigurator({
               Options
             </h3>
             <ParameterSelector
-              parameters={parameters}
+              parameters={isCoffeeSleeve ? parameters.filter(p => p.param_key !== 'size') : parameters}
               values={paramValues}
               onChange={handleParamChange}
             />
@@ -406,6 +464,24 @@ export function ProductConfigurator({
 
       <Separator />
 
+      {/* Label combo add-on */}
+      <label className="flex items-start gap-3 cursor-pointer rounded-lg border border-gray-200 p-3 hover:border-gray-300 transition-colors">
+        <input
+          type="checkbox"
+          checked={labelCombo}
+          onChange={(e) => setLabelCombo(e.target.checked)}
+          className="mt-0.5 accent-brand-primary"
+        />
+        <div>
+          <p className="text-sm font-medium text-brand-text">Order Label Combos</p>
+          <p className="text-xs text-brand-text-muted mt-0.5">
+            Combine multiple label sizes in one order (e.g. jar label + lid label). We&apos;ll contact you to confirm the combo.
+          </p>
+        </div>
+      </label>
+
+      <Separator />
+
       {/* Action buttons */}
       {minimumApplied && (
         <div className="rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
@@ -434,7 +510,7 @@ export function ProductConfigurator({
               {navigatingState === 'design' ? (
                 <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Preparing Editor...</>
               ) : (
-                'Design Now'
+                'Add to Cart / Start Design'
               )}
             </Button>
             <Button

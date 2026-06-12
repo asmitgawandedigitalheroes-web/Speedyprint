@@ -29,14 +29,13 @@ async function generateQRCodeDataURL(text: string): Promise<string> {
   return QRCode.toDataURL(text, { width: 200, margin: 1 })
 }
 
-async function generateBarcodeDataURL(value: string): Promise<string> {
+async function generateBarcodeDataURL(value: string, format = 'CODE128'): Promise<string> {
   return new Promise((resolve, reject) => {
-    // Create an off-screen SVG element for JsBarcode
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
     import('jsbarcode').then(({ default: JsBarcode }) => {
       try {
         JsBarcode(svg, value, {
-          format: 'CODE128',
+          format,
           width: 2,
           height: 60,
           displayValue: true,
@@ -59,10 +58,17 @@ export default function BulkCreatePanel() {
   const [activeRow, setActiveRow] = useState<number | null>(null)
   const [showInsertTools, setShowInsertTools] = useState(false)
   const [serialStart, setSerialStart] = useState('1')
-  const [serialPrefix, setSerialPrefix] = useState('')
+  const [serialEnd, setSerialEnd] = useState('')
+  const [isVariable, setIsVariable] = useState(true)
   const [qrText, setQrText] = useState('')
   const [barcodeValue, setBarcodeValue] = useState('')
+  const [barcodeFormat, setBarcodeFormat] = useState('CODE128')
   const [isGenerating, setIsGenerating] = useState(false)
+
+  const BARCODE_FORMATS = [
+    'CODE128', 'CODE39', 'EAN13', 'EAN8', 'UPC', 'ITF14', 'MSI', 'pharmacode',
+    'codabar', 'CODE93',
+  ]
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -134,14 +140,14 @@ export default function BulkCreatePanel() {
   const handleInsertSerial = () => {
     if (!canvas) return
 
-    const label = `${serialPrefix}{{_serial_}}`
+    const label = '{{_serial_}}'
     addText(canvas as unknown as FabricCanvas, {
       text: label,
       fontSize: 24,
       fill: '#000000',
     })
     toast.success('Serial number placeholder added', {
-      description: `"${label}" will be auto-incremented during batch export.`,
+      description: `Starts at ${serialStart || 1}${serialEnd ? `, ends at ${serialEnd}` : ''}. ${isVariable ? 'Variable: updates per item.' : ''}`,
     })
   }
   // ── Insert QR code image ───────────────────────────────────────────────────
@@ -164,9 +170,9 @@ export default function BulkCreatePanel() {
     if (!canvas || !barcodeValue.trim()) return
     setIsGenerating(true)
     try {
-      const dataUrl = await generateBarcodeDataURL(barcodeValue.trim())
+      const dataUrl = await generateBarcodeDataURL(barcodeValue.trim(), barcodeFormat)
       await addImageFromURL(canvas as unknown as FabricCanvas, dataUrl)
-      toast.success('Barcode added to canvas')
+      toast.success(`Barcode (${barcodeFormat}) added to canvas`)
     } catch (e: any) {
       toast.error('Failed to generate barcode: ' + e.message)
     } finally {
@@ -205,21 +211,36 @@ export default function BulkCreatePanel() {
                   <p className="text-[11px] font-semibold text-ed-text">Serialised Number</p>
                 </div>
                 <div className="flex gap-1.5">
-                  <input
-                    type="text"
-                    placeholder="Prefix (e.g. INV-)"
-                    value={serialPrefix}
-                    onChange={(e) => setSerialPrefix(e.target.value)}
-                    className="flex-1 min-w-0 px-2 py-1 text-[11px] border border-ed-border rounded editor-input"
-                  />
-                  <input
-                    type="number"
-                    placeholder="Start"
-                    value={serialStart}
-                    onChange={(e) => setSerialStart(e.target.value)}
-                    className="w-14 px-2 py-1 text-[11px] border border-ed-border rounded editor-input"
-                  />
+                  <div className="flex-1 space-y-1">
+                    <p className="text-[9px] text-ed-text-dim">Start Number</p>
+                    <input
+                      type="number"
+                      placeholder="1"
+                      value={serialStart}
+                      onChange={(e) => setSerialStart(e.target.value)}
+                      className="w-full px-2 py-1 text-[11px] border border-ed-border rounded editor-input"
+                    />
+                  </div>
+                  <div className="flex-1 space-y-1">
+                    <p className="text-[9px] text-ed-text-dim">End Number</p>
+                    <input
+                      type="number"
+                      placeholder="100"
+                      value={serialEnd}
+                      onChange={(e) => setSerialEnd(e.target.value)}
+                      className="w-full px-2 py-1 text-[11px] border border-ed-border rounded editor-input"
+                    />
+                  </div>
                 </div>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={isVariable}
+                    onChange={(e) => setIsVariable(e.target.checked)}
+                    className="rounded border-ed-border"
+                  />
+                  <span className="text-[10px] text-ed-text">Variable (updates per item in batch)</span>
+                </label>
                 <button
                   onClick={handleInsertSerial}
                   disabled={!canvas}
@@ -228,7 +249,7 @@ export default function BulkCreatePanel() {
                   Insert Placeholder
                 </button>
                 <p className="text-[9px] text-ed-text-dim leading-relaxed">
-                  A <code className="bg-ed-surface-hover px-0.5 rounded">{'{{_serial_}}'}</code> placeholder is added to the canvas. Each exported file will use the next number in sequence.
+                  A <code className="bg-ed-surface-hover px-0.5 rounded">{'{{_serial_}}'}</code> placeholder is added. Each exported file uses the next number from {serialStart || '1'}{serialEnd ? ` to ${serialEnd}` : ''}.
                 </p>
               </div>
 
@@ -258,8 +279,17 @@ export default function BulkCreatePanel() {
               <div className="p-3 space-y-2">
                 <div className="flex items-center gap-2">
                   <Barcode size={13} className="text-ed-accent shrink-0" />
-                  <p className="text-[11px] font-semibold text-ed-text">Barcode (CODE128)</p>
+                  <p className="text-[11px] font-semibold text-ed-text">Barcode</p>
                 </div>
+                <select
+                  value={barcodeFormat}
+                  onChange={(e) => setBarcodeFormat(e.target.value)}
+                  className="w-full px-2 py-1 text-[11px] border border-ed-border rounded editor-input bg-ed-bg"
+                >
+                  {BARCODE_FORMATS.map((fmt) => (
+                    <option key={fmt} value={fmt}>{fmt}</option>
+                  ))}
+                </select>
                 <input
                   type="text"
                   placeholder="Value to encode (e.g. SKU123)"
