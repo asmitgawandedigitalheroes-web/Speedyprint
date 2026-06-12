@@ -55,21 +55,13 @@ export async function updateSession(request: NextRequest) {
   const AUTH_ALIASES = ['/account/sign-up', '/account/sign-in']
   const isAuthAlias = AUTH_ALIASES.includes(pathname)
 
-  // Protect /account routes (but not the public sign-up/sign-in aliases)
-  // /checkout is intentionally public — guests can checkout without an account
-  if (pathname.startsWith('/account') && !isAuthAlias) {
-    if (!user) {
-      const url = request.nextUrl.clone()
-      url.pathname = '/login'
-      url.searchParams.set('redirect', pathname)
-      return NextResponse.redirect(url)
-    }
-
-    // BUG-025 FIX: Admin / staff have their own panel — send them there
-    // Extract role from JWT app_metadata (synced via trigger) instead of DB query
+  // /account routes are protected by the client-side guard in account/layout.tsx,
+  // which shows a modal popup before redirecting to /login.
+  // We intentionally do NOT redirect here so the popup can render first.
+  // Admin / production staff are still sent to /admin server-side (no popup needed there).
+  if (pathname.startsWith('/account') && !isAuthAlias && user) {
     const role = user.app_metadata?.role
-
-    if (role && ['admin', 'production_staff'].includes(role) && pathname.startsWith('/account')) {
+    if (role && ['admin', 'production_staff'].includes(role)) {
       const url = request.nextUrl.clone()
       url.pathname = '/admin'
       return NextResponse.redirect(url)

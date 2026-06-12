@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { stripe } from '@/lib/stripe'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { sendPaymentReceived } from '@/lib/email/resend'
 
 export async function POST(req: NextRequest) {
   const body = await req.text()
@@ -64,6 +65,21 @@ export async function POST(req: NextRequest) {
             throw updateError // Re-throw to trigger catch block (lock removal)
           } else {
             console.log(`Order ${orderId} updated to paid`)
+
+            // Send payment confirmation email (non-blocking)
+            try {
+              const { data: orderRow } = await supabase
+                .from('orders')
+                .select('*, profiles(email)')
+                .eq('id', orderId)
+                .single()
+              const customerEmail = (orderRow as any)?.profiles?.email
+              if (orderRow && customerEmail) {
+                await sendPaymentReceived(orderRow as any, customerEmail)
+              }
+            } catch (emailErr) {
+              console.error('[Stripe webhook] Failed to send payment email:', emailErr)
+            }
           }
         }
         break

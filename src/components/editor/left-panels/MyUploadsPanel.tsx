@@ -1,9 +1,8 @@
 'use client'
 
 import { useState, useRef, useCallback } from 'react'
-import { Upload, Image as ImageIcon, Trash2, Plus } from 'lucide-react'
+import { Upload, Image as ImageIcon, Trash2, Plus, FileText } from 'lucide-react'
 import { useEditorStore } from '@/lib/editor/useEditorStore'
-import { addImage } from '@/lib/editor/fabricUtils'
 import { toast } from 'sonner'
 import { FabricImage } from 'fabric'
 
@@ -11,7 +10,27 @@ interface UploadEntry {
   id: string
   name: string
   dataUrl: string
+  thumbnail: string  // dataUrl for display; may differ from dataUrl for PDFs
+  isPdf: boolean
   timestamp: number
+}
+
+async function renderPdfPageToDataUrl(arrayBuffer: ArrayBuffer): Promise<string> {
+  const pdfjsLib = await import('pdfjs-dist')
+  pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+    'pdfjs-dist/build/pdf.worker.min.mjs',
+    import.meta.url
+  ).href
+
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise
+  const page = await pdf.getPage(1)
+  const viewport = page.getViewport({ scale: 2 })
+  const canvas = document.createElement('canvas')
+  canvas.width = viewport.width
+  canvas.height = viewport.height
+  const ctx = canvas.getContext('2d')!
+  await page.render({ canvasContext: ctx, viewport, canvas }).promise
+  return canvas.toDataURL('image/png')
 }
 
 export default function MyUploadsPanel() {
@@ -25,7 +44,6 @@ export default function MyUploadsPanel() {
       if (!files) return
 
       Array.from(files).forEach((file) => {
-        // Preflight checks
         const allowedTypes = ['image/png', 'image/jpeg', 'image/svg+xml', 'application/pdf']
         if (!allowedTypes.includes(file.type)) {
           toast.error(`"${file.name}" is an unsupported format. Please use PNG, JPG, SVG, or PDF.`)
@@ -37,32 +55,49 @@ export default function MyUploadsPanel() {
           return
         }
 
-        const reader = new FileReader()
-        reader.onload = (ev) => {
-          const dataUrl = ev.target?.result as string
-          
-          // Image resolution check
-          const img = new Image()
-          img.onload = () => {
-             if (img.width < 1000 || img.height < 1000) {
-               toast.warning(`"${file.name}" has low resolution. It may appear blurry when printed.`, {
-                 description: 'For best results, use images at least 2000px wide.',
-               })
-             }
-          }
-          img.src = dataUrl
+        const isPdf = file.type === 'application/pdf'
+        const id = `upload-${Date.now()}-${Math.random().toString(36).slice(2)}`
 
-          setUploads((prev) => [
-            {
-              id: `upload-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-              name: file.name,
-              dataUrl,
-              timestamp: Date.now(),
-            },
-            ...prev,
-          ])
+        if (isPdf) {
+          const arrayReader = new FileReader()
+          arrayReader.onload = async (ev) => {
+            const arrayBuffer = ev.target?.result as ArrayBuffer
+            try {
+              const thumbnail = await renderPdfPageToDataUrl(arrayBuffer)
+              // Store the rendered PNG as the dataUrl too — it's what gets placed on canvas
+              setUploads((prev) => [
+                { id, name: file.name, dataUrl: thumbnail, thumbnail, isPdf: true, timestamp: Date.now() },
+                ...prev,
+              ])
+            } catch (err) {
+              console.error('[MyUploads] PDF render error:', err)
+              toast.error(`Could not render "${file.name}". Only single-page PDFs with standard content are supported.`)
+            }
+          }
+          arrayReader.readAsArrayBuffer(file)
+        } else {
+          const reader = new FileReader()
+          reader.onload = (ev) => {
+            const dataUrl = ev.target?.result as string
+
+            // Resolution check for raster images
+            const img = new Image()
+            img.onload = () => {
+              if (img.width < 1000 || img.height < 1000) {
+                toast.warning(`"${file.name}" has low resolution. It may appear blurry when printed.`, {
+                  description: 'For best results, use images at least 2000px wide.',
+                })
+              }
+            }
+            img.src = dataUrl
+
+            setUploads((prev) => [
+              { id, name: file.name, dataUrl, thumbnail: dataUrl, isPdf: false, timestamp: Date.now() },
+              ...prev,
+            ])
+          }
+          reader.readAsDataURL(file)
         }
-        reader.readAsDataURL(file)
       })
 
       e.target.value = ''
@@ -111,7 +146,7 @@ export default function MyUploadsPanel() {
         <input
           ref={fileInputRef}
           type="file"
-          accept="image/*"
+          accept="image/*,.pdf,application/pdf"
           multiple
           className="hidden"
           onChange={handleFileUpload}
@@ -123,7 +158,7 @@ export default function MyUploadsPanel() {
           <div className="flex flex-col items-center justify-center py-12 text-center">
             <ImageIcon size={40} className="text-ed-text-dim mb-3" />
             <p className="text-sm text-ed-text-dim mb-1">No uploads yet</p>
-            <p className="text-[10px] text-ed-text-dim">Upload images to use in your design</p>
+            <p className="text-[10px] text-ed-text-dim">Upload images or PDFs to use in your design</p>
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-2">
@@ -134,10 +169,16 @@ export default function MyUploadsPanel() {
               >
                 <div className="relative">
                   <img
-                    src={upload.dataUrl}
+                    src={upload.thumbnail}
                     alt={upload.name}
                     className="w-full h-20 object-cover"
                   />
+                  {upload.isPdf && (
+                    <span className="absolute bottom-1 left-1 flex items-center gap-0.5 bg-black/60 text-white rounded px-1 py-0.5 text-[8px] font-semibold">
+                      <FileText size={8} />
+                      PDF
+                    </span>
+                  )}
                   <button
                     onClick={() => handleDelete(upload.id)}
                     className="absolute top-1 right-1 p-0.5 bg-red-500 text-white rounded opacity-0 group-hover:opacity-100 transition-opacity"

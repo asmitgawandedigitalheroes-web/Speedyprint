@@ -13,9 +13,8 @@ export async function GET() {
 
     const { data, error } = await supabase
       .from('product_templates')
-      .select('*, product_group:product_groups!inner(*)')
+      .select('*, product_group:product_groups(*)')
       .eq('is_active', true)
-      .eq('product_groups.is_active', true)
       .order('created_at', { ascending: true })
 
     if (error) {

@@ -42,29 +42,31 @@ function findArtboard(canvas: FabricCanvas) {
 
 export function addText(
   canvas: FabricCanvas,
-  options?: { 
-    text?: string; 
-    fontSize?: number; 
-    fill?: string; 
-    fontFamily?: string; 
+  options?: {
+    text?: string;
+    fontSize?: number;
+    fill?: string;
+    fontFamily?: string;
     fontWeight?: string;
     fontStyle?: string;
     stroke?: string;
     strokeWidth?: number;
   }
 ) {
-  const { artboardWidth, artboardHeight } = useEditorStore.getState()
+  const center = getArtboardCenter()
+  const { artboardWidth } = useEditorStore.getState()
   const w = artboardWidth || 800
-  const h = artboardHeight || 600
-  const textWidth = w * 0.3
-  // Clamp to artboard bounds — getArtboardCenter() can return (0,0) before artboard is placed
-  const left = Math.max(0, Math.min((w - textWidth) / 2, w - textWidth))
-  const top = Math.max(0, Math.min(h / 2 - 20, h - 40))
+  const fontSize = options?.fontSize ?? 24
+  // Textbox is 40 % of the artboard width; centred horizontally and vertically on the artboard
+  const textWidth = Math.round(w * 0.4)
+  const left = Math.max(0, center.x - textWidth / 2)
+  const top = Math.max(0, center.y - fontSize / 2)
   const text = new Textbox(options?.text ?? 'Double-click to edit', {
     left,
     top,
-    fontSize: options?.fontSize ?? 24,
-    fill: options?.fill ?? '#333333',
+    width: textWidth,
+    fontSize,
+    fill: options?.fill ?? '#000000',
     fontFamily: options?.fontFamily ?? 'Inter, sans-serif',
     fontWeight: options?.fontWeight as any ?? 'normal',
     fontStyle: options?.fontStyle as any ?? 'normal',
@@ -74,10 +76,6 @@ export function addText(
     originX: 'left',
     originY: 'top',
   })
-  
-  // Set width to fit the content initially, with a fallback
-  const initialWidth = text.getLineWidth(0) || 200
-  text.set('width', initialWidth + 2) // +2 for a tiny bit of breathing room
 
   canvas.add(text)
   canvas.setActiveObject(text)
@@ -627,6 +625,8 @@ export function exportJSON(canvas: FabricCanvas): string {
 export async function loadJSON(canvas: FabricCanvas, json: string) {
   await canvas.loadFromJSON(JSON.parse(json))
   canvas.renderAll()
+  // Re-centre viewport on the artboard after loading so the design is always visible
+  useEditorStore.getState().zoomToFit()
 }
 
 export function exportPNG(canvas: FabricCanvas): string {

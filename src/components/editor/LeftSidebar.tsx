@@ -42,7 +42,7 @@ const TABS: TabDef[] = [
   { id: 'draw', label: 'Draw', icon: <Pencil size={18} />, group: 'tools' },
   { id: 'text', label: 'Text', icon: <Type size={18} />, group: 'tools' },
   { id: 'add', label: 'Add', icon: <Shapes size={18} />, group: 'tools' },
-  { id: 'my', label: 'My', icon: <FolderOpen size={18} />, group: 'utility' },
+  { id: 'my', label: 'Uploads', icon: <FolderOpen size={18} />, group: 'utility' },
   // { id: 'ai', label: 'AI', icon: <Sparkles size={18} />, group: 'utility' },
   { id: 'layers', label: 'Layers', icon: <Layers size={18} />, group: 'utility' },
   { id: 'bulk', label: 'Var Data', icon: <Database size={18} />, group: 'utility' },
@@ -143,11 +143,11 @@ export default function LeftSidebar() {
       {/* Expandable content panel */}
       <div
         className={`bg-ed-surface border-r border-ed-border overflow-hidden transition-all duration-200 ease-out ${
-          isMobile ? (activeTab ? 'w-full' : 'w-0') : activeTab ? 'w-72' : 'w-0'
+          isMobile ? (activeTab ? 'w-full' : 'w-0') : activeTab ? 'w-[340px]' : 'w-0'
         }`}
       >
         {activeTab && (
-          <div className={`${isMobile ? 'w-full' : 'w-72'} h-full overflow-y-auto overflow-x-hidden`}>
+          <div className={`${isMobile ? 'w-full' : 'w-[340px]'} h-full overflow-y-auto overflow-x-hidden text-[13px]`}>
             {PANEL_MAP[activeTab]}
           </div>
         )}

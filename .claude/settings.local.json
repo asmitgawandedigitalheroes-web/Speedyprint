@@ -72,7 +72,27 @@
       "Bash(supabase db *)",
       "Bash(curl -s -X POST http://localhost:64386/api/products/11111111-1111-1111-1111-111111111105/price -H 'Content-Type: application/json' -d '{\"quantity\":1000,\"params\":{\"size\":\"Small \\\\xe2\\\\x80\\\\x94 150mm \\\\xc3\\\\x97 150mm\"}}')",
       "Bash(curl -s -X POST http://localhost:64386/api/products/11111111-1111-1111-1111-111111111105/price -H 'Content-Type: application/json' -d '{\"quantity\":1000,\"params\":{}}')",
-      "Bash(find \"/c/Users/Vikram Gondane/OneDrive/Desktop/Asmit/cluade projects/New folder/Speedyprint\" -type f \\\\\\( -name \"*.sql\" -o -name \"*.json\" -o -name \"*.ts\" -o -name \"*.tsx\" \\\\\\) -exec grep -l \"TEX21\\\\|race.?number.*price\\\\|pricing.*race\" {} \\\\;)"
+      "Bash(find \"/c/Users/Vikram Gondane/OneDrive/Desktop/Asmit/cluade projects/New folder/Speedyprint\" -type f \\\\\\( -name \"*.sql\" -o -name \"*.json\" -o -name \"*.ts\" -o -name \"*.tsx\" \\\\\\) -exec grep -l \"TEX21\\\\|race.?number.*price\\\\|pricing.*race\" {} \\\\;)",
+      "Bash(node -e \"const p = require\\('pdfjs-dist/package.json'\\); console.log\\(p.version\\)\")",
+      "Bash(cd \"/g/New folder \\(1\\)/New folder/Speedyprint\" && grep -r \"sendOrderShipped\\\\|order.*shipped\\\\|status.*shipped\" --include=\"*.ts\" --include=\"*.tsx\" src/app/api/ 2>/dev/null | grep -v node_modules)",
+      "Bash(npx playwright *)",
+      "Bash(Get-Content \"C:\\\\Users\\\\HP\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\G--New-folder--1--New-folder-Speedyprint\\\\84367531-6993-43a3-85e0-62a396fd6bc8\\\\tasks\\\\bygnudqkk.output\" -Tail 10)",
+      "Bash(cd \"G:\\\\New folder \\(1\\)\\\\New folder\\\\Speedyprint\" && ls \"C:\\\\Users\\\\HP\\\\AppData\\\\Local\\\\ms-playwright\\\\chromium_headless_shell-1217\\\\chrome-headless-shell-win64\\\\\" 2>&1 | head -5)",
+      "Bash(node -e \"const p = require\\('@playwright/test/package.json'\\); console.log\\(p.version\\)\")",
+      "Bash(node -e \"const p = require\\('playwright/package.json'\\); console.log\\(p.version\\)\")",
+      "Bash(ls /c/Users/HP/AppData/Local/ms-playwright/chromium-1217/ 2>&1 | head -5)",
+      "Bash(ls /c/Users/HP/AppData/Local/ms-playwright/ 2>&1)",
+      "Bash(mkdir -p \"/c/Users/HP/AppData/Local/ms-playwright/chromium_headless_shell-1217/chrome-headless-shell-win64\")",
+      "Bash(ln -sf \"/c/Users/HP/AppData/Local/ms-playwright/chromium_headless_shell-1223/chrome-headless-shell-win64/chrome-headless-shell.exe\" \"/c/Users/HP/AppData/Local/ms-playwright/chromium_headless_shell-1217/chrome-headless-shell-win64/chrome-headless-shell.exe\")",
+      "Bash(rm -rf \"/c/Users/HP/AppData/Local/ms-playwright/chromium_headless_shell-1217\")",
+      "Bash(mkdir -p \"/c/Users/HP/AppData/Local/ms-playwright/chromium_headless_shell-1217\")",
+      "Bash(ln -sfn \"/c/Users/HP/AppData/Local/ms-playwright/chromium_headless_shell-1223/chrome-headless-shell-win64\" \"/c/Users/HP/AppData/Local/ms-playwright/chromium_headless_shell-1217/chrome-headless-shell-win64\")",
+      "Bash(npm run *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3001)",
+      "Bash(ls -la '/mnt/g/New folder \\(1\\)/New folder/Speedyprint/public/images/samples/' 2>&1 | head -30)",
+      "mcp__visualize__read_me",
+      "mcp__visualize__show_widget",
+      "PowerShell(cd \"G:\\\\New folder \\(1\\)\\\\New folder\\\\Speedyprint\"; git add src/app/\\(dashboard\\)/account/layout.tsx \"src/app/\\(main\\)/checkout/page.tsx\" \"src/app/\\(main\\)/products/[slug]/ProductConfigurator.tsx\" \"src/app/\\(main\\)/products/[slug]/ProductDetailClient.tsx\" src/app/api/templates/route.ts src/app/api/webhooks/stripe/route.ts src/components/editor/LeftSidebar.tsx src/components/editor/PropertiesPanel.tsx src/components/editor/Toolbar.tsx src/components/editor/left-panels/BulkCreatePanel.tsx src/components/editor/left-panels/MyUploadsPanel.tsx src/components/editor/left-panels/TemplatesPanel.tsx src/lib/editor/fabricUtils.ts src/lib/supabase/middleware.ts package.json package-lock.json playwright.config.ts; git add tests/client-changes.spec.ts; git add \"public/images/samples/\"; git status --short)"
     ]
   }
 }

@@ -22,7 +22,10 @@ import {
   LayoutTemplate,
   MoreVertical,
   RotateCcw,
+  MessageCircle,
+  Link2,
 } from 'lucide-react'
+import { WHATSAPP_URL } from '@/lib/utils/constants'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -46,6 +49,8 @@ export default function Toolbar() {
   const [siblingTemplates, setSiblingTemplates] = useState<ProductTemplate[]>([])
   const [showTemplatePicker, setShowTemplatePicker] = useState(false)
   const [showCartModal, setShowCartModal] = useState(false)
+  const [showCanvaInput, setShowCanvaInput] = useState(false)
+  const [canvaLink, setCanvaLink] = useState('')
   const [cartQuantity, setCartQuantity] = useState(100)
   const [addingToCart, setAddingToCart] = useState(false)
   const [cartAdded, setCartAdded] = useState(false)
@@ -807,9 +812,78 @@ export default function Toolbar() {
                   <span>Batch CSV</span>
                 </DropdownMenuItem>
               )}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => setShowCanvaInput(true)}>
+                <Link2 className="mr-2 h-4 w-4 text-purple-500" />
+                <span>Link a Canva Design</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <a
+                  href={`${WHATSAPP_URL}?text=${encodeURIComponent('Hi, I need help with my design on Speedy Print.')}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  data-testid="whatsapp-help-btn-mobile"
+                >
+                  <MessageCircle className="mr-2 h-4 w-4 text-green-600" />
+                  <span>Help Me (WhatsApp)</span>
+                </a>
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
+
+        {/* Canva Design Link */}
+        {showCanvaInput ? (
+          <div className="hidden lg:flex items-center gap-1.5 px-2 py-1 border border-ed-border rounded-md bg-ed-bg">
+            <Link2 size={13} className="text-ed-text-dim shrink-0" />
+            <input
+              type="url"
+              placeholder="Paste Canva share link…"
+              value={canvaLink}
+              onChange={(e) => setCanvaLink(e.target.value)}
+              autoFocus
+              className="text-xs bg-transparent outline-none text-ed-text w-44 placeholder:text-ed-text-dim"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  if (canvaLink.trim()) {
+                    toast.success('Canva link saved', { description: canvaLink.trim() })
+                  }
+                  setShowCanvaInput(false)
+                  setCanvaLink('')
+                }
+                if (e.key === 'Escape') {
+                  setShowCanvaInput(false)
+                  setCanvaLink('')
+                }
+              }}
+            />
+            <button onClick={() => { setShowCanvaInput(false); setCanvaLink('') }} className={iconBtn}>
+              <X size={12} />
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => setShowCanvaInput(true)}
+            title="Link a Canva Design"
+            className={`hidden lg:flex items-center gap-1.5 px-3 py-1.5 border border-ed-border text-ed-text-muted text-xs font-medium rounded-md hover:text-ed-text hover:border-ed-border-light hover:bg-ed-surface-hover transition-colors`}
+          >
+            <Link2 size={14} />
+            Canva
+          </button>
+        )}
+
+        {/* WhatsApp Help Me */}
+        <a
+          href={`${WHATSAPP_URL}?text=${encodeURIComponent('Hi, I need help with my design on Speedy Print.')}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          title="Help Me via WhatsApp"
+          data-testid="whatsapp-help-btn"
+          className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 border border-green-200 text-green-700 text-xs font-medium rounded-md hover:bg-green-50 hover:border-green-300 transition-colors"
+        >
+          <MessageCircle size={14} />
+          Help Me
+        </a>
 
         {/* Primary CTA — compact text on mobile */}
         <button

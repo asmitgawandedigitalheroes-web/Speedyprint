@@ -2,6 +2,7 @@
 
 import { useState, Suspense } from 'react'
 import Image from 'next/image'
+import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { ProductConfigurator } from './ProductConfigurator'
 import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react'
@@ -12,6 +13,13 @@ import type {
   PricingRule,
   Division,
 } from '@/types'
+
+// Sample images shown below the product image block when product is vinyl-related
+// Each entry maps a public image path to the template it represents.
+// Template IDs are placeholders — update once real template slugs are known.
+const VINYL_SAMPLES: { src: string; alt: string; href: string }[] = [
+  { src: '/images/samples/vinyl-sample-1.png', alt: 'Vinyl label sample', href: '/templates' },
+]
 
 type TemplateWithParams = ProductTemplate & {
   template_parameters: TemplateParameter[]
@@ -150,6 +158,33 @@ export function ProductDetailClient({
           </div>
         )}
 
+      {/* Sample images — shown for vinyl products */}
+      {product.slug?.toLowerCase().includes('vinyl') && VINYL_SAMPLES.length > 0 && (
+        <div className="mt-5">
+          <p className="text-xs font-semibold text-brand-text-muted uppercase tracking-wider mb-3">Design Samples</p>
+          <div className="grid grid-cols-3 gap-2">
+            {VINYL_SAMPLES.map((sample) => (
+              <Link
+                key={sample.src}
+                href={sample.href}
+                className="group relative overflow-hidden rounded-lg border border-gray-200 hover:border-brand-primary hover:shadow-md transition-all"
+              >
+                <Image
+                  src={sample.src}
+                  alt={sample.alt}
+                  width={200}
+                  height={200}
+                  className="object-cover w-full aspect-square"
+                />
+                <div className="absolute inset-0 bg-brand-primary/0 group-hover:bg-brand-primary/10 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+                  <span className="text-[10px] font-semibold text-white bg-brand-primary rounded-full px-2 py-0.5">Use Template</span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
       </div>
 
       {/* ── RIGHT: Configurator panel ─────────────────────────────────── */}
@@ -167,6 +202,7 @@ export function ProductDetailClient({
             pricingRules={pricingRules}
             onTemplateChange={handleTemplateChange}
             designId={designId}
+            productSlug={product.slug}
           />
         </Suspense>
       </div>
