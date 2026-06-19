@@ -46,6 +46,8 @@ export default function EditorCanvas() {
     showGrid,
     showPrintBoundaries,
     canvasDimensions,
+    artboardWidth: storeArtboardWidth,
+    artboardHeight: storeArtboardHeight,
     template,
     setArtboardSize,
     setZoom,
@@ -154,6 +156,7 @@ export default function EditorCanvas() {
 
     // Use store's setZoom which handles centering via setCenterFromObject
     setZoom(initialZoom)
+    canvas.renderAll()
 
     // Mouse wheel zoom — zoom toward cursor position
     canvas.on('mouse:wheel', (opt) => {
@@ -509,13 +512,21 @@ export default function EditorCanvas() {
     const canvas = fabricRef.current
     if (!canvas || !showPrintBoundaries) return
 
-    const { artboardWidth, artboardHeight } = useEditorStore.getState()
+    // Use the artboard object's actual canvas position/size as the source of truth,
+    // falling back to the store values when the artboard hasn't been added yet.
+    const artboardObj = canvas.getObjects().find(
+      (o) => (o as unknown as Record<string, unknown>).isArtboard
+    )
+    const artLeft = artboardObj ? (artboardObj.left ?? 0) : 0
+    const artTop  = artboardObj ? (artboardObj.top  ?? 0) : 0
+    const artboardWidth  = artboardObj ? (artboardObj.width  ?? storeArtboardWidth) : storeArtboardWidth
+    const artboardHeight = artboardObj ? (artboardObj.height ?? storeArtboardHeight) : storeArtboardHeight
     if (!artboardWidth || !artboardHeight) return
 
     // Use template values if available; fall back to sensible print defaults
-    // Default: 3 mm bleed, 3 mm safe zone (typical for most print products)
-    const DEFAULT_BLEED_PX   = Math.max(12, artboardWidth * 0.018)  // ~3 mm at 96dpi
-    const DEFAULT_SAFE_PX    = Math.max(12, artboardWidth * 0.018)
+    // Default: ~5% of artboard width for bleed, ~5% for safe zone (visible at all sizes)
+    const DEFAULT_BLEED_PX   = Math.max(8, Math.round(artboardWidth * 0.05))
+    const DEFAULT_SAFE_PX    = Math.max(8, Math.round(artboardWidth * 0.05))
 
     let bleedPx: number
     let safeZonePx: number
@@ -529,13 +540,23 @@ export default function EditorCanvas() {
       safeZonePx = DEFAULT_SAFE_PX
     }
 
+    // Ensure the combined bleed+safe doesn't exceed 40% of the artboard half-dimension
+    const maxInset = Math.min(artboardWidth, artboardHeight) * 0.4
+    if (bleedPx + safeZonePx > maxInset) {
+      const ratio = maxInset / (bleedPx + safeZonePx)
+      bleedPx = Math.round(bleedPx * ratio)
+      safeZonePx = Math.round(safeZonePx * ratio)
+    }
+
     const guideObjects: (Rect | FabricLine)[] = []
 
     // ── Bleed boundary rect (red dashed) ─────────────────────────────────
     //    The trim line — where the paper will be cut.
     const bleedRect = new Rect({
-      left:         bleedPx,
-      top:          bleedPx,
+      left:         artLeft + bleedPx,
+      top:          artTop  + bleedPx,
+      originX:      'left',
+      originY:      'top',
       width:        artboardWidth  - bleedPx * 2,
       height:       artboardHeight - bleedPx * 2,
       fill:         'transparent',
@@ -554,8 +575,10 @@ export default function EditorCanvas() {
     //    Keep all critical content (text, logos) inside this boundary.
     const sx = bleedPx + safeZonePx
     const safeRect = new Rect({
-      left:         sx,
-      top:          sx,
+      left:         artLeft + sx,
+      top:          artTop  + sx,
+      originX:      'left',
+      originY:      'top',
       width:        artboardWidth  - sx * 2,
       height:       artboardHeight - sx * 2,
       fill:         'transparent',
@@ -572,21 +595,23 @@ export default function EditorCanvas() {
 
     // ── Corner crop marks at bleed boundary ──────────────────────────────
     //    Short L-shaped lines just outside the trim at each corner.
-    const markLen = Math.max(8, bleedPx * 0.8)   // length of each crop-mark arm
+    const markLen = Math.max(6, bleedPx * 0.8)   // length of each crop-mark arm
     const gap = 2                                  // gap between crop mark and trim line
+    const aW = artboardWidth
+    const aH = artboardHeight
     const corners: Array<[number, number, number, number][]> = [
       // Top-left  (horizontal + vertical)
-      [[bleedPx - gap - markLen, bleedPx, bleedPx - gap, bleedPx],
-       [bleedPx, bleedPx - gap - markLen, bleedPx, bleedPx - gap]],
+      [[artLeft + bleedPx - gap - markLen, artTop + bleedPx, artLeft + bleedPx - gap, artTop + bleedPx],
+       [artLeft + bleedPx, artTop + bleedPx - gap - markLen, artLeft + bleedPx, artTop + bleedPx - gap]],
       // Top-right
-      [[artboardWidth - bleedPx + gap, bleedPx, artboardWidth - bleedPx + gap + markLen, bleedPx],
-       [artboardWidth - bleedPx, bleedPx - gap - markLen, artboardWidth - bleedPx, bleedPx - gap]],
+      [[artLeft + aW - bleedPx + gap, artTop + bleedPx, artLeft + aW - bleedPx + gap + markLen, artTop + bleedPx],
+       [artLeft + aW - bleedPx, artTop + bleedPx - gap - markLen, artLeft + aW - bleedPx, artTop + bleedPx - gap]],
       // Bottom-left
-      [[bleedPx - gap - markLen, artboardHeight - bleedPx, bleedPx - gap, artboardHeight - bleedPx],
-       [bleedPx, artboardHeight - bleedPx + gap, bleedPx, artboardHeight - bleedPx + gap + markLen]],
+      [[artLeft + bleedPx - gap - markLen, artTop + aH - bleedPx, artLeft + bleedPx - gap, artTop + aH - bleedPx],
+       [artLeft + bleedPx, artTop + aH - bleedPx + gap, artLeft + bleedPx, artTop + aH - bleedPx + gap + markLen]],
       // Bottom-right
-      [[artboardWidth - bleedPx + gap, artboardHeight - bleedPx, artboardWidth - bleedPx + gap + markLen, artboardHeight - bleedPx],
-       [artboardWidth - bleedPx, artboardHeight - bleedPx + gap, artboardWidth - bleedPx, artboardHeight - bleedPx + gap + markLen]],
+      [[artLeft + aW - bleedPx + gap, artTop + aH - bleedPx, artLeft + aW - bleedPx + gap + markLen, artTop + aH - bleedPx],
+       [artLeft + aW - bleedPx, artTop + aH - bleedPx + gap, artLeft + aW - bleedPx, artTop + aH - bleedPx + gap + markLen]],
     ]
     for (const [h, v] of corners) {
       for (const coords of [h, v]) {
@@ -610,7 +635,11 @@ export default function EditorCanvas() {
       guideObjects.forEach((obj) => canvas.remove(obj))
       canvas.renderAll()
     }
-  }, [showPrintBoundaries, canvasDimensions])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  // containerSize added so guides re-run when the canvas is first created — prevents
+  // the race where canvasDimensions arrives before fabricRef.current is set.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showPrintBoundaries, canvasDimensions, storeArtboardWidth, storeArtboardHeight, containerSize])
 
   const templateInfo = template
     ? `${template.name} — ${template.print_width_mm}×${template.print_height_mm}mm @ ${template.dpi} DPI`
