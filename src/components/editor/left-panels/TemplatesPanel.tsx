@@ -102,6 +102,8 @@ export default function TemplatesPanel() {
   const setTemplate = useEditorStore((s) => s.setTemplate)
   // The template that was set when the designer was opened (locked order type)
   const currentTemplate = useEditorStore((s) => s.template)
+  const savedTemplateOverrides = useEditorStore((s) => s.savedTemplateOverrides)
+  const saveTemplateOverride = useEditorStore((s) => s.saveTemplateOverride)
 
   // Fetch product templates via the API route (uses admin client to bypass RLS)
   useEffect(() => {
@@ -144,13 +146,16 @@ export default function TemplatesPanel() {
     )
   })
 
-  // Group by product_group
+  // Group by product_group — templates without a group go into a fallback "Other" bucket
+  const FALLBACK_GROUP_ID = '__ungrouped__'
   const groupMap = new Map<string, { group: ProductGroup; templates: TemplateWithGroup[] }>()
   for (const t of filtered) {
-    if (!t.product_group) continue
-    const gid = t.product_group.id
+    const gid = t.product_group?.id ?? FALLBACK_GROUP_ID
     if (!groupMap.has(gid)) {
-      groupMap.set(gid, { group: t.product_group, templates: [] })
+      groupMap.set(gid, {
+        group: t.product_group ?? ({ id: FALLBACK_GROUP_ID, name: 'Other', display_order: 9999 } as ProductGroup),
+        templates: [],
+      })
     }
     groupMap.get(gid)!.templates.push(t)
   }
@@ -170,7 +175,11 @@ export default function TemplatesPanel() {
         tmpl.product_group_id === currentTemplate.product_group_id
 
       if (isSameGroup) {
-        setTemplate(tmpl)
+        // Save the current template (with any custom dimensions) before switching
+        if (currentTemplate) saveTemplateOverride(currentTemplate)
+        // Restore a saved override if the user previously customised this template
+        const restored = savedTemplateOverrides[tmpl.id]
+        setTemplate(restored ?? tmpl)
       }
 
       // Compute pixel dimensions and resize the artboard
@@ -188,9 +197,10 @@ export default function TemplatesPanel() {
         const displayH = Math.round(dims.heightPx * scale)
 
         artboard.set({ width: displayW, height: displayH, fill: '#ffffff' })
+        artboard.setCoords()
         setArtboardSize(displayW, displayH)
 
-        // Re-center the artboard in the viewport
+        // Re-center the artboard using the store's setZoom (correct viewport math)
         const canvasW = canvas.getWidth()
         const canvasH = canvas.getHeight()
         const padding = 0.85
@@ -199,14 +209,11 @@ export default function TemplatesPanel() {
           (canvasH * padding) / displayH,
           1
         )
-        canvas.setZoom(zoom)
-        const vpLeft = (canvasW - displayW * zoom) / 2
-        const vpTop = (canvasH - displayH * zoom) / 2
-        canvas.absolutePan({ x: -vpLeft / zoom, y: -vpTop / zoom } as never)
+        useEditorStore.getState().setZoom(zoom)
         canvas.renderAll()
       }
     },
-    [canvas, setTemplate]
+    [canvas, setTemplate, currentTemplate, savedTemplateOverrides, saveTemplateOverride]
   )
 
   return (

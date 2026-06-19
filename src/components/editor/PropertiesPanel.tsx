@@ -32,10 +32,37 @@ const FONT_OPTIONS = [
   'Trebuchet MS', 'Tahoma', 'Comic Sans MS',
 ]
 
-const PRESET_COLORS = [
-  '#000000', '#FFFFFF', '#FF0000', '#FF6600', '#FFCC00',
-  '#00CC44', '#0055FF', '#9900CC', '#FF0099', '#00CCFF',
-  '#FF3300', '#003399', '#FF9900', '#00FF66', '#CC00FF',
+// CMYK print-safe palette — [hex, name, CMYK string]
+const CMYK_COLORS: [string, string, string][] = [
+  ['#000000', 'Rich Black',    'C100 M76 Y0 K43'],
+  ['#231F20', 'Process Black', 'C0 M0 Y0 K100'],
+  ['#58595B', 'Cool Grey 8',   'C0 M0 Y0 K65'],
+  ['#939598', 'Cool Grey 5',   'C0 M0 Y0 K42'],
+  ['#D1D3D4', 'Cool Grey 2',   'C0 M0 Y0 K17'],
+  ['#FFFFFF', 'White',         'C0 M0 Y0 K0'],
+  ['#00AEEF', 'Process Cyan',    'C100 M0 Y0 K0'],
+  ['#EC008C', 'Process Magenta', 'C0 M100 Y0 K0'],
+  ['#FFF200', 'Process Yellow',  'C0 M0 Y100 K0'],
+  ['#ED1C24', 'Red',         'C0 M100 Y100 K0'],
+  ['#BE1E2D', 'Dark Red',    'C0 M100 Y85 K25'],
+  ['#F7941D', 'Orange',      'C0 M45 Y100 K0'],
+  ['#F15A29', 'Warm Orange', 'C0 M65 Y85 K0'],
+  ['#FCEE21', 'Bright Yellow', 'C0 M5 Y100 K0'],
+  ['#8DC63F', 'Lime Green',    'C45 M0 Y100 K0'],
+  ['#00A651', 'Green',         'C100 M0 Y70 K0'],
+  ['#007236', 'Dark Green',    'C100 M0 Y70 K30'],
+  ['#0071BC', 'Blue',        'C100 M50 Y0 K0'],
+  ['#003087', 'Dark Blue',   'C100 M75 Y0 K25'],
+  ['#2E3192', 'Pantone 2728','C90 M80 Y0 K0'],
+  ['#662D91', 'Purple',      'C55 M85 Y0 K0'],
+  ['#92278F', 'Violet',      'C45 M90 Y0 K0'],
+  ['#ED145B', 'Pink',        'C0 M90 Y25 K0'],
+  ['#A0522D', 'Sienna',     'C0 M55 Y85 K37'],
+  ['#C68642', 'Brown',      'C0 M40 Y75 K20'],
+  ['#F5CBA7', 'Skin Light', 'C0 M18 Y33 K4'],
+  ['#FDF5E6', 'Cream',      'C0 M3 Y10 K1'],
+  ['#D2B48C', 'Tan',        'C0 M22 Y42 K18'],
+  ['#808000', 'Olive',      'C0 M0 Y100 K50'],
 ]
 
 /* ─────────────────────────────────────────────────────────────
@@ -378,16 +405,16 @@ export default function PropertiesPanel() {
                 value={typeof props.fill === 'string' ? props.fill : '#000000'}
                 onChange={(v) => update('fill', v)}
               />
-              {/* Preset swatches */}
-              <div className="flex flex-wrap gap-1 pt-0.5">
-                {PRESET_COLORS.map((c) => (
+              {/* CMYK colour swatches */}
+              <div className="grid grid-cols-6 gap-1 pt-1">
+                {CMYK_COLORS.map(([hex, name, cmyk]) => (
                   <button
-                    key={c}
-                    onClick={() => update('fill', c)}
-                    title={c}
-                    style={{ backgroundColor: c }}
+                    key={hex}
+                    onClick={() => update('fill', hex)}
+                    title={`${name}\n${cmyk}\n${hex.toUpperCase()}`}
+                    style={{ backgroundColor: hex }}
                     className={`h-5 w-5 rounded-sm border transition-all hover:scale-110 ${
-                      props.fill === c ? 'border-ed-accent ring-1 ring-ed-accent scale-110' : 'border-ed-border'
+                      props.fill === hex ? 'border-ed-accent ring-1 ring-ed-accent scale-110' : 'border-ed-border'
                     }`}
                   />
                 ))}
@@ -509,7 +536,7 @@ export default function PropertiesPanel() {
                 </Row>
 
                 {/* Line height */}
-                <Row label="Line H">
+                <Row label="Line Ht">
                   <NumInput
                     value={Math.round((props.lineHeight ?? 1.16) * 100) / 100}
                     onChange={(v) => update('lineHeight', v)}

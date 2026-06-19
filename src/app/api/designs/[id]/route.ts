@@ -110,6 +110,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     if (body.canvas_json !== undefined) updates.canvas_json = body.canvas_json
     if (body.name !== undefined) updates.name = body.name
     if (body.thumbnail_url !== undefined) updates.thumbnail_url = body.thumbnail_url
+    if (body.canva_url !== undefined) updates.canva_url = body.canva_url || null
 
     const { data, error } = await admin
       .from('designs')

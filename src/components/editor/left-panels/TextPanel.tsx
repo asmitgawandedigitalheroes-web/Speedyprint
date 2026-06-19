@@ -16,10 +16,10 @@ interface TextPreset {
 }
 
 const TEXT_PRESETS: TextPreset[] = [
-  { id: 'heading', label: 'Add Heading', text: 'Heading', fontSize: 48, fill: '#1E293B', fontWeight: 'bold', icon: <Heading1 size={18} /> },
-  { id: 'subheading', label: 'Add Subheading', text: 'Subheading', fontSize: 32, fill: '#334155', fontWeight: '600', icon: <Heading2 size={18} /> },
-  { id: 'body', label: 'Add Body Text', text: 'Body text goes here', fontSize: 18, fill: '#475569', icon: <Type size={18} /> },
-  { id: 'caption', label: 'Add Caption', text: 'Caption text', fontSize: 12, fill: '#64748B', icon: <Type size={14} /> },
+  { id: 'heading', label: 'Add Heading', text: 'Heading', fontSize: 48, fill: '#000000', fontWeight: 'bold', icon: <Heading1 size={18} /> },
+  { id: 'subheading', label: 'Add Subheading', text: 'Subheading', fontSize: 32, fill: '#000000', fontWeight: '600', icon: <Heading2 size={18} /> },
+  { id: 'body', label: 'Add Body Text', text: 'Body text goes here', fontSize: 18, fill: '#000000', icon: <Type size={18} /> },
+  { id: 'caption', label: 'Add Caption', text: 'Caption text', fontSize: 12, fill: '#000000', icon: <Type size={14} /> },
 ]
 
 const STYLED_TEXTS = [

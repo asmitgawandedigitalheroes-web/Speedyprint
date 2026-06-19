@@ -54,17 +54,14 @@ export function addText(
   }
 ) {
   const center = getArtboardCenter()
-  const { artboardWidth } = useEditorStore.getState()
-  const w = artboardWidth || 800
   const fontSize = options?.fontSize ?? 24
-  // Textbox is 40 % of the artboard width; centred horizontally and vertically on the artboard
-  const textWidth = Math.round(w * 0.4)
-  const left = Math.max(0, center.x - textWidth / 2)
-  const top = Math.max(0, center.y - fontSize / 2)
+  // No fixed width — let Fabric auto-size to the text content.
+  // Users can drag the handle to widen and enable word-wrap.
   const text = new Textbox(options?.text ?? 'Double-click to edit', {
-    left,
-    top,
-    width: textWidth,
+    left: center.x,
+    top: center.y,
+    originX: 'center',
+    originY: 'center',
     fontSize,
     fill: options?.fill ?? '#000000',
     fontFamily: options?.fontFamily ?? 'Inter, sans-serif',
@@ -73,8 +70,6 @@ export function addText(
     stroke: options?.stroke ?? null,
     strokeWidth: options?.strokeWidth ?? 0,
     editable: true,
-    originX: 'left',
-    originY: 'top',
   })
 
   canvas.add(text)
@@ -619,11 +614,19 @@ export function getBackgroundColor(canvas: FabricCanvas): string {
 
 export function exportJSON(canvas: FabricCanvas): string {
   // @ts-ignore - Fabric 6/7 types might not show arguments for toJSON but it works
-  return JSON.stringify(canvas.toJSON(['isArtboard', 'rawText']), null, 2)
+  const json = canvas.toJSON(['isArtboard', 'rawText', 'isGuide']) as { objects: Array<Record<string, unknown>> }
+  // Strip guide objects (bleed/safe-zone overlays) — they're recreated dynamically
+  json.objects = json.objects.filter((obj) => !obj.isGuide)
+  return JSON.stringify(json, null, 2)
 }
 
 export async function loadJSON(canvas: FabricCanvas, json: string) {
   await canvas.loadFromJSON(JSON.parse(json))
+  // Re-mark artboard BEFORE zoomToFit so it can locate the artboard for centering
+  const objs = canvas.getObjects()
+  if (objs.length > 0) {
+    ;(objs[0] as unknown as Record<string, unknown>).isArtboard = true
+  }
   canvas.renderAll()
   // Re-centre viewport on the artboard after loading so the design is always visible
   useEditorStore.getState().zoomToFit()
