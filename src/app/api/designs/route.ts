@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { product_template_id, name, canvas_json, thumbnail_url } = body
+    const { product_template_id, name, canvas_json, thumbnail_url, canva_url } = body
 
     if (!product_template_id || !name || !canvas_json) {
       return NextResponse.json(
@@ -40,6 +40,7 @@ export async function POST(request: NextRequest) {
         name,
         canvas_json,
         thumbnail_url: thumbnail_url || null,
+        canva_url: canva_url || null,
         is_saved_template: false,
       })
       .select('*')

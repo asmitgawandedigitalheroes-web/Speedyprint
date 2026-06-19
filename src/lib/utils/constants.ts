@@ -81,11 +81,13 @@ export const MAX_CART_QUANTITY = 10000
 
 // V2 Sticker/Label Divisions
 export const V2_DIVISIONS = [
-  { key: 'custom-stickers' as const, name: 'Custom Stickers', description: 'High-quality custom stickers for any purpose', icon: 'Star', color: '#E30613' },
-  { key: 'product-labels' as const, name: 'Product Labels', description: 'Professional labels for your products', icon: 'Tag', color: '#1E293B' },
-  { key: 'vehicle-decals' as const, name: 'Vehicle & Fleet Decals', description: 'Durable decals for vehicles and fleets', icon: 'Truck', color: '#14B8A6' },
-  { key: 'window-wall' as const, name: 'Window & Wall Graphics', description: 'Eye-catching window and wall graphics', icon: 'Layout', color: '#8B5CF6' },
-  { key: 'specialty-3d' as const, name: 'Specialty & 3D Domed', description: 'Premium 3D domed stickers and specialty items', icon: 'Diamond', color: '#EC4899' },
+  { key: 'labels' as const, name: 'Labels & Stickers', description: 'Custom labels, stickers, vinyl decals, and wristbands', icon: 'Tag', color: '#E30613' },
+  { key: 'print' as const, name: 'Print & Stationery', description: 'Flyers, business cards, coffee sleeves, and more', icon: 'Printer', color: '#1E293B' },
+  { key: 'race-numbers' as const, name: 'Race & Event', description: 'Race numbers, event tags, and timing bibs', icon: 'Hash', color: '#14B8A6' },
+  { key: 'mtb-boards' as const, name: 'MTB & Boards', description: 'MTB number boards, bike flaps, and Correx boards', icon: 'Bike', color: '#8B5CF6' },
+  { key: 'stamps' as const, name: 'Stamps', description: 'Self-inking stamps and custom rubber stamps', icon: 'Stamp', color: '#EC4899' },
+  { key: 'laser' as const, name: 'Laser & NFC', description: 'Laser-cut acrylic signs, engraved gifts, and NFC stands', icon: 'Diamond', color: '#0EA5E9' },
+  { key: 'trophies' as const, name: 'Trophies', description: 'Custom trophies, medals, and awards', icon: 'Award', color: '#D97706' },
 ]
 
 // Product Families — grouped navigation for the homepage
@@ -162,7 +164,6 @@ export const MATERIALS = [
 export const FINISHES = [
   { value: 'gloss', label: 'Gloss', multiplier: 1.0 },
   { value: 'matte', label: 'Matte', multiplier: 1.05 },
-  { value: 'satin', label: 'Satin', multiplier: 1.03 },
 ] as const
 
 export const ADHESION_TYPES = [

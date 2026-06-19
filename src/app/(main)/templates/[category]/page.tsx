@@ -50,7 +50,9 @@ export default async function TemplateCategoryPage({ params }: PageProps) {
   if (!division) notFound()
 
   const allTemplates = await getTemplates()
-  const templates = allTemplates
+  const templates = allTemplates.filter(
+    (t) => t.product_group?.division === category
+  )
 
   return (
     <div className="bg-brand-bg min-h-screen">

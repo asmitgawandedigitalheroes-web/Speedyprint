@@ -54,6 +54,9 @@ export interface EditorState {
   designName: string
   setDesignName: (name: string) => void
   canvasDimensions: CanvasDimensions | null
+  /** Persists per-template overrides (e.g. custom width/height) so they survive template switches */
+  savedTemplateOverrides: Record<string, ProductTemplate>
+  saveTemplateOverride: (template: ProductTemplate) => void
 
   // Canvas
   canvas: FabricCanvas | null
@@ -143,6 +146,11 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   designName: 'Untitled Design',
   setDesignName: (name) => set({ designName: name }),
   canvasDimensions: null,
+  savedTemplateOverrides: {},
+  saveTemplateOverride: (tmpl) =>
+    set((s) => ({
+      savedTemplateOverrides: { ...s.savedTemplateOverrides, [tmpl.id]: tmpl },
+    })),
 
   // Canvas
   canvas: null,

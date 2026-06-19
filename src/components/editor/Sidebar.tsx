@@ -27,11 +27,44 @@ import { useIsMobile } from '@/hooks/useIsMobile'
 import { setBackground, getBackgroundColor } from '@/lib/editor/fabricUtils'
 import type { Shadow as FabricShadow } from 'fabric'
 
-const RECOMMENDED_COLORS = [
-  '#FF6B6B', '#2DD4A8', '#45B7D1', '#96CEB4', '#FFEAA7',
-  '#DDA0DD', '#88D8B0', '#F0E68C', '#9B59B6', '#87CEEB',
-  '#F0A500', '#5B2C6F', '#BB8FCE', '#FF69B4', '#FFCC02',
-  '#E07C4F', '#009B77', '#00CED1', '#2E86DE', '#7D3C98',
+// CMYK print-safe palette — each entry: [hex, label, CMYK string]
+const CMYK_COLORS: [string, string, string][] = [
+  // Blacks & Greys
+  ['#000000', 'Rich Black',    'C100 M76 Y0 K43'],
+  ['#231F20', 'Process Black', 'C0 M0 Y0 K100'],
+  ['#58595B', 'Cool Grey 8',   'C0 M0 Y0 K65'],
+  ['#939598', 'Cool Grey 5',   'C0 M0 Y0 K42'],
+  ['#D1D3D4', 'Cool Grey 2',   'C0 M0 Y0 K17'],
+  ['#FFFFFF', 'White',         'C0 M0 Y0 K0'],
+  // Process (CMYK primaries)
+  ['#00AEEF', 'Process Cyan',    'C100 M0 Y0 K0'],
+  ['#EC008C', 'Process Magenta', 'C0 M100 Y0 K0'],
+  ['#FFF200', 'Process Yellow',  'C0 M0 Y100 K0'],
+  // Reds & Oranges
+  ['#ED1C24', 'Red',         'C0 M100 Y100 K0'],
+  ['#BE1E2D', 'Dark Red',    'C0 M100 Y85 K25'],
+  ['#F7941D', 'Orange',      'C0 M45 Y100 K0'],
+  ['#F15A29', 'Warm Orange', 'C0 M65 Y85 K0'],
+  // Yellows & Greens
+  ['#FCEE21', 'Bright Yellow', 'C0 M5 Y100 K0'],
+  ['#8DC63F', 'Lime Green',    'C45 M0 Y100 K0'],
+  ['#00A651', 'Green',         'C100 M0 Y70 K0'],
+  ['#007236', 'Dark Green',    'C100 M0 Y70 K30'],
+  // Blues & Purples
+  ['#0071BC', 'Blue',        'C100 M50 Y0 K0'],
+  ['#003087', 'Dark Blue',   'C100 M75 Y0 K25'],
+  ['#2E3192', 'Pantone 2728','C90 M80 Y0 K0'],
+  ['#662D91', 'Purple',      'C55 M85 Y0 K0'],
+  ['#92278F', 'Violet',      'C45 M90 Y0 K0'],
+  ['#ED145B', 'Pink',        'C0 M90 Y25 K0'],
+  // Browns & Skin tones
+  ['#A0522D', 'Sienna',     'C0 M55 Y85 K37'],
+  ['#C68642', 'Brown',      'C0 M40 Y75 K20'],
+  ['#F5CBA7', 'Skin Light', 'C0 M18 Y33 K4'],
+  // Warm neutrals
+  ['#FDF5E6', 'Cream',      'C0 M3 Y10 K1'],
+  ['#D2B48C', 'Tan',        'C0 M22 Y42 K18'],
+  ['#808000', 'Olive',      'C0 M0 Y100 K50'],
 ]
 
 const FONT_OPTIONS = [
@@ -489,33 +522,34 @@ export default function Sidebar() {
         </div>
       </div>
 
-      {/* Quick Colors */}
+      {/* CMYK Colour Palette */}
       <div className="px-3 py-2.5 border-b border-ed-border">
-        <h3 className="text-[11px] font-semibold text-ed-text-muted uppercase tracking-wider mb-2">Colors</h3>
-        <div className="grid grid-cols-10 gap-1.5">
-          {RECOMMENDED_COLORS.map((color) => (
+        <h3 className="text-[11px] font-semibold text-ed-text-muted uppercase tracking-wider mb-2">CMYK Colours</h3>
+        <div className="grid grid-cols-6 gap-1.5">
+          {CMYK_COLORS.map(([hex, name, cmyk]) => (
             <button
-              key={color}
+              key={hex}
               onClick={() => {
                 if (activeObject) {
                   if (isTextObject) {
-                    updateProp('fill', color)
-                    setTextColor(color)
-                    setFill(color)
+                    updateProp('fill', hex)
+                    setTextColor(hex)
+                    setFill(hex)
                   } else {
-                    updateProp('fill', color)
-                    setFill(color)
+                    updateProp('fill', hex)
+                    setFill(hex)
                   }
                 } else {
-                  handleBgChange(color)
+                  handleBgChange(hex)
                 }
               }}
-              className="w-6 h-6 rounded-full border border-ed-border hover:scale-125 hover:border-ed-text-dim transition-all"
-              style={{ backgroundColor: color }}
-              title={color}
+              className="w-7 h-7 rounded border border-ed-border hover:scale-110 hover:border-ed-accent transition-all"
+              style={{ backgroundColor: hex }}
+              title={`${name}\n${cmyk}\n${hex.toUpperCase()}`}
             />
           ))}
         </div>
+        <p className="text-[9px] text-ed-text-dim mt-1.5">Hover for CMYK codes</p>
       </div>
 
       {/* Element Properties */}
@@ -718,7 +752,7 @@ export default function Sidebar() {
                       </div>
                     </div>
                     {/* Line Height & Letter Spacing */}
-                    <PropRow label="Line H">
+                    <PropRow label="Line Ht">
                       <input
                         type="number"
                         value={lineHeight}

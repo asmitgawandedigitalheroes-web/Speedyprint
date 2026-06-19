@@ -48,6 +48,7 @@ export default function EditorShell({ templateId, designId, mode }: EditorShellP
   const setTemplate = useEditorStore((s) => s.setTemplate)
   const setDesign = useEditorStore((s) => s.setDesign)
   const setDesignId = useEditorStore((s) => s.setDesignId)
+  const saveTemplateOverride = useEditorStore((s) => s.saveTemplateOverride)
   const canvas = useEditorStore((s) => s.canvas)
   const template = useEditorStore((s) => s.template)
   const isMobile = useIsMobile()
@@ -127,7 +128,26 @@ export default function EditorShell({ templateId, designId, mode }: EditorShellP
         return
       }
 
-      setTemplate(data as unknown as ProductTemplate)
+      // Apply custom width/height (mm) chosen on the product page, if any.
+      // These are saved in sessionStorage by ProductConfigurator before navigating here.
+      let templateToUse = data as unknown as ProductTemplate
+      try {
+        const raw = sessionStorage.getItem(`speedy_params_${templateId}`)
+        if (raw) {
+          const { params } = JSON.parse(raw) as { params: Record<string, unknown> }
+          const customW = params?.width_mm ? Number(params.width_mm) : null
+          const customH = params?.height_mm ? Number(params.height_mm) : null
+          if (customW && customH && customW > 0 && customH > 0) {
+            templateToUse = { ...templateToUse, print_width_mm: customW, print_height_mm: customH }
+          }
+        }
+      } catch {
+        // sessionStorage unavailable or malformed — use template defaults
+      }
+
+      setTemplate(templateToUse)
+      // Immediately persist the (possibly custom-sized) template so it survives template switches
+      saveTemplateOverride(templateToUse)
       setLoading(false)
     }
 

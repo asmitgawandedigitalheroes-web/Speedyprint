@@ -19,6 +19,7 @@ CREATE INDEX IF NOT EXISTS user_addresses_user_id_idx ON user_addresses(user_id)
 
 ALTER TABLE user_addresses ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users manage own addresses" ON user_addresses;
 CREATE POLICY "Users manage own addresses"
   ON user_addresses
   FOR ALL
@@ -26,6 +27,7 @@ CREATE POLICY "Users manage own addresses"
   WITH CHECK (auth.uid() = user_id);
 
 -- Admins can read all addresses (e.g. for order fulfilment lookup)
+DROP POLICY IF EXISTS "Admins read all addresses" ON user_addresses;
 CREATE POLICY "Admins read all addresses"
   ON user_addresses
   FOR SELECT

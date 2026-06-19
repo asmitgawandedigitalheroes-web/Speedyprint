@@ -61,18 +61,9 @@ export function ProductConfigurator({
     return defaults
   })
   const [quantity, setQuantity] = useState(1)
-  const [vinylMaterial, setVinylMaterial] = useState('white-vinyl-1yr')
   const [labelCombo, setLabelCombo] = useState(false)
 
-  const isVinylProduct = productSlug?.toLowerCase().includes('vinyl') ?? false
   const isCoffeeSleeve = productSlug?.toLowerCase().includes('coffee') || productSlug?.toLowerCase().includes('sleeve') || templates.some(t => t.print_width_mm === 270 && t.print_height_mm === 70)
-
-  const VINYL_MATERIALS = [
-    { value: 'white-vinyl-1yr', label: 'White vinyl (1 year)' },
-    { value: 'grey-back-vinyl-3yr', label: 'Grey back vinyl (3 year)' },
-    { value: 'clear-vinyl-1yr', label: 'Clear vinyl (1 year)' },
-    { value: 'removable-vinyl', label: 'Removable vinyl' },
-  ]
 
   // Adjustable dimensions state
   const [customWidth, setCustomWidth] = useState<string>('')
@@ -235,7 +226,7 @@ export function ProductConfigurator({
       )}
 
       {/* ── Adjustable Dimensions ─────────────────────────────────────────── */}
-      {dimensionConstraints && (
+      {dimensionConstraints && !isCoffeeSleeve && (
         <>
           <Separator />
           <div className="space-y-4">
@@ -307,40 +298,6 @@ export function ProductConfigurator({
                 Area: <span className="font-medium text-brand-text">{(Number(customWidth) * Number(customHeight)).toLocaleString()} mm²</span>
               </p>
             )}
-          </div>
-        </>
-      )}
-
-      {/* Vinyl material selector */}
-      {isVinylProduct && (
-        <>
-          <Separator />
-          <div className="space-y-3">
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-brand-text-muted">
-              Material
-            </h3>
-            <div className="space-y-2">
-              {VINYL_MATERIALS.map((mat) => (
-                <label
-                  key={mat.value}
-                  className={`flex items-center gap-3 cursor-pointer rounded-lg border p-3 transition-colors ${
-                    vinylMaterial === mat.value
-                      ? 'border-brand-primary bg-brand-primary/5'
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="vinyl-material"
-                    value={mat.value}
-                    checked={vinylMaterial === mat.value}
-                    onChange={() => setVinylMaterial(mat.value)}
-                    className="accent-brand-primary"
-                  />
-                  <span className="text-sm text-brand-text">{mat.label}</span>
-                </label>
-              ))}
-            </div>
           </div>
         </>
       )}
@@ -464,23 +421,27 @@ export function ProductConfigurator({
 
       <Separator />
 
-      {/* Label combo add-on */}
-      <label className="flex items-start gap-3 cursor-pointer rounded-lg border border-gray-200 p-3 hover:border-gray-300 transition-colors">
-        <input
-          type="checkbox"
-          checked={labelCombo}
-          onChange={(e) => setLabelCombo(e.target.checked)}
-          className="mt-0.5 accent-brand-primary"
-        />
-        <div>
-          <p className="text-sm font-medium text-brand-text">Order Label Combos</p>
-          <p className="text-xs text-brand-text-muted mt-0.5">
-            Combine multiple label sizes in one order (e.g. jar label + lid label). We&apos;ll contact you to confirm the combo.
-          </p>
-        </div>
-      </label>
+      {/* Label combo add-on — labels division only */}
+      {division === 'labels' && (
+        <>
+          <label className="flex items-start gap-3 cursor-pointer rounded-lg border border-gray-200 p-3 hover:border-gray-300 transition-colors">
+            <input
+              type="checkbox"
+              checked={labelCombo}
+              onChange={(e) => setLabelCombo(e.target.checked)}
+              className="mt-0.5 accent-brand-primary"
+            />
+            <div>
+              <p className="text-sm font-medium text-brand-text">Order Label Combos</p>
+              <p className="text-xs text-brand-text-muted mt-0.5">
+                Combine multiple label sizes in one order (e.g. jar label + lid label). We&apos;ll contact you to confirm the combo.
+              </p>
+            </div>
+          </label>
 
-      <Separator />
+          <Separator />
+        </>
+      )}
 
       {/* Action buttons */}
       {minimumApplied && (
