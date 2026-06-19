@@ -41,6 +41,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useCart } from '@/hooks/useCart'
 import { CURRENCY_SYMBOL, VAT_RATE } from '@/lib/utils/constants'
 import type { ProductTemplate } from '@/types'
+import CanvaImportModal from './CanvaImportModal'
 
 export default function Toolbar() {
   const [saving, setSaving] = useState(false)
@@ -49,8 +50,9 @@ export default function Toolbar() {
   const [siblingTemplates, setSiblingTemplates] = useState<ProductTemplate[]>([])
   const [showTemplatePicker, setShowTemplatePicker] = useState(false)
   const [showCartModal, setShowCartModal] = useState(false)
-  const [showCanvaInput, setShowCanvaInput] = useState(false)
-  const [canvaLink, setCanvaLink] = useState('')
+  const [showCanvaModal, setShowCanvaModal] = useState(false)
+  const [linkedCanvaUrl, setLinkedCanvaUrl] = useState('')
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false)
   const [cartQuantity, setCartQuantity] = useState(100)
   const [addingToCart, setAddingToCart] = useState(false)
   const [cartAdded, setCartAdded] = useState(false)
@@ -66,6 +68,8 @@ export default function Toolbar() {
   const redo = useEditorStore((s) => s.redo)
   const template = useEditorStore((s) => s.template)
   const setTemplate = useEditorStore((s) => s.setTemplate)
+  const savedTemplateOverrides = useEditorStore((s) => s.savedTemplateOverrides)
+  const saveTemplateOverride = useEditorStore((s) => s.saveTemplateOverride)
   const designId = useEditorStore((s) => s.designId)
   const setDesignId = useEditorStore((s) => s.setDesignId)
   const designName = useEditorStore((s) => s.designName)
@@ -118,28 +122,41 @@ export default function Toolbar() {
   const handleTemplateSwitch = useCallback(
     (newTemplate: ProductTemplate) => {
       setShowTemplatePicker(false)
-      setTemplate(newTemplate)
+
+      // Save the current template (with any custom dimensions applied) before switching away
+      const currentTemplate = useEditorStore.getState().template
+      if (currentTemplate) {
+        saveTemplateOverride(currentTemplate)
+      }
+
+      // Restore a previously-saved override for the incoming template (preserves custom size).
+      // Fall back to sessionStorage (written by ProductConfigurator) in case the user
+      // hasn't switched away from this template before and savedTemplateOverrides is empty.
+      let restored = savedTemplateOverrides[newTemplate.id]
+      if (!restored) {
+        try {
+          const raw = sessionStorage.getItem(`speedy_params_${newTemplate.id}`)
+          if (raw) {
+            const { params } = JSON.parse(raw) as { params: Record<string, unknown> }
+            const w = params?.width_mm ? Number(params.width_mm) : null
+            const h = params?.height_mm ? Number(params.height_mm) : null
+            if (w && h && w > 0 && h > 0) {
+              restored = { ...newTemplate, print_width_mm: w, print_height_mm: h }
+            }
+          }
+        } catch { /* sessionStorage unavailable */ }
+      }
+      setTemplate(restored ?? newTemplate)
     },
-    [setTemplate]
+    [setTemplate, saveTemplateOverride, savedTemplateOverrides]
   )
 
   const handleSave = useCallback(async () => {
     if (!canvas) return
 
-    // If not authenticated, save to local storage and redirect to login
+    // If not authenticated, show login prompt instead of silently redirecting
     if (!isAuthenticated) {
-      const canvasJson = exportJSON(canvas)
-      const pendingData = {
-        name: designName || 'Untitled Design',
-        canvas_json: JSON.parse(canvasJson),
-        product_template_id: template?.id ?? null,
-        timestamp: Date.now()
-      }
-      localStorage.setItem('sp_pending_design', JSON.stringify(pendingData))
-      // Clear unsaved flag BEFORE navigating so the beforeunload guard does not
-      // show "Leave site?" — the design has been persisted to localStorage.
-      setSaveStatus('saved')
-      window.location.href = `/login?redirect=${encodeURIComponent(window.location.pathname)}`
+      setShowLoginPrompt(true)
       return
     }
 
@@ -153,6 +170,7 @@ export default function Toolbar() {
         canvas_json: canvasJson,
         thumbnail_url: thumbnailUrl,
         product_template_id: template?.id ?? null,
+        canva_url: linkedCanvaUrl || null,
       }
 
       let res: Response
@@ -186,7 +204,7 @@ export default function Toolbar() {
     } finally {
       setSaving(false)
     }
-  }, [canvas, template, designId, setDesignId, designName, isAuthenticated])
+  }, [canvas, template, designId, setDesignId, designName, isAuthenticated, linkedCanvaUrl])
 
   const handleSaveAsDefault = useCallback(async () => {
     if (!canvas || !template) return
@@ -223,9 +241,28 @@ export default function Toolbar() {
     }
   }, [canvas, template, setTemplate])
 
+  // Persist a linked Canva URL to the current design record
+  const handleCanvaLink = useCallback(async (canvaUrl: string) => {
+    setLinkedCanvaUrl(canvaUrl)
+    toast.success('Canva design linked', { description: 'The link has been saved with your design.' })
+
+    // Persist to DB if the design has already been saved
+    const currentDesignId = useEditorStore.getState().designId
+    if (!currentDesignId || !isAuthenticated) return
+    try {
+      await fetch(`/api/designs/${currentDesignId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ canva_url: canvaUrl }),
+      })
+    } catch {
+      // Non-critical — the URL is held in local state until the next full save
+    }
+  }, [isAuthenticated])
+
   // Auto-save every 30 seconds when there are unsaved changes
   useEffect(() => {
-    if (!canvas) return
+    if (!canvas || !isAuthenticated) return
 
     const autoSave = async () => {
       const currentJson = exportJSON(canvas)
@@ -276,7 +313,7 @@ export default function Toolbar() {
     return () => {
       if (autoSaveTimerRef.current) clearInterval(autoSaveTimerRef.current)
     }
-  }, [canvas, designName, template])
+  }, [canvas, designName, template, isAuthenticated])
 
   // Mark as unsaved when canvas changes
   useEffect(() => {
@@ -581,6 +618,7 @@ export default function Toolbar() {
   const ghostBtn = 'flex items-center gap-1.5 px-3 py-1.5 border border-ed-border text-ed-text-muted text-xs font-medium rounded-md hover:text-ed-text hover:border-ed-border-light hover:bg-ed-surface-hover disabled:opacity-30 disabled:cursor-not-allowed transition-colors'
 
   return (
+    <>
     <div className="h-11 bg-ed-surface border-b border-ed-border flex items-center px-3 gap-2 flex-shrink-0 z-[60]">
       {/* LEFT: Back + Breadcrumb + Name + Status */}
       <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -655,7 +693,7 @@ export default function Toolbar() {
         </span>
       </div>
 
-      {/* CENTER: Undo/Redo + Zoom - Hidden on mobile to prevent overlap, tail-end of scroll on tablet */}
+      {/* CENTER: Undo/Redo/Reset - Hidden on mobile */}
       <div className="hidden lg:flex flex-1 items-center justify-center gap-0.5 flex-shrink-0">
         <button onClick={undo} disabled={noCanvas} title="Undo (Ctrl+Z)" className={iconBtn}>
           <Undo2 size={15} />
@@ -666,23 +704,6 @@ export default function Toolbar() {
         <button onClick={handleReset} disabled={noCanvas} title="Reset Design" className={`${iconBtn} hover:text-red-500`}>
           <RotateCcw size={15} />
         </button>
-
-        <div className="w-px h-4 bg-ed-border mx-2" />
-
-        <div className="flex items-center bg-ed-bg rounded-md px-1">
-          <button onClick={zoomOut} disabled={noCanvas} title="Zoom Out" className={iconBtn}>
-            <ZoomOut size={15} />
-          </button>
-          <span className="text-[11px] text-ed-text-muted font-mono min-w-[3rem] text-center tabular-nums select-none">
-            {Math.round(zoom * 100)}%
-          </span>
-          <button onClick={zoomIn} disabled={noCanvas} title="Zoom In" className={iconBtn}>
-            <ZoomIn size={15} />
-          </button>
-        </div>
-        <button onClick={zoomToFit} disabled={noCanvas} title="Fit to View" className={iconBtn}>
-          <Maximize2 size={15} />
-        </button>
       </div>
 
       {/* RIGHT: Actions */}
@@ -691,6 +712,25 @@ export default function Toolbar() {
           <button onClick={handlePreview} disabled={noCanvas} title="Preview" className={iconBtn}>
             <Eye size={16} />
           </button>
+
+          <div className="w-px h-4 bg-ed-border mx-0.5" />
+
+          {/* Zoom controls — left of bleed lines */}
+          <div className="flex items-center bg-ed-bg rounded-md px-1">
+            <button onClick={zoomOut} disabled={noCanvas} title="Zoom Out" className={iconBtn}>
+              <ZoomOut size={15} />
+            </button>
+            <span className="text-[11px] text-ed-text-muted font-mono min-w-[3rem] text-center tabular-nums select-none">
+              {Math.round(zoom * 100)}%
+            </span>
+            <button onClick={zoomIn} disabled={noCanvas} title="Zoom In" className={iconBtn}>
+              <ZoomIn size={15} />
+            </button>
+          </div>
+          <button onClick={zoomToFit} disabled={noCanvas} title="Fit to View" className={iconBtn}>
+            <Maximize2 size={15} />
+          </button>
+
           <button
             onClick={() => useEditorStore.getState().togglePrintBoundaries()}
             disabled={noCanvas}
@@ -813,7 +853,7 @@ export default function Toolbar() {
                 </DropdownMenuItem>
               )}
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => setShowCanvaInput(true)}>
+              <DropdownMenuItem onClick={() => setShowCanvaModal(true)}>
                 <Link2 className="mr-2 h-4 w-4 text-purple-500" />
                 <span>Link a Canva Design</span>
               </DropdownMenuItem>
@@ -833,44 +873,18 @@ export default function Toolbar() {
         </div>
 
         {/* Canva Design Link */}
-        {showCanvaInput ? (
-          <div className="hidden lg:flex items-center gap-1.5 px-2 py-1 border border-ed-border rounded-md bg-ed-bg">
-            <Link2 size={13} className="text-ed-text-dim shrink-0" />
-            <input
-              type="url"
-              placeholder="Paste Canva share link…"
-              value={canvaLink}
-              onChange={(e) => setCanvaLink(e.target.value)}
-              autoFocus
-              className="text-xs bg-transparent outline-none text-ed-text w-44 placeholder:text-ed-text-dim"
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  if (canvaLink.trim()) {
-                    toast.success('Canva link saved', { description: canvaLink.trim() })
-                  }
-                  setShowCanvaInput(false)
-                  setCanvaLink('')
-                }
-                if (e.key === 'Escape') {
-                  setShowCanvaInput(false)
-                  setCanvaLink('')
-                }
-              }}
-            />
-            <button onClick={() => { setShowCanvaInput(false); setCanvaLink('') }} className={iconBtn}>
-              <X size={12} />
-            </button>
-          </div>
-        ) : (
-          <button
-            onClick={() => setShowCanvaInput(true)}
-            title="Link a Canva Design"
-            className={`hidden lg:flex items-center gap-1.5 px-3 py-1.5 border border-ed-border text-ed-text-muted text-xs font-medium rounded-md hover:text-ed-text hover:border-ed-border-light hover:bg-ed-surface-hover transition-colors`}
-          >
-            <Link2 size={14} />
-            Canva
-          </button>
-        )}
+        <button
+          onClick={() => setShowCanvaModal(true)}
+          title="Link a Canva Design"
+          className={`hidden lg:flex items-center gap-1.5 px-3 py-1.5 border text-xs font-medium rounded-md transition-colors ${
+            linkedCanvaUrl
+              ? 'border-ed-accent/40 text-ed-accent bg-ed-accent/5 hover:bg-ed-accent/10'
+              : 'border-ed-border text-ed-text-muted hover:text-ed-text hover:border-ed-border-light hover:bg-ed-surface-hover'
+          }`}
+        >
+          <Link2 size={14} />
+          {linkedCanvaUrl ? 'Canva linked ✓' : 'Link a Canva design'}
+        </button>
 
         {/* WhatsApp Help Me */}
         <a
@@ -912,6 +926,77 @@ export default function Toolbar() {
           e.target.value = ''
         }}
       />
+
+      {/* Login Required Prompt */}
+      {showLoginPrompt && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+              <h2 className="text-lg font-bold text-gray-900">Save Your Design</h2>
+              <button onClick={() => setShowLoginPrompt(false)} className="p-1 rounded-md hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors">
+                <X size={18} />
+              </button>
+            </div>
+            <div className="px-5 py-6 text-center">
+              <div className="w-14 h-14 bg-brand-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Save size={24} className="text-brand-primary" />
+              </div>
+              <p className="text-sm text-gray-600 mb-1">
+                To save your design, you need a Speedy Print account.
+              </p>
+              <p className="text-xs text-gray-400 mb-6">
+                Your design will be kept safe — sign in or create a free account to continue.
+              </p>
+              <div className="flex flex-col gap-2">
+                <button
+                  onClick={() => {
+                    if (canvas) {
+                      const canvasJson = exportJSON(canvas)
+                      localStorage.setItem('sp_pending_design', JSON.stringify({
+                        name: designName || 'Untitled Design',
+                        canvas_json: JSON.parse(canvasJson),
+                        product_template_id: template?.id ?? null,
+                        timestamp: Date.now(),
+                      }))
+                      setSaveStatus('saved')
+                    }
+                    setShowLoginPrompt(false)
+                    window.location.href = `/login?redirect=${encodeURIComponent(window.location.pathname)}`
+                  }}
+                  className="w-full px-4 py-2.5 bg-brand-primary text-white text-sm font-bold rounded-lg hover:bg-brand-primary-dark transition-colors"
+                >
+                  Sign In
+                </button>
+                <button
+                  onClick={() => {
+                    if (canvas) {
+                      const canvasJson = exportJSON(canvas)
+                      localStorage.setItem('sp_pending_design', JSON.stringify({
+                        name: designName || 'Untitled Design',
+                        canvas_json: JSON.parse(canvasJson),
+                        product_template_id: template?.id ?? null,
+                        timestamp: Date.now(),
+                      }))
+                      setSaveStatus('saved')
+                    }
+                    setShowLoginPrompt(false)
+                    window.location.href = `/register?redirect=${encodeURIComponent(window.location.pathname)}`
+                  }}
+                  className="w-full px-4 py-2.5 border border-gray-200 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Create Free Account
+                </button>
+                <button
+                  onClick={() => setShowLoginPrompt(false)}
+                  className="w-full px-4 py-2.5 text-gray-400 text-xs hover:text-gray-600 transition-colors"
+                >
+                  Continue without saving
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Add to Cart Modal */}
       {showCartModal && (
@@ -1092,5 +1177,14 @@ export default function Toolbar() {
         </div>
       )}
     </div>
+
+    {/* Canva Import Modal */}
+    <CanvaImportModal
+      open={showCanvaModal}
+      onClose={() => setShowCanvaModal(false)}
+      onLink={handleCanvaLink}
+      onProceedToOrder={() => setShowCartModal(true)}
+    />
+    </>
   )
 }
