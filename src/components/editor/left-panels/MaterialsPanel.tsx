@@ -970,17 +970,21 @@ export default function MaterialsPanel() {
         }
       } else if (item.mode === 'shape') {
         const center = getArtboardCenter()
+        const { canvasDimensions } = useEditorStore.getState()
+        const s = canvasDimensions ? canvasDimensions.dpi / 72 : 1
+        const w = Math.round(160 * s)
+        const h = Math.round(120 * s)
         const fill = item.patternDraw
           ? createPatternFromDraw(item.patternDraw, item.patternSize ?? 20)
           : (item.color ?? '#cccccc')
         const rect = new Rect({
-          left: center.x - 80,
-          top: center.y - 60,
-          width: 160,
-          height: 120,
+          left: center.x - w / 2,
+          top: center.y - h / 2,
+          width: w,
+          height: h,
           fill,
-          rx: 4,
-          ry: 4,
+          rx: Math.round(4 * s),
+          ry: Math.round(4 * s),
         })
         canvas.add(rect)
         canvas.setActiveObject(rect)

@@ -72,17 +72,17 @@ export function ProductDetailClient({
     <div className="grid grid-cols-1 gap-0 lg:grid-cols-[1fr_480px] xl:grid-cols-[1fr_520px]">
 
       {/* ── LEFT: Image panel ─────────────────────────────────────────── */}
-      <div>
+      <div className="flex flex-col items-center">
 
         {/* Main image */}
-        <div className="relative aspect-square overflow-hidden rounded-2xl bg-gray-50 ring-1 ring-gray-200">
+        <div className="relative w-full max-w-lg aspect-square overflow-hidden rounded-2xl bg-gray-50 ring-1 ring-gray-200">
           {activeImage ? (
             <Image
               src={activeImage.url}
               alt={activeImage.label}
               fill
               sizes="(max-width: 1024px) 100vw, 55vw"
-              className="object-cover object-center"
+              className="object-contain object-center p-6"
               priority
             />
           ) : (
@@ -138,21 +138,21 @@ export function ProductDetailClient({
           )}
         </div>
 
-        {/* Thumbnail strip */}
+        {/* Thumbnail grid */}
         {allImages.length > 1 && (
-          <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
+          <div className="mt-3 w-full max-w-lg grid grid-cols-4 gap-2">
             {allImages.map((img, i) => (
               <button
                 key={img.url}
                 onClick={() => setActiveIndex(i)}
                 className={cn(
-                  'relative h-14 w-20 shrink-0 overflow-hidden rounded-lg border-2 transition-all',
+                  'relative aspect-square overflow-hidden rounded-lg border-2 bg-gray-50 transition-all',
                   i === activeIndex
                     ? 'border-brand-primary ring-2 ring-brand-primary/20'
                     : 'border-gray-200 hover:border-gray-400'
                 )}
               >
-                <Image src={img.url} alt={img.label} fill sizes="64px" className="object-cover" />
+                <Image src={img.url} alt={img.label} fill sizes="80px" className="object-contain p-1" />
               </button>
             ))}
           </div>

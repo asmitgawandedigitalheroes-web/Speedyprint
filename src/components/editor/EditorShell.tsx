@@ -9,6 +9,50 @@ import { useAuth } from '@/hooks/useAuth'
 import { loadJSON } from '@/lib/editor/fabricUtils'
 import { toast } from 'sonner'
 import type { ProductTemplate, Design } from '@/types'
+import type { Canvas as FabricCanvas } from 'fabric'
+
+// After loadJSON replaces all canvas objects, ensure the artboard rect matches
+// the current template dimensions (important when a custom size overrides defaults).
+function fixArtboardAfterLoad(canvas: FabricCanvas) {
+  const { canvasDimensions, setArtboardSize } = useEditorStore.getState()
+  if (!canvasDimensions) return
+
+  const artboardW = canvasDimensions.widthPx
+  const artboardH = canvasDimensions.heightPx
+
+  const artboard = canvas.getObjects().find(
+    (o) => (o as unknown as Record<string, unknown>).isArtboard
+  )
+  if (!artboard) return
+
+  artboard.set({ left: 0, top: 0, width: artboardW, height: artboardH })
+  artboard.setCoords()
+
+  // Remove guide objects serialised at old dimensions — print-boundaries effect will redraw them
+  canvas.getObjects()
+    .filter((o) => !!(o as unknown as Record<string, unknown>).isGuide)
+    .forEach((g) => canvas.remove(g))
+
+  setArtboardSize(artboardW, artboardH)
+
+  const containerW = canvas.getWidth()
+  const containerH = canvas.getHeight()
+  const newZoom = Math.min(
+    (containerW * 0.65) / artboardW,
+    (containerH * 0.65) / artboardH
+  )
+
+  const objCenter = artboard.getCenterPoint()
+  const vpt = canvas.viewportTransform
+  if (vpt) {
+    vpt[0] = newZoom
+    vpt[3] = newZoom
+    vpt[4] = (containerW / 2) - (objCenter.x * newZoom)
+    vpt[5] = (containerH / 2) - (objCenter.y * newZoom)
+    canvas.setViewportTransform(vpt)
+  }
+  useEditorStore.setState({ zoom: newZoom })
+}
 
 const EditorCanvas = dynamic(() => import('./Canvas'), {
   ssr: false,
@@ -209,6 +253,7 @@ export default function EditorShell({ templateId, designId, mode }: EditorShellP
         // Make artboard non-selectable
         objs[0].set({ selectable: false, evented: false, hoverCursor: 'default' })
       }
+      fixArtboardAfterLoad(canvas)
       canvas.renderAll()
       useEditorStore.setState({ isRestoring: false })
       useEditorStore.getState().refreshObjects()

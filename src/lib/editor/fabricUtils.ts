@@ -38,6 +38,16 @@ function findArtboard(canvas: FabricCanvas) {
   return canvas.getObjects().find((o) => (o as unknown as Record<string, unknown>).isArtboard)
 }
 
+/**
+ * Scale factor relative to a 72 DPI baseline.
+ * Converts fixed "screen px" design sizes into the correct canvas pixels for the artboard's print DPI.
+ * e.g. 300 DPI → 300/72 ≈ 4.17.  No template (default artboard) → 1.
+ */
+export function getArtboardScale(): number {
+  const { canvasDimensions } = useEditorStore.getState()
+  return canvasDimensions ? canvasDimensions.dpi / 72 : 1
+}
+
 /* ──────────────────────── Text ──────────────────────── */
 
 export function addText(
@@ -54,7 +64,10 @@ export function addText(
   }
 ) {
   const center = getArtboardCenter()
-  const fontSize = options?.fontSize ?? 24
+  const s = getArtboardScale()
+  // Scale pt/px values to the artboard's print DPI so text appears at the correct physical size
+  const fontSize = Math.round((options?.fontSize ?? 24) * s)
+  const strokeWidth = options?.strokeWidth ? options.strokeWidth * s : 0
   // No fixed width — let Fabric auto-size to the text content.
   // Users can drag the handle to widen and enable word-wrap.
   const text = new Textbox(options?.text ?? 'Double-click to edit', {
@@ -68,7 +81,7 @@ export function addText(
     fontWeight: options?.fontWeight as any ?? 'normal',
     fontStyle: options?.fontStyle as any ?? 'normal',
     stroke: options?.stroke ?? null,
-    strokeWidth: options?.strokeWidth ?? 0,
+    strokeWidth,
     editable: true,
   })
 
@@ -171,16 +184,19 @@ export async function addSVGToCanvas(canvas: FabricCanvas, svgString: string, ma
 
 export function addRect(canvas: FabricCanvas) {
   const center = getArtboardCenter()
+  const s = getArtboardScale()
+  const size = Math.round(100 * s)
+  const half = Math.round(size / 2)
   const rect = new Rect({
-    left: center.x - 50,
-    top: center.y - 50,
-    width: 100,
-    height: 100,
+    left: center.x - half,
+    top: center.y - half,
+    width: size,
+    height: size,
     fill: '#4F46E5',
     stroke: '#3730A3',
-    strokeWidth: 1,
-    rx: 4,
-    ry: 4,
+    strokeWidth: Math.max(1, Math.round(s)),
+    rx: Math.round(4 * s),
+    ry: Math.round(4 * s),
     originX: 'left',
     originY: 'top',
   })
@@ -192,13 +208,15 @@ export function addRect(canvas: FabricCanvas) {
 
 export function addCircle(canvas: FabricCanvas) {
   const center = getArtboardCenter()
+  const s = getArtboardScale()
+  const radius = Math.round(40 * s)
   const circle = new Circle({
-    left: center.x - 40,
-    top: center.y - 40,
-    radius: 40,
+    left: center.x - radius,
+    top: center.y - radius,
+    radius,
     fill: '#059669',
     stroke: '#047857',
-    strokeWidth: 1,
+    strokeWidth: Math.max(1, Math.round(s)),
     originX: 'left',
     originY: 'top',
   })
@@ -210,14 +228,17 @@ export function addCircle(canvas: FabricCanvas) {
 
 export function addTriangle(canvas: FabricCanvas) {
   const center = getArtboardCenter()
+  const s = getArtboardScale()
+  const size = Math.round(80 * s)
+  const half = Math.round(size / 2)
   const tri = new Triangle({
-    left: center.x - 40,
-    top: center.y - 40,
-    width: 80,
-    height: 80,
+    left: center.x - half,
+    top: center.y - half,
+    width: size,
+    height: size,
     fill: '#DC2626',
     stroke: '#B91C1C',
-    strokeWidth: 1,
+    strokeWidth: Math.max(1, Math.round(s)),
     originX: 'left',
     originY: 'top',
   })
@@ -229,11 +250,13 @@ export function addTriangle(canvas: FabricCanvas) {
 
 export function addLine(canvas: FabricCanvas) {
   const center = getArtboardCenter()
+  const s = getArtboardScale()
+  const half = Math.round(60 * s)
   const line = new Line(
-    [center.x - 60, center.y, center.x + 60, center.y],
+    [center.x - half, center.y, center.x + half, center.y],
     {
       stroke: '#333333',
-      strokeWidth: 2,
+      strokeWidth: Math.max(1, Math.round(2 * s)),
     }
   )
   canvas.add(line)
@@ -244,7 +267,8 @@ export function addLine(canvas: FabricCanvas) {
 
 export function addStar(canvas: FabricCanvas) {
   const center = getArtboardCenter()
-  const cx = 0, cy = 0, outerR = 40, innerR = 18, points = 5
+  const s = getArtboardScale()
+  const cx = 0, cy = 0, outerR = Math.round(40 * s), innerR = Math.round(18 * s), points = 5
   const starPoints: { x: number; y: number }[] = []
   for (let i = 0; i < points * 2; i++) {
     const r = i % 2 === 0 ? outerR : innerR
@@ -252,11 +276,11 @@ export function addStar(canvas: FabricCanvas) {
     starPoints.push({ x: cx + r * Math.cos(angle), y: cy + r * Math.sin(angle) })
   }
   const star = new Polygon(starPoints, {
-    left: center.x - 40,
-    top: center.y - 40,
+    left: center.x - outerR,
+    top: center.y - outerR,
     fill: '#F59E0B',
     stroke: '#D97706',
-    strokeWidth: 1,
+    strokeWidth: Math.max(1, Math.round(s)),
   })
   canvas.add(star)
   canvas.setActiveObject(star)

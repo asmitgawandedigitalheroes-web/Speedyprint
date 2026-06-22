@@ -191,24 +191,19 @@ export default function TemplatesPanel() {
         (o) => (o as unknown as Record<string, unknown>).isArtboard
       )
       if (artboard) {
-        const maxDisplay = 800
-        const scale = Math.min(maxDisplay / dims.widthPx, maxDisplay / dims.heightPx, 1)
-        const displayW = Math.round(dims.widthPx * scale)
-        const displayH = Math.round(dims.heightPx * scale)
-
-        artboard.set({ width: displayW, height: displayH, fill: '#ffffff' })
+        artboard.set({ width: dims.widthPx, height: dims.heightPx, fill: '#ffffff' })
         artboard.setCoords()
-        setArtboardSize(displayW, displayH)
+        setArtboardSize(dims.widthPx, dims.heightPx)
 
-        // Re-center the artboard using the store's setZoom (correct viewport math)
+        // Re-center — zoom at "comfortable" reading size (~2px/mm) then cap to fit
         const canvasW = canvas.getWidth()
         const canvasH = canvas.getHeight()
-        const padding = 0.85
-        const zoom = Math.min(
-          (canvasW * padding) / displayW,
-          (canvasH * padding) / displayH,
-          1
+        const comfortZoom = 2.0 * 25.4 / (dims.dpi || 300)
+        const fitZoom = Math.min(
+          (canvasW * 0.75) / dims.widthPx,
+          (canvasH * 0.75) / dims.heightPx
         )
+        const zoom = Math.min(comfortZoom, fitZoom)
         useEditorStore.getState().setZoom(zoom)
         canvas.renderAll()
       }
@@ -270,13 +265,21 @@ export default function TemplatesPanel() {
                       className="group bg-ed-bg border border-ed-border rounded-lg overflow-hidden hover:border-ed-accent/40 hover:shadow-sm transition-all text-left"
                     >
                       <div
-                        className="w-full h-20 flex items-center justify-center"
+                        className="w-full h-20 flex items-center justify-center overflow-hidden"
                         style={{ backgroundColor: color.bg }}
                       >
-                        <div
-                          className="w-[80%] h-[80%] flex items-center justify-center"
-                          dangerouslySetInnerHTML={{ __html: generatePreviewSvg(t, color) }}
-                        />
+                        {t.image_url ? (
+                          <img
+                            src={t.image_url}
+                            alt={t.name}
+                            className="w-full h-full object-contain p-1"
+                          />
+                        ) : (
+                          <div
+                            className="w-[80%] h-[80%] flex items-center justify-center"
+                            dangerouslySetInnerHTML={{ __html: generatePreviewSvg(t, color) }}
+                          />
+                        )}
                       </div>
                       <div className="px-2 py-1.5">
                         <p className="text-[11px] font-medium text-ed-text truncate">{t.name}</p>
