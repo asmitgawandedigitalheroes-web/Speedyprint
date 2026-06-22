@@ -107,21 +107,26 @@ export function calculatePrice(
     // per_area_m2: price_value is R/m², unit price = rate × area_m²
     // Rules with more condition keys are more specific and take priority.
     const perAreaRules = activeRules.filter((r) => r.rule_type === 'per_area_m2')
+    const totalM2 = (widthMm * heightMm / 1_000_000) * quantity
+    const AREA_META_KEYS = new Set(['description', 'min_total_m2', 'max_total_m2'])
     const perAreaRule = perAreaRules
       .sort((a, b) => {
-        // More specific rules (more condition keys) come first
-        const aKeys = Object.keys(a.conditions as object).filter((k) => k !== 'description').length
-        const bKeys = Object.keys(b.conditions as object).filter((k) => k !== 'description').length
+        // More specific rules (more non-meta condition keys) come first
+        const aKeys = Object.keys(a.conditions as object).filter((k) => !AREA_META_KEYS.has(k)).length
+        const bKeys = Object.keys(b.conditions as object).filter((k) => !AREA_META_KEYS.has(k)).length
         return bKeys - aKeys
       })
       .find((r) => {
-        const cond = r.conditions as Record<string, string>
+        const cond = r.conditions as Record<string, unknown>
+        const minM2 = cond.min_total_m2 ? Number(cond.min_total_m2) : 0
+        const maxM2 = cond.max_total_m2 ? Number(cond.max_total_m2) : Infinity
+        if (totalM2 < minM2 || totalM2 > maxM2) return false
         return Object.entries(cond)
-          .filter(([k]) => k !== 'description')
+          .filter(([k]) => !AREA_META_KEYS.has(k))
           .every(([k, v]) => params[k] === v)
       })
     if (perAreaRule) {
-      const areaM2 = areaMm2 / 1_000_000
+      const areaM2 = totalM2 / quantity
       const areaPrice = Math.round(perAreaRule.price_value * areaM2 * 100) / 100
       unitPrice = areaPrice
       const areaEntry = { label: `Price (${widthMm}×${heightMm}mm @ R${perAreaRule.price_value}/m²)`, amount: areaPrice }

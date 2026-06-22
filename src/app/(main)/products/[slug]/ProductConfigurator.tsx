@@ -116,6 +116,13 @@ export function ProductConfigurator({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // Prefetch designer route JS bundle so navigation is faster
+  useEffect(() => {
+    if (selectedTemplateId) {
+      router.prefetch(`/designer/${selectedTemplateId}`)
+    }
+  }, [selectedTemplateId, router])
+
   function handleTemplateChange(templateId: string) {
     setSelectedTemplateId(templateId)
     const template = templates.find((t) => t.id === templateId)
@@ -460,6 +467,18 @@ export function ProductConfigurator({
                   `speedy_params_${selectedTemplateId}`,
                   JSON.stringify({ params: allParams, quantity })
                 )
+                // Cache the template with the user's custom dimensions already applied
+                // so EditorShell receives the correct size without needing Supabase
+                if (selectedTemplate) {
+                  const customW = dimensionConstraints && customWidth ? Number(customWidth) : null
+                  const customH = dimensionConstraints && customHeight ? Number(customHeight) : null
+                  const tplToCache = {
+                    ...selectedTemplate,
+                    ...(customW && customW > 0 ? { print_width_mm: customW } : {}),
+                    ...(customH && customH > 0 ? { print_height_mm: customH } : {}),
+                  }
+                  sessionStorage.setItem(`speedy_tpl_${selectedTemplateId}`, JSON.stringify(tplToCache))
+                }
                 const url = designId
                   ? `/designer/${selectedTemplateId}?design=${designId}`
                   : `/designer/${selectedTemplateId}`

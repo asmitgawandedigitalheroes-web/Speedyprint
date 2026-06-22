@@ -286,10 +286,9 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     const containerW = canvas.getWidth()
     const containerH = canvas.getHeight()
 
-    const padding = 0.85
     const fitZoom = Math.min(
-      (containerW * padding) / artboardWidth,
-      (containerH * padding) / artboardHeight
+      (containerW * 0.85) / artboardWidth,
+      (containerH * 0.85) / artboardHeight
     )
 
     const clamped = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, fitZoom))

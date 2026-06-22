@@ -19,15 +19,6 @@ import ContextMenu from './ContextMenu'
 const DEFAULT_ARTBOARD_WIDTH = 800
 const DEFAULT_ARTBOARD_HEIGHT = 600
 
-function computeDisplayScale(
-  fullWidthPx: number,
-  fullHeightPx: number,
-  maxDisplay = 800
-): number {
-  if (fullWidthPx <= maxDisplay && fullHeightPx <= maxDisplay) return 1
-  return Math.min(maxDisplay / fullWidthPx, maxDisplay / fullHeightPx)
-}
-
 export default function EditorCanvas() {
   const canvasElRef = useRef<HTMLCanvasElement>(null)
   const fabricRef = useRef<FabricCanvas | null>(null)
@@ -76,16 +67,13 @@ export default function EditorCanvas() {
     return () => observer.disconnect()
   }, [])
 
-  // Compute artboard dimensions from canvasDimensions (or defaults)
+  // Compute artboard dimensions from canvasDimensions (or defaults).
+  // Use full print-pixel dimensions — zoom handles display scaling.
   const computeArtboard = useCallback(() => {
-    let artboardW = DEFAULT_ARTBOARD_WIDTH
-    let artboardH = DEFAULT_ARTBOARD_HEIGHT
     if (canvasDimensions) {
-      const scale = computeDisplayScale(canvasDimensions.widthPx, canvasDimensions.heightPx, 800)
-      artboardW = Math.round(canvasDimensions.widthPx * scale)
-      artboardH = Math.round(canvasDimensions.heightPx * scale)
+      return { artboardW: canvasDimensions.widthPx, artboardH: canvasDimensions.heightPx }
     }
-    return { artboardW, artboardH }
+    return { artboardW: DEFAULT_ARTBOARD_WIDTH, artboardH: DEFAULT_ARTBOARD_HEIGHT }
   }, [canvasDimensions])
 
   // Initialize Fabric.js canvas once container has dimensions
@@ -117,6 +105,15 @@ export default function EditorCanvas() {
       wrapper.style.height = '100%'
     }
 
+    // Zoom to fit: scale artboard to fill 65% of the container (templates) or 75% (default).
+    // 65% leaves comfortable breathing room around portrait-format canvases.
+    const initialZoom = canvasDimensions
+      ? Math.min((containerW * 0.65) / artboardW, (containerH * 0.65) / artboardH)
+      : Math.min((containerW * 0.75) / artboardW, (containerH * 0.75) / artboardH)
+
+    // Shadow blur targets ~8px on screen at the initial zoom level.
+    const shadowBlur = Math.min(40, Math.round(8 / initialZoom))
+
     // Add artboard rect (white workspace with shadow)
     const artboard = new Rect({
       left: 0,
@@ -129,18 +126,10 @@ export default function EditorCanvas() {
       selectable: false,
       evented: false,
       hoverCursor: 'default',
-      shadow: new Shadow({ color: 'rgba(0,0,0,0.15)', blur: 20, offsetX: 0, offsetY: 2 }),
+      shadow: new Shadow({ color: 'rgba(0,0,0,0.15)', blur: shadowBlur, offsetX: 0, offsetY: 2 }),
     })
     ;(artboard as unknown as Record<string, unknown>).isArtboard = true
     canvas.add(artboard)
-
-    // Calculate initial zoom to fit artboard with padding
-    const padding = 0.85
-    const initialZoom = Math.min(
-      (containerW * padding) / artboardW,
-      (containerH * padding) / artboardH,
-      1
-    )
 
     fabricRef.current = canvas
     setCanvas(canvas)
@@ -404,29 +393,27 @@ export default function EditorCanvas() {
       obj.setCoords()
     })
 
-    // Recalculate zoom to fit new artboard with padding
+    // Recalculate zoom for new artboard — zoom to fit 65% of container
     const containerW = canvas.getWidth()
     const containerH = canvas.getHeight()
-    const padding = 0.85
-    const fitZoom = Math.min(
-      (containerW * padding) / artboardW,
-      (containerH * padding) / artboardH,
-      1
+    const newZoom = Math.min(
+      (containerW * 0.65) / artboardW,
+      (containerH * 0.65) / artboardH
     )
 
     // Compute viewport transform directly (setCenterFromObject approach)
     const objCenter = artboard.getCenterPoint()
     const vpt = canvas.viewportTransform
     if (vpt) {
-      vpt[0] = fitZoom
-      vpt[3] = fitZoom
-      vpt[4] = (containerW / 2) - (objCenter.x * fitZoom)
-      vpt[5] = (containerH / 2) - (objCenter.y * fitZoom)
+      vpt[0] = newZoom
+      vpt[3] = newZoom
+      vpt[4] = (containerW / 2) - (objCenter.x * newZoom)
+      vpt[5] = (containerH / 2) - (objCenter.y * newZoom)
       canvas.setViewportTransform(vpt)
     }
 
     // Sync store zoom state
-    useEditorStore.setState({ zoom: fitZoom })
+    useEditorStore.setState({ zoom: newZoom })
     canvas.renderAll()
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
