@@ -107,12 +107,14 @@ export function ProductDetailClient({
           {allImages.length > 1 && (
             <>
               <button
+                type="button"
                 onClick={prev}
                 className="absolute left-3 top-1/2 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 shadow-md backdrop-blur-sm ring-1 ring-gray-200 hover:bg-white transition-colors"
               >
                 <ChevronLeft className="h-5 w-5 text-gray-700" />
               </button>
               <button
+                type="button"
                 onClick={next}
                 className="absolute right-3 top-1/2 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 shadow-md backdrop-blur-sm ring-1 ring-gray-200 hover:bg-white transition-colors"
               >
@@ -127,6 +129,7 @@ export function ProductDetailClient({
               {allImages.map((_, i) => (
                 <button
                   key={i}
+                  type="button"
                   onClick={() => setActiveIndex(i)}
                   className={cn(
                     'h-1.5 rounded-full transition-all',
@@ -144,6 +147,7 @@ export function ProductDetailClient({
             {allImages.map((img, i) => (
               <button
                 key={img.url}
+                type="button"
                 onClick={() => setActiveIndex(i)}
                 className={cn(
                   'relative aspect-square overflow-hidden rounded-lg border-2 bg-gray-50 transition-all',
