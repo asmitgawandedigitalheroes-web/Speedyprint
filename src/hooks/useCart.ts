@@ -29,9 +29,10 @@ export const useCart = create<CartState>()(
 
       addItem: (item) => {
         const id = crypto.randomUUID()
-        const line_total = item.quantity * item.unit_price
+        const setup_fee = item.setup_fee ?? 0
+        const line_total = item.quantity * item.unit_price + setup_fee
         set((state) => ({
-          items: [...state.items, { ...item, id, line_total, selected: true }],
+          items: [...state.items, { ...item, id, setup_fee, line_total, selected: true }],
         }))
       },
 
@@ -46,7 +47,7 @@ export const useCart = create<CartState>()(
         set((state) => ({
           items: state.items.map((item) =>
             item.id === id
-              ? { ...item, quantity: clamped, line_total: clamped * item.unit_price }
+              ? { ...item, quantity: clamped, line_total: clamped * item.unit_price + (item.setup_fee ?? 0) }
               : item
           ),
         }))

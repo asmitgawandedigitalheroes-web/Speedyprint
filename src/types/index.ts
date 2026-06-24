@@ -10,7 +10,7 @@ export interface ProductFamily {
 }
 export type Division = 'labels' | 'race-numbers' | 'mtb-boards' | 'stamps' | 'laser' | 'trophies' | 'print'
 export type ParamType = 'select' | 'range' | 'number' | 'text'
-export type PricingRuleType = 'base_price' | 'quantity_break' | 'size_tier' | 'material_addon' | 'option_addon' | 'finish_addon' | 'per_area_m2' | 'minimum_order'
+export type PricingRuleType = 'base_price' | 'quantity_break' | 'size_tier' | 'material_addon' | 'option_addon' | 'finish_addon' | 'per_area_m2' | 'minimum_order' | 'setup_fee'
 export type OrderStatus = 'draft' | 'pending_payment' | 'paid' | 'in_production' | 'completed' | 'cancelled'
 export type OrderItemStatus = 'pending_design' | 'pending_proof' | 'proof_sent' | 'approved' | 'in_production' | 'completed' | 'cancelled'
 export type CsvJobStatus = 'uploaded' | 'validated' | 'processing' | 'completed' | 'error'
@@ -342,6 +342,7 @@ export interface CartItem {
   template_name: string
   quantity: number
   unit_price: number
+  setup_fee?: number
   line_total: number
   selected_params: Record<string, unknown>
   design_id?: string

@@ -61,7 +61,7 @@ export function ProductConfigurator({
     return defaults
   })
   const [quantity, setQuantity] = useState(1)
-  const [labelCombo, setLabelCombo] = useState(false)
+
 
   const isCoffeeSleeve = productSlug?.toLowerCase().includes('coffee') || productSlug?.toLowerCase().includes('sleeve') || templates.some(t => t.print_width_mm === 270 && t.print_height_mm === 70)
 
@@ -428,27 +428,6 @@ export function ProductConfigurator({
 
       <Separator />
 
-      {/* Label combo add-on — labels division only */}
-      {division === 'labels' && (
-        <>
-          <label className="flex items-start gap-3 cursor-pointer rounded-lg border border-gray-200 p-3 hover:border-gray-300 transition-colors">
-            <input
-              type="checkbox"
-              checked={labelCombo}
-              onChange={(e) => setLabelCombo(e.target.checked)}
-              className="mt-0.5 accent-brand-primary"
-            />
-            <div>
-              <p className="text-sm font-medium text-brand-text">Order Label Combos</p>
-              <p className="text-xs text-brand-text-muted mt-0.5">
-                Combine multiple label sizes in one order (e.g. jar label + lid label). We&apos;ll contact you to confirm the combo.
-              </p>
-            </div>
-          </label>
-
-          <Separator />
-        </>
-      )}
 
       {/* Action buttons */}
       {minimumApplied && (

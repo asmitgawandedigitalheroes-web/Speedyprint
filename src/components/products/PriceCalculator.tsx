@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { Separator } from '@/components/ui/separator'
@@ -59,7 +59,7 @@ export function PriceCalculator({
     return () => clearTimeout(timer)
   }, [fetchPrice])
 
-  // Nothing loaded yet — show placeholder rows
+  // Nothing loaded yet - show placeholder rows
   if (!price && !error) {
     return (
       <div className="space-y-3">
@@ -122,7 +122,7 @@ export function PriceCalculator({
       <div className="flex items-center justify-between">
         <span className="text-base font-semibold text-brand-text">Total</span>
         <span className="text-xl font-bold text-brand-primary">
-          {formatCurrency(price!.realSubtotal)}
+          {formatCurrency(price!.subtotal)}
         </span>
       </div>
 
@@ -131,7 +131,7 @@ export function PriceCalculator({
           <p className="text-xs text-amber-800">
             A minimum order of{' '}
             <span className="font-semibold">{formatCurrency(price!.minimumValue!)}</span>{' '}
-            applies — increase your size or quantity to proceed.
+            applies - increase your size or quantity to proceed.
           </p>
         </div>
       )}

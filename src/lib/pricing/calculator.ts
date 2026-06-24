@@ -1,4 +1,4 @@
-import type { PricingRule } from '@/types'
+﻿import type { PricingRule } from '@/types'
 
 export interface PriceBreakdown {
   label: string
@@ -9,6 +9,7 @@ export interface PriceResult {
   unitPrice: number
   subtotal: number
   realSubtotal: number
+  setupFee: number
   breakdown: PriceBreakdown[]
   minimumApplied?: boolean
   minimumValue?: number
@@ -29,7 +30,7 @@ export function calculatePrice(
   let unitPrice = 0
   const quantity = params.quantity || 1
 
-  // Resolve applicable quantity break — prefer rules with extra matching conditions (e.g. print_option)
+  // Resolve applicable quantity break - prefer rules with extra matching conditions (e.g. print_option)
   // over generic qty-only rules, so print-option-specific pricing overrides the default.
   const QTY_META_KEYS = new Set(['min_qty', 'max_qty', 'discount_type', 'description'])
   const quantityRules = activeRules
@@ -62,7 +63,7 @@ export function calculatePrice(
     appliedQtyBreak !== null &&
     (appliedQtyBreak.conditions as { discount_type?: string }).discount_type !== 'percentage'
 
-  // 1. Base price — use fixed_price break value if applicable, else base_price rule
+  // 1. Base price - use fixed_price break value if applicable, else base_price rule
   if (isFixedPrice && appliedQtyBreak) {
     unitPrice = appliedQtyBreak.price_value
     breakdown.push({
@@ -98,7 +99,7 @@ export function calculatePrice(
     }
   }
 
-  // Area-based size tier (adjustable dimensions) — matches when width_mm + height_mm provided
+  // Area-based size tier (adjustable dimensions) - matches when width_mm + height_mm provided
   const widthMm = params.width_mm ? Number(params.width_mm) : null
   const heightMm = params.height_mm ? Number(params.height_mm) : null
   if (widthMm && heightMm) {
@@ -181,7 +182,7 @@ export function calculatePrice(
     }
   }
 
-  // 4. Apply finish addon — matches any single condition key against params
+  // 4. Apply finish addon - matches any single condition key against params
   // Supports conditions like {"finish":"Gloss"}, {"lamination":"Matt"}, {"finishing":"Gloss Lamination"}
   const finishRules = activeRules.filter((r) => r.rule_type === 'finish_addon')
   for (const rule of finishRules) {
@@ -235,17 +236,29 @@ export function calculatePrice(
   const minimumRule = activeRules.find((r) => r.rule_type === 'minimum_order')
   const minimumValue = minimumRule ? minimumRule.price_value : null
   const minimumApplied = minimumValue !== null && realSubtotal < minimumValue
-  const subtotal = minimumApplied && minimumValue !== null ? minimumValue : realSubtotal
+  const itemsTotal = minimumApplied && minimumValue !== null ? minimumValue : realSubtotal
 
   breakdown.push({
     label: `Subtotal (${quantity} × R${unitPrice.toFixed(2)})`,
     amount: realSubtotal,
   })
 
+  // Setup fee - one-time charge per order line, not multiplied by quantity
+  let setupFee = 0
+  const setupFeeRules = activeRules.filter((r) => r.rule_type === 'setup_fee')
+  for (const rule of setupFeeRules) {
+    setupFee += rule.price_value
+    breakdown.push({ label: 'Setup fee', amount: rule.price_value })
+  }
+  setupFee = Math.round(setupFee * 100) / 100
+
+  const subtotal = Math.round((itemsTotal + setupFee) * 100) / 100
+
   return {
     unitPrice: Math.round(unitPrice * 100) / 100,
-    subtotal: Math.round(subtotal * 100) / 100,
+    subtotal,
     realSubtotal,
+    setupFee,
     breakdown,
     minimumApplied,
     minimumValue: minimumValue ?? undefined,

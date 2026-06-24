@@ -143,11 +143,11 @@ export default function LeftSidebar() {
       {/* Expandable content panel */}
       <div
         className={`bg-ed-surface border-r border-ed-border overflow-hidden transition-all duration-200 ease-out ${
-          isMobile ? (activeTab ? 'w-full' : 'w-0') : activeTab ? 'w-[380px]' : 'w-0'
+          isMobile ? (activeTab ? 'w-full' : 'w-0') : activeTab ? 'w-[260px]' : 'w-0'
         }`}
       >
         {activeTab && (
-          <div className={`${isMobile ? 'w-full' : 'w-[380px]'} h-full overflow-y-auto overflow-x-hidden text-[13px]`}>
+          <div className={`${isMobile ? 'w-full' : 'w-[260px]'} h-full overflow-y-auto overflow-x-hidden text-[13px]`}>
             {PANEL_MAP[activeTab]}
           </div>
         )}

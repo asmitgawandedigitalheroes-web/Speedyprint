@@ -33,7 +33,7 @@ export function MobileBottomBar({ onOpenPanel, isObjectSelected }: MobileBottomB
           <div className={`p-1.5 rounded-full ${leftPanel && leftPanel !== 'layers' ? 'bg-ed-accent/10' : ''}`}>
             <Plus size={22} />
           </div>
-          <span className="text-[10px] font-bold uppercase tracking-tighter">Design</span>
+          <span className="text-[10px] font-bold uppercase tracking-tighter">Edit</span>
         </button>
 
         <button

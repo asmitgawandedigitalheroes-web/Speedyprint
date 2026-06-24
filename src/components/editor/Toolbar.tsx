@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useRef, useCallback, useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
@@ -56,6 +56,7 @@ export default function Toolbar() {
   const [cartQuantity, setCartQuantity] = useState(100)
   const [addingToCart, setAddingToCart] = useState(false)
   const [cartAdded, setCartAdded] = useState(false)
+  const [modalSetupFee, setModalSetupFee] = useState(0)
   const jsonInputRef = useRef<HTMLInputElement>(null)
   const templatePickerRef = useRef<HTMLDivElement>(null)
 
@@ -256,7 +257,7 @@ export default function Toolbar() {
         body: JSON.stringify({ canva_url: canvaUrl }),
       })
     } catch {
-      // Non-critical — the URL is held in local state until the next full save
+      // Non-critical - the URL is held in local state until the next full save
     }
   }, [isAuthenticated])
 
@@ -512,7 +513,7 @@ export default function Toolbar() {
     return Math.round(base * 100) / 100
   }, [template])
 
-  const handleOpenCartModal = useCallback(() => {
+  const handleOpenCartModal = useCallback(async () => {
     if (!canvas) return
     if (!user) {
       const returnUrl = encodeURIComponent(window.location.pathname + window.location.search)
@@ -520,8 +521,31 @@ export default function Toolbar() {
       return
     }
     setCartAdded(false)
+    setModalSetupFee(0)
     setShowCartModal(true)
-  }, [canvas, user, router])
+    // Fetch real pricing to get setup fee for display
+    if (template?.product_group_id) {
+      try {
+        const priceRes = await fetch(`/api/products/${template.product_group_id}/price`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            quantity: cartQuantity,
+            params: {
+              width_mm: template.print_width_mm ?? 100,
+              height_mm: template.print_height_mm ?? 100,
+            },
+          }),
+        })
+        if (priceRes.ok) {
+          const data = await priceRes.json()
+          setModalSetupFee(data?.price?.setupFee ?? 0)
+        }
+      } catch {
+        // ignore - display stays 0
+      }
+    }
+  }, [canvas, user, router, template, cartQuantity])
 
   const handleConfirmAddToCart = useCallback(async () => {
     if (!canvas) return
@@ -572,8 +596,6 @@ export default function Toolbar() {
         throw new Error(`Failed to save design before adding to cart: ${res.status}`)
       }
 
-      const unitPrice = getUnitPrice(cartQuantity)
-
       // Restore product configuration params saved by ProductConfigurator
       let savedParams: Record<string, string> = {}
       if (template?.id) {
@@ -585,7 +607,36 @@ export default function Toolbar() {
             sessionStorage.removeItem(`speedy_params_${template.id}`)
           }
         } catch {
-          // ignore — fall back to dimensions only
+          // ignore - fall back to dimensions only
+        }
+      }
+
+      // Fetch real pricing from API (includes setup fee); fall back to local calc
+      let unitPrice = getUnitPrice(cartQuantity)
+      let setupFee = 0
+      if (template?.product_group_id) {
+        try {
+          const priceRes = await fetch(`/api/products/${template.product_group_id}/price`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              quantity: cartQuantity,
+              params: {
+                width_mm: template.print_width_mm ?? 100,
+                height_mm: template.print_height_mm ?? 100,
+                ...savedParams,
+              },
+            }),
+          })
+          if (priceRes.ok) {
+            const priceData = await priceRes.json()
+            if (priceData?.price) {
+              unitPrice = priceData.price.unitPrice
+              setupFee = priceData.price.setupFee ?? 0
+            }
+          }
+        } catch {
+          // ignore - local fallback already set
         }
       }
 
@@ -596,6 +647,7 @@ export default function Toolbar() {
         template_name: template?.name ?? (designName || 'Untitled Design'),
         quantity: cartQuantity,
         unit_price: unitPrice,
+        setup_fee: setupFee,
         selected_params: {
           width_mm: template?.print_width_mm ?? 100,
           height_mm: template?.print_height_mm ?? 100,
@@ -693,43 +745,27 @@ export default function Toolbar() {
         </span>
       </div>
 
-      {/* CENTER: Undo/Redo/Reset - Hidden on mobile */}
-      <div className="hidden lg:flex flex-1 items-center justify-center gap-0.5 flex-shrink-0">
-        <button onClick={undo} disabled={noCanvas} title="Undo (Ctrl+Z)" className={iconBtn}>
-          <Undo2 size={15} />
-        </button>
-        <button onClick={redo} disabled={noCanvas} title="Redo (Ctrl+Y)" className={iconBtn}>
-          <Redo2 size={15} />
-        </button>
-        <button onClick={handleReset} disabled={noCanvas} title="Reset Design" className={`${iconBtn} hover:text-red-500`}>
-          <RotateCcw size={15} />
-        </button>
-      </div>
-
       {/* RIGHT: Actions */}
       <div className="flex items-center gap-1.5 flex-shrink-0">
+        {/* Undo/Redo/Reset - Hidden on mobile */}
+        <div className="hidden lg:flex items-center gap-0.5 border-r border-ed-border pr-1 mr-0.5">
+          <button onClick={undo} disabled={noCanvas} title="Undo (Ctrl+Z)" className={iconBtn}>
+            <Undo2 size={15} />
+          </button>
+          <button onClick={redo} disabled={noCanvas} title="Redo (Ctrl+Y)" className={iconBtn}>
+            <Redo2 size={15} />
+          </button>
+          <button onClick={handleReset} disabled={noCanvas} title="Reset Design" className={`${iconBtn} hover:text-red-500`}>
+            <RotateCcw size={15} />
+          </button>
+        </div>
+
         <div className="hidden lg:flex items-center gap-1.5">
           <button onClick={handlePreview} disabled={noCanvas} title="Preview" className={iconBtn}>
             <Eye size={16} />
           </button>
 
           <div className="w-px h-4 bg-ed-border mx-0.5" />
-
-          {/* Zoom controls — left of bleed lines */}
-          <div className="flex items-center bg-ed-bg rounded-md px-1">
-            <button onClick={zoomOut} disabled={noCanvas} title="Zoom Out" className={iconBtn}>
-              <ZoomOut size={15} />
-            </button>
-            <span className="text-[11px] text-ed-text-muted font-mono min-w-[3rem] text-center tabular-nums select-none">
-              {Math.round(zoom * 100)}%
-            </span>
-            <button onClick={zoomIn} disabled={noCanvas} title="Zoom In" className={iconBtn}>
-              <ZoomIn size={15} />
-            </button>
-          </div>
-          <button onClick={zoomToFit} disabled={noCanvas} title="Fit to View" className={iconBtn}>
-            <Maximize2 size={15} />
-          </button>
 
           <button
             onClick={() => useEditorStore.getState().togglePrintBoundaries()}
@@ -759,7 +795,7 @@ export default function Toolbar() {
             {saving ? 'Saving...' : 'Save'}
           </button>
 
-          {/* Export dropdown — JPG / PNG / SVG / PDF */}
+          {/* Export dropdown - JPG / PNG / SVG / PDF */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button disabled={noCanvas} className={ghostBtn} title="Export design">
@@ -804,7 +840,7 @@ export default function Toolbar() {
           <div className="w-px h-4 bg-ed-border mx-0.5" />
         </div>
 
-        {/* Mobile More Actions Dropdown — shown when < lg */}
+        {/* Mobile More Actions Dropdown - shown when < lg */}
         <div className="flex lg:hidden items-center mr-1">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -899,7 +935,7 @@ export default function Toolbar() {
           Help Me
         </a>
 
-        {/* Primary CTA — compact text on mobile */}
+        {/* Primary CTA - compact text on mobile */}
         <button
           onClick={handleOpenCartModal}
           disabled={noCanvas}
@@ -945,7 +981,7 @@ export default function Toolbar() {
                 To save your design, you need a Speedy Print account.
               </p>
               <p className="text-xs text-gray-400 mb-6">
-                Your design will be kept safe — sign in or create a free account to continue.
+                Your design will be kept safe - sign in or create a free account to continue.
               </p>
               <div className="flex flex-col gap-2">
                 <button
@@ -1122,6 +1158,12 @@ export default function Toolbar() {
                       <span className="text-gray-500">Subtotal ({cartQuantity} units)</span>
                       <span className="font-medium text-gray-700">{CURRENCY_SYMBOL}{(getUnitPrice(cartQuantity) * cartQuantity).toFixed(2)}</span>
                     </div>
+                    {modalSetupFee > 0 && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-500">Setup fee</span>
+                        <span className="font-medium text-gray-700">{CURRENCY_SYMBOL}{modalSetupFee.toFixed(2)}</span>
+                      </div>
+                    )}
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-500">VAT ({(VAT_RATE * 100).toFixed(0)}%)</span>
                       <span className="font-medium text-gray-700">{CURRENCY_SYMBOL}{(getUnitPrice(cartQuantity) * cartQuantity * VAT_RATE).toFixed(2)}</span>
@@ -1129,7 +1171,7 @@ export default function Toolbar() {
                     <div className="border-t border-gray-200 pt-2 flex justify-between">
                       <span className="font-bold text-gray-900">Total</span>
                       <span className="font-bold text-gray-900 text-lg">
-                        {CURRENCY_SYMBOL}{(getUnitPrice(cartQuantity) * cartQuantity * (1 + VAT_RATE)).toFixed(2)}
+                        {CURRENCY_SYMBOL}{(getUnitPrice(cartQuantity) * cartQuantity + modalSetupFee + getUnitPrice(cartQuantity) * cartQuantity * VAT_RATE).toFixed(2)}
                       </span>
                     </div>
                   </div>
