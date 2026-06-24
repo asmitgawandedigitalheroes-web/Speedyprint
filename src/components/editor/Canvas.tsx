@@ -642,19 +642,17 @@ export default function EditorCanvas() {
         {templateInfo}
       </div>
 
-      {/* Bleed / Safe legend — shown when print boundaries are on */}
-      {showPrintBoundaries && (
-        <div className="absolute bottom-3 right-3 z-10 flex items-center gap-3 rounded-lg bg-white/90 backdrop-blur-sm border border-gray-200 shadow-sm px-3 py-1.5 select-none pointer-events-none">
-          <span className="flex items-center gap-1.5 text-[10px] font-semibold text-gray-600">
-            <span className="inline-block h-[2px] w-5 rounded-full" style={{ background: 'rgba(239,68,68,0.85)', backgroundImage: 'repeating-linear-gradient(90deg,rgba(239,68,68,0.85) 0,rgba(239,68,68,0.85) 6px,transparent 6px,transparent 9px)' }} />
-            Bleed
-          </span>
-          <span className="flex items-center gap-1.5 text-[10px] font-semibold text-gray-600">
-            <span className="inline-block h-[2px] w-5 rounded-full" style={{ backgroundImage: 'repeating-linear-gradient(90deg,rgba(59,130,246,0.85) 0,rgba(59,130,246,0.85) 4px,transparent 4px,transparent 7px)' }} />
-            Safe
-          </span>
-        </div>
-      )}
+      {/* Bleed / Safe legend — always in DOM, hidden via CSS to avoid Fabric.js insertBefore conflicts */}
+      <div className={`absolute bottom-3 right-3 z-10 flex items-center gap-3 rounded-lg bg-white/90 backdrop-blur-sm border border-gray-200 shadow-sm px-3 py-1.5 select-none pointer-events-none ${showPrintBoundaries ? '' : 'hidden'}`}>
+        <span className="flex items-center gap-1.5 text-[10px] font-semibold text-gray-600">
+          <span className="inline-block h-[2px] w-5 rounded-full" style={{ background: 'rgba(239,68,68,0.85)', backgroundImage: 'repeating-linear-gradient(90deg,rgba(239,68,68,0.85) 0,rgba(239,68,68,0.85) 6px,transparent 6px,transparent 9px)' }} />
+          Bleed
+        </span>
+        <span className="flex items-center gap-1.5 text-[10px] font-semibold text-gray-600">
+          <span className="inline-block h-[2px] w-5 rounded-full" style={{ backgroundImage: 'repeating-linear-gradient(90deg,rgba(59,130,246,0.85) 0,rgba(59,130,246,0.85) 4px,transparent 4px,transparent 7px)' }} />
+          Safe
+        </span>
+      </div>
 
       <canvas ref={canvasElRef} />
       <DrawingModeSync />

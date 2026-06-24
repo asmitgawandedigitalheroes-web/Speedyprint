@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useEditorStore } from '@/lib/editor/useEditorStore'
+import { ZoomIn, ZoomOut, Maximize2 } from 'lucide-react'
 
 interface CursorInfo { x: number; y: number }
 interface SelectionInfo { width: number; height: number }
@@ -18,6 +19,11 @@ export default function StatusBar() {
   const artboardWidth = useEditorStore((s) => s.artboardWidth)
   const zoom = useEditorStore((s) => s.zoom)
   const objects = useEditorStore((s) => s.objects)
+
+  const noCanvas = !canvas
+  const zoomIn = useEditorStore((s) => s.zoomIn)
+  const zoomOut = useEditorStore((s) => s.zoomOut)
+  const zoomToFit = useEditorStore((s) => s.zoomToFit)
 
   const [cursor, setCursor] = useState<CursorInfo>({ x: 0, y: 0 })
   const [selection, setSelection] = useState<SelectionInfo | null>(null)
@@ -96,7 +102,38 @@ export default function StatusBar() {
         <span>{template.print_width_mm}x{template.print_height_mm}mm</span>
       )}
 
-      <span>{Math.round(zoom * 100)}%</span>
+      <div className="w-px h-3.5 bg-ed-border" />
+
+      {/* Zoom controls */}
+      <div className="flex items-center gap-0.5">
+        <button
+          onClick={zoomOut}
+          disabled={noCanvas}
+          title="Zoom Out"
+          className="p-1 rounded hover:bg-ed-surface-hover disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-ed-text-dim hover:text-ed-text"
+        >
+          <ZoomOut size={12} />
+        </button>
+        <span className="font-mono min-w-[3rem] text-center tabular-nums text-ed-text-muted select-none">
+          {Math.round(zoom * 100)}%
+        </span>
+        <button
+          onClick={zoomIn}
+          disabled={noCanvas}
+          title="Zoom In"
+          className="p-1 rounded hover:bg-ed-surface-hover disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-ed-text-dim hover:text-ed-text"
+        >
+          <ZoomIn size={12} />
+        </button>
+        <button
+          onClick={zoomToFit}
+          disabled={noCanvas}
+          title="Fit to View"
+          className="p-1 rounded hover:bg-ed-surface-hover disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-ed-text-dim hover:text-ed-text"
+        >
+          <Maximize2 size={12} />
+        </button>
+      </div>
     </div>
   )
 }

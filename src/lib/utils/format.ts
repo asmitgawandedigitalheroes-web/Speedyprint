@@ -1,7 +1,7 @@
 import { CURRENCY_SYMBOL } from './constants'
 
 export function formatCurrency(amount: number): string {
-  return `${CURRENCY_SYMBOL}${amount.toLocaleString('en-ZA', {
+  return `${CURRENCY_SYMBOL}${amount.toLocaleString('en-US', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}`
