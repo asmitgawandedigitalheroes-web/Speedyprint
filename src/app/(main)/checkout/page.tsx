@@ -9,17 +9,19 @@ import { useAuth } from '@/hooks/useAuth'
 import { useCart } from '@/hooks/useCart'
 import { createClient } from '@/lib/supabase/client'
 import { formatCurrency } from '@/lib/utils/format'
-import { SA_PROVINCES, FLAT_SHIPPING_RATE, FREE_DELIVERY_THRESHOLD } from '@/lib/utils/constants'
+import { SA_PROVINCES, FLAT_SHIPPING_RATE, FREE_DELIVERY_THRESHOLD, OVERNIGHT_SHIPPING_RATE, INTERNATIONAL_SHIPPING_ESTIMATE } from '@/lib/utils/constants'
 import { toast } from 'sonner'
 import { Check, ChevronDown, ShieldCheck, Truck, AlertCircle, CreditCard, ArrowRight, ChevronLeft, Package, UserCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
+
+type DeliveryOption = 'collection' | 'standard' | 'overnight' | 'international'
 
 const shippingSchema = z.object({
   full_name: z.string().min(3, 'Full name is required (min 3 chars)'),
   address_line1: z.string().min(5, 'Address is required (min 5 chars)'),
   address_line2: z.string().optional(),
   city: z.string().min(2, 'City is required'),
-  province: z.string().min(1, 'Please select a province'),
+  province: z.string().optional(),
   postal_code: z.string().regex(/^[0-9A-Za-z\s\-]{3,10}$/, 'Invalid postal code'),
   phone: z.string().regex(/^[0-9+\-\s()]{10,15}$/, 'Invalid phone number (10-15 digits)'),
   country: z.string().default('ZA'),
@@ -61,7 +63,8 @@ export default function CheckoutPage() {
   const [guestEmailError, setGuestEmailError] = useState('')
   const [errors, setErrors] = useState<Partial<Record<keyof ShippingData, string>>>({})
   const [paymentMethod, setPaymentMethod] = useState<'switch' | 'stripe'>('switch')
-  const [collectFromOffice, setCollectFromOffice] = useState(false)
+  const [deliveryOption, setDeliveryOption] = useState<DeliveryOption>('standard')
+  const [isInternational, setIsInternational] = useState(false)
 
   // Shipping rate state
   const [shippingRates, setShippingRates] = useState<ShippingRate[]>([])
@@ -85,12 +88,15 @@ export default function CheckoutPage() {
 
   // Compute effective shipping cost
   const shippingCost = useMemo(() => {
-    if (collectFromOffice) return 0
+    if (deliveryOption === 'collection') return 0
+    if (deliveryOption === 'overnight') return OVERNIGHT_SHIPPING_RATE
+    if (deliveryOption === 'international') return INTERNATIONAL_SHIPPING_ESTIMATE
+    // standard:
     if (isFreeDelivery) return 0
     if (selectedRate) return selectedRate.total_price
     if (ratesFallback) return FLAT_SHIPPING_RATE
     return 0 // while loading
-  }, [collectFromOffice, isFreeDelivery, selectedRate, ratesFallback])
+  }, [deliveryOption, isFreeDelivery, selectedRate, ratesFallback])
 
   const vatAmount = useMemo(() => subtotal * 0.15, [subtotal])
   const orderTotal = useMemo(() => subtotal + vatAmount + shippingCost, [subtotal, vatAmount, shippingCost])
@@ -175,12 +181,24 @@ export default function CheckoutPage() {
       toast.error(Object.values(fieldErrors)[0] as string || 'Please fix the errors')
       return false
     }
+    // Province required for South African orders
+    if (!isInternational && !shipping.province) {
+      setErrors(prev => ({ ...prev, province: 'Please select a province' }))
+      toast.error('Please select a province')
+      return false
+    }
+    // Country required for international orders
+    if (isInternational && (!shipping.country || shipping.country === 'ZA')) {
+      setErrors(prev => ({ ...prev, country: 'Please enter your country' } as any))
+      toast.error('Please enter your country')
+      return false
+    }
     setErrors({})
     return true
   }
 
   const fetchShippingRates = async () => {
-    if (collectFromOffice || isFreeDelivery) {
+    if (deliveryOption !== 'standard' || isFreeDelivery) {
       setShippingRates([])
       setSelectedRate(null)
       return
@@ -221,12 +239,18 @@ export default function CheckoutPage() {
     }
     if (!validateStep1()) return
     window.scrollTo({ top: 0 })
-    await fetchShippingRates()
-    setStep(2)
+    // Set delivery option based on destination before going to step 2
+    if (isInternational) {
+      setDeliveryOption('international')
+      setStep(2)
+    } else {
+      await fetchShippingRates()
+      setStep(2)
+    }
   }
 
   const handlePlaceOrder = async () => {
-    if (!collectFromOffice && !isFreeDelivery && !selectedRate && !ratesFallback) {
+    if (deliveryOption === 'standard' && !isFreeDelivery && !selectedRate && !ratesFallback) {
       toast.error('Please select a shipping method')
       return
     }
@@ -235,9 +259,14 @@ export default function CheckoutPage() {
     try {
       const supabase = createClient()
 
-      // Determine service type for Bob Go booking
-      const gobobServiceType = selectedRate
-        ? `${selectedRate.provider_slug}|${selectedRate.service_level_code}`
+      // Determine service type for courier booking / order notes
+      const gobobServiceType = deliveryOption === 'overnight' ? 'overnight_delivery'
+        : deliveryOption === 'international' ? 'international_delivery'
+        : selectedRate ? `${selectedRate.provider_slug}|${selectedRate.service_level_code}`
+        : null
+
+      const orderNotes = deliveryOption === 'international'
+        ? `International delivery to: ${shipping.country || 'not specified'}. Shipping cost is an estimate — actual cost will be confirmed before dispatch.`
         : null
 
       const { data: order, error: orderError } = await supabase
@@ -253,6 +282,7 @@ export default function CheckoutPage() {
           total: orderTotal,
           shipping_address: shipping,
           billing_address: shipping,
+          notes: orderNotes,
           gobob_service_type: gobobServiceType,
           gobob_quoted_rate: selectedRate?.total_price ?? null,
         })
@@ -453,9 +483,29 @@ export default function CheckoutPage() {
                 {/* Shipping form */}
                 {(savedAddresses.length === 0 || selectedAddressId === null) && (
                   <div className="rounded-xl border border-gray-200 bg-white p-6">
-                    <h2 className="mb-5 text-sm font-semibold text-gray-700 flex items-center gap-2">
-                      <Truck className="h-4 w-4 text-gray-400" /> Shipping Address
-                    </h2>
+                    <div className="flex items-center justify-between mb-5">
+                      <h2 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                        <Truck className="h-4 w-4 text-gray-400" /> Shipping Address
+                      </h2>
+                      {/* International toggle */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const next = !isInternational
+                          setIsInternational(next)
+                          setShipping(prev => ({ ...prev, province: '', country: next ? '' : 'ZA' }))
+                          setErrors(prev => ({ ...prev, province: undefined }))
+                        }}
+                        className={cn(
+                          'flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium transition-colors',
+                          isInternational
+                            ? 'border-blue-500 bg-blue-50 text-blue-700'
+                            : 'border-gray-200 bg-gray-50 text-gray-500 hover:border-gray-300'
+                        )}
+                      >
+                        🌍 {isInternational ? 'International order' : 'Ordering from outside SA?'}
+                      </button>
+                    </div>
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                       <div>
                         <label className={LABEL}>Full Name *</label>
@@ -467,6 +517,19 @@ export default function CheckoutPage() {
                         <input name="phone" type="tel" inputMode="tel" placeholder="+27 82 123 4567" value={shipping.phone} onChange={handleInputChange} onBlur={handleBlur} className={cn(INPUT, errors.phone && 'border-red-300')} />
                         {errors.phone && <p className={ERROR}><AlertCircle className="h-3 w-3" /> {errors.phone}</p>}
                       </div>
+                      {isInternational && (
+                        <div className="sm:col-span-2">
+                          <label className={LABEL}>Country *</label>
+                          <input
+                            name="country"
+                            placeholder="e.g. Zimbabwe, Kenya, United Kingdom"
+                            value={shipping.country === 'ZA' ? '' : shipping.country}
+                            onChange={handleInputChange}
+                            className={cn(INPUT, (errors as any).country && 'border-red-300')}
+                          />
+                          {(errors as any).country && <p className={ERROR}><AlertCircle className="h-3 w-3" /> {(errors as any).country}</p>}
+                        </div>
+                      )}
                       <div className="sm:col-span-2">
                         <label className={LABEL}>Street Address *</label>
                         <input name="address_line1" placeholder="123 Main Street" value={shipping.address_line1} onChange={handleInputChange} onBlur={handleBlur} className={cn(INPUT, errors.address_line1 && 'border-red-300')} />
@@ -482,19 +545,28 @@ export default function CheckoutPage() {
                         {errors.city && <p className={ERROR}><AlertCircle className="h-3 w-3" /> {errors.city}</p>}
                       </div>
                       <div>
-                        <label className={LABEL}>Province *</label>
-                        <div className="relative">
-                          <select name="province" value={shipping.province} onChange={handleInputChange} onBlur={handleBlur} className={cn(INPUT, 'appearance-none pr-8', errors.province && 'border-red-300')}>
-                            <option value="">Select province</option>
-                            {SA_PROVINCES.map(p => <option key={p} value={p}>{p}</option>)}
-                          </select>
-                          <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                        </div>
-                        {errors.province && <p className={ERROR}><AlertCircle className="h-3 w-3" /> {errors.province}</p>}
+                        {isInternational ? (
+                          <>
+                            <label className={LABEL}>State / Region (optional)</label>
+                            <input name="province" placeholder="e.g. Harare, Nairobi" value={shipping.province} onChange={handleInputChange} className={INPUT} />
+                          </>
+                        ) : (
+                          <>
+                            <label className={LABEL}>Province *</label>
+                            <div className="relative">
+                              <select name="province" value={shipping.province} onChange={handleInputChange} onBlur={handleBlur} className={cn(INPUT, 'appearance-none pr-8', errors.province && 'border-red-300')}>
+                                <option value="">Select province</option>
+                                {SA_PROVINCES.map(p => <option key={p} value={p}>{p}</option>)}
+                              </select>
+                              <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                            </div>
+                            {errors.province && <p className={ERROR}><AlertCircle className="h-3 w-3" /> {errors.province}</p>}
+                          </>
+                        )}
                       </div>
                       <div>
                         <label className={LABEL}>Postal Code *</label>
-                        <input name="postal_code" inputMode="numeric" placeholder="8001" value={shipping.postal_code} onChange={handleInputChange} onBlur={handleBlur} className={cn(INPUT, errors.postal_code && 'border-red-300')} />
+                        <input name="postal_code" inputMode="numeric" placeholder={isInternational ? 'e.g. EC1A1BB' : '8001'} value={shipping.postal_code} onChange={handleInputChange} onBlur={handleBlur} className={cn(INPUT, errors.postal_code && 'border-red-300')} />
                         {errors.postal_code && <p className={ERROR}><AlertCircle className="h-3 w-3" /> {errors.postal_code}</p>}
                       </div>
                     </div>
@@ -570,81 +642,129 @@ export default function CheckoutPage() {
                     <Package className="h-4 w-4 text-gray-400" /> Delivery Method
                   </h2>
 
-                  {/* Collection from Office option */}
-                  <button
-                    type="button"
-                    onClick={() => setCollectFromOffice((v) => !v)}
-                    className={cn(
-                      'w-full flex items-center gap-3 rounded-lg border p-3 text-left text-sm transition-colors mb-3',
-                      collectFromOffice ? 'border-red-600 bg-red-50' : 'border-gray-200 hover:border-gray-300'
-                    )}
-                  >
-                    <div className={cn(
-                      'flex h-4 w-4 shrink-0 items-center justify-center rounded-full border',
-                      collectFromOffice ? 'border-red-600 bg-red-600' : 'border-gray-300'
-                    )}>
-                      {collectFromOffice && <div className="h-1.5 w-1.5 rounded-full bg-white" />}
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-medium text-gray-800">Collection from Office</p>
-                      <p className="text-xs text-gray-400">13 Langwa Street, Strydompark, Randburg — Free</p>
-                    </div>
-                    <span className="text-sm font-semibold text-green-600">Free</span>
-                  </button>
+                  <div className="space-y-2">
+                    {/* Collection from Office — always available */}
+                    {[{
+                      id: 'collection' as DeliveryOption,
+                      label: 'Collection from Office',
+                      sub: '13 Langwa Street, Strydompark, Randburg',
+                      price: 'Free',
+                      priceClass: 'text-green-600',
+                    }].map(opt => (
+                      <button key={opt.id} type="button" onClick={() => setDeliveryOption(opt.id)}
+                        className={cn('w-full flex items-center gap-3 rounded-lg border p-3 text-left text-sm transition-colors',
+                          deliveryOption === opt.id ? 'border-red-600 bg-red-50' : 'border-gray-200 hover:border-gray-300')}>
+                        <div className={cn('flex h-4 w-4 shrink-0 items-center justify-center rounded-full border',
+                          deliveryOption === opt.id ? 'border-red-600 bg-red-600' : 'border-gray-300')}>
+                          {deliveryOption === opt.id && <div className="h-1.5 w-1.5 rounded-full bg-white" />}
+                        </div>
+                        <div className="flex-1"><p className="font-medium text-gray-800">{opt.label}</p><p className="text-xs text-gray-400">{opt.sub}</p></div>
+                        <span className={cn('text-sm font-semibold', opt.priceClass)}>{opt.price}</span>
+                      </button>
+                    ))}
 
-                  {!collectFromOffice && !isFreeDelivery && (
-                    <>
-                    {loadingRates ? (
-                      <div className="flex items-center gap-2 py-4 text-sm text-gray-500">
-                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-200 border-t-gray-500" />
-                        Fetching shipping rates…
-                      </div>
-                    ) : ratesFallback ? (
-                      <div className="rounded-lg border border-red-200 bg-red-50 p-3 flex items-start gap-3">
-                        <div className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-red-600 bg-red-600">
-                          <div className="h-1.5 w-1.5 rounded-full bg-white" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-gray-800">Standard Delivery</p>
-                          <p className="text-xs text-gray-500">Estimated 3–5 business days</p>
-                        </div>
-                        <span className="ml-auto text-sm font-semibold text-gray-900">{formatCurrency(FLAT_SHIPPING_RATE)}</span>
-                      </div>
-                    ) : shippingRates.length > 0 ? (
-                      <div className="space-y-2">
-                        {shippingRates.map(rate => {
-                          const isSelected = selectedRate?.id === rate.id
-                          return (
-                          <button
-                            key={rate.id}
-                            type="button"
-                            onClick={() => setSelectedRate(rate)}
-                            className={cn(
-                              'w-full flex items-center gap-3 rounded-lg border p-3 text-left text-sm transition-colors',
-                              isSelected ? 'border-red-600 bg-red-50' : 'border-gray-200 hover:border-gray-300'
-                            )}
-                          >
-                            <div className={cn(
-                              'flex h-4 w-4 shrink-0 items-center justify-center rounded-full border',
-                              isSelected ? 'border-red-600 bg-red-600' : 'border-gray-300'
-                            )}>
-                              {isSelected && <div className="h-1.5 w-1.5 rounded-full bg-white" />}
+                    {/* SA delivery options */}
+                    {!isInternational && (
+                      <>
+                        {/* Standard delivery */}
+                        {isFreeDelivery ? (
+                          <button type="button" onClick={() => setDeliveryOption('standard')}
+                            className={cn('w-full flex items-center gap-3 rounded-lg border p-3 text-left text-sm transition-colors',
+                              deliveryOption === 'standard' ? 'border-red-600 bg-red-50' : 'border-gray-200 hover:border-gray-300')}>
+                            <div className={cn('flex h-4 w-4 shrink-0 items-center justify-center rounded-full border',
+                              deliveryOption === 'standard' ? 'border-red-600 bg-red-600' : 'border-gray-300')}>
+                              {deliveryOption === 'standard' && <div className="h-1.5 w-1.5 rounded-full bg-white" />}
                             </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="font-medium text-gray-800">{rate.service_name}</p>
-                              <p className="text-xs text-gray-400">
-                                {rate.provider_slug}
-                                {rate.min_delivery_date && rate.max_delivery_date
-                                  ? ` · ${new Date(rate.min_delivery_date).toLocaleDateString('en-ZA', { day: 'numeric', month: 'short' })}–${new Date(rate.max_delivery_date).toLocaleDateString('en-ZA', { day: 'numeric', month: 'short' })}`
-                                  : ''}
-                              </p>
-                            </div>
-                            <span className="text-sm font-semibold text-gray-900">{formatCurrency(rate.total_price)}</span>
+                            <div className="flex-1"><p className="font-medium text-gray-800">Standard Delivery</p><p className="text-xs text-gray-400">3–5 business days</p></div>
+                            <span className="text-sm font-semibold text-green-600">Free</span>
                           </button>
-                        )})}
-                      </div>
-                    ) : null}
-                    </>
+                        ) : loadingRates ? (
+                          <div className="flex items-center gap-2 py-3 px-3 text-sm text-gray-500 rounded-lg border border-gray-200">
+                            <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-200 border-t-gray-500" />
+                            Fetching shipping rates…
+                          </div>
+                        ) : ratesFallback ? (
+                          <button type="button" onClick={() => setDeliveryOption('standard')}
+                            className={cn('w-full flex items-center gap-3 rounded-lg border p-3 text-left text-sm transition-colors',
+                              deliveryOption === 'standard' ? 'border-red-600 bg-red-50' : 'border-gray-200 hover:border-gray-300')}>
+                            <div className={cn('flex h-4 w-4 shrink-0 items-center justify-center rounded-full border',
+                              deliveryOption === 'standard' ? 'border-red-600 bg-red-600' : 'border-gray-300')}>
+                              {deliveryOption === 'standard' && <div className="h-1.5 w-1.5 rounded-full bg-white" />}
+                            </div>
+                            <div className="flex-1"><p className="font-medium text-gray-800">Standard Delivery</p><p className="text-xs text-gray-400">Estimated 3–5 business days</p></div>
+                            <span className="text-sm font-semibold text-gray-900">{formatCurrency(FLAT_SHIPPING_RATE)}</span>
+                          </button>
+                        ) : shippingRates.length > 0 ? (
+                          <div className="space-y-2">
+                            {shippingRates.map(rate => {
+                              const isSelected = deliveryOption === 'standard' && selectedRate?.id === rate.id
+                              return (
+                                <button key={rate.id} type="button"
+                                  onClick={() => { setDeliveryOption('standard'); setSelectedRate(rate) }}
+                                  className={cn('w-full flex items-center gap-3 rounded-lg border p-3 text-left text-sm transition-colors',
+                                    isSelected ? 'border-red-600 bg-red-50' : 'border-gray-200 hover:border-gray-300')}>
+                                  <div className={cn('flex h-4 w-4 shrink-0 items-center justify-center rounded-full border',
+                                    isSelected ? 'border-red-600 bg-red-600' : 'border-gray-300')}>
+                                    {isSelected && <div className="h-1.5 w-1.5 rounded-full bg-white" />}
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="font-medium text-gray-800">{rate.service_name}</p>
+                                    <p className="text-xs text-gray-400">
+                                      {rate.provider_slug}
+                                      {rate.min_delivery_date && rate.max_delivery_date
+                                        ? ` · ${new Date(rate.min_delivery_date).toLocaleDateString('en-ZA', { day: 'numeric', month: 'short' })}–${new Date(rate.max_delivery_date).toLocaleDateString('en-ZA', { day: 'numeric', month: 'short' })}`
+                                        : ''}
+                                    </p>
+                                  </div>
+                                  <span className="text-sm font-semibold text-gray-900">{formatCurrency(rate.total_price)}</span>
+                                </button>
+                              )
+                            })}
+                          </div>
+                        ) : null}
+
+                        {/* Overnight delivery */}
+                        <button type="button" onClick={() => setDeliveryOption('overnight')}
+                          className={cn('w-full flex items-center gap-3 rounded-lg border p-3 text-left text-sm transition-colors',
+                            deliveryOption === 'overnight' ? 'border-red-600 bg-red-50' : 'border-gray-200 hover:border-gray-300')}>
+                          <div className={cn('flex h-4 w-4 shrink-0 items-center justify-center rounded-full border',
+                            deliveryOption === 'overnight' ? 'border-red-600 bg-red-600' : 'border-gray-300')}>
+                            {deliveryOption === 'overnight' && <div className="h-1.5 w-1.5 rounded-full bg-white" />}
+                          </div>
+                          <div className="flex-1">
+                            <p className="font-medium text-gray-800">Overnight Delivery</p>
+                            <p className="text-xs text-gray-400">Next business day — South Africa only</p>
+                          </div>
+                          <span className="text-sm font-semibold text-gray-900">{formatCurrency(OVERNIGHT_SHIPPING_RATE)}</span>
+                        </button>
+                      </>
+                    )}
+
+                    {/* International delivery */}
+                    {isInternational && (
+                      <button type="button" onClick={() => setDeliveryOption('international')}
+                        className={cn('w-full flex items-center gap-3 rounded-lg border p-3 text-left text-sm transition-colors',
+                          deliveryOption === 'international' ? 'border-red-600 bg-red-50' : 'border-gray-200 hover:border-gray-300')}>
+                        <div className={cn('flex h-4 w-4 shrink-0 items-center justify-center rounded-full border',
+                          deliveryOption === 'international' ? 'border-red-600 bg-red-600' : 'border-gray-300')}>
+                          {deliveryOption === 'international' && <div className="h-1.5 w-1.5 rounded-full bg-white" />}
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-medium text-gray-800">🌍 International Delivery</p>
+                          <p className="text-xs text-gray-400">Worldwide — actual cost confirmed before dispatch</p>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-sm font-semibold text-gray-900">{formatCurrency(INTERNATIONAL_SHIPPING_ESTIMATE)}</span>
+                          <p className="text-[10px] text-gray-400">estimate</p>
+                        </div>
+                      </button>
+                    )}
+                  </div>
+
+                  {deliveryOption === 'international' && (
+                    <p className="mt-3 rounded-md bg-blue-50 border border-blue-100 px-3 py-2 text-xs text-blue-700">
+                      International shipping is quoted based on weight, dimensions, and destination. We will contact you to confirm the exact shipping cost before dispatching your order.
+                    </p>
                   )}
                 </div>
 
@@ -683,7 +803,7 @@ export default function CheckoutPage() {
 
                 <button
                   onClick={handlePlaceOrder}
-                  disabled={loading || (!collectFromOffice && !isFreeDelivery && !selectedRate && !ratesFallback)}
+                  disabled={loading || (deliveryOption === 'standard' && !isFreeDelivery && !selectedRate && !ratesFallback)}
                   className="w-full flex items-center justify-center gap-2 rounded-lg bg-red-600 py-3 text-sm font-medium text-white hover:bg-red-700 transition-colors disabled:opacity-50"
                 >
                   {loading ? (
@@ -721,6 +841,8 @@ export default function CheckoutPage() {
                     <span className="text-gray-400 italic text-xs">calculated next</span>
                   ) : loadingRates ? (
                     <span className="text-gray-400 italic text-xs">loading…</span>
+                  ) : deliveryOption === 'international' ? (
+                    <span className="text-right">{formatCurrency(shippingCost)} <span className="text-[10px] text-gray-400 block">estimate</span></span>
                   ) : (
                     <span>{formatCurrency(shippingCost)}</span>
                   )}

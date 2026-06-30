@@ -1,9 +1,9 @@
-// BUG-022 FIX: Was 'Speedy Labels' — mismatched the DB value ('SpeedyPrint') and footer branding.
+﻿// BUG-022 FIX: Was 'Speedy Labels' - mismatched the DB value ('SpeedyPrint') and footer branding.
 // Three different identities were visible simultaneously on the same page.
 // TODO: Replace this constant with a live DB read from site_settings.site_name
 // so admins can update the brand name without a code deploy.
 export const SITE_NAME = 'Speedy Print'
-export const SITE_DESCRIPTION = 'Premium custom print and fabrication solutions for business, events and brands — South Africa\'s complete print suite.'
+export const SITE_DESCRIPTION = 'Premium custom print and fabrication solutions for business, events and brands - South Africa\'s complete print suite.'
 export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || 'https://speedyprint.co.za').replace(/\/$/, '')
 
 export const VAT_RATE = 0.15 // 15% South African VAT
@@ -22,8 +22,8 @@ export const DIVISIONS = [
 ]
 
 export const HEADER_PRODUCTS = [
-  { href: '/labels', label: 'Labels', description: 'Custom labels, stickers, wristbands & car magnets', icon: 'Tag' },
-  { href: '/race-numbers', label: 'Race Numbers', description: 'Professional race numbers & event tags', icon: 'Hash' },
+  { href: '/labels', label: 'Labels', description: 'Custom labels, stickers & car magnets', icon: 'Tag' },
+  { href: '/race-numbers', label: 'Race Numbers', description: 'Professional race numbers, event tags & wristbands', icon: 'Hash' },
   { href: '/mtb-boards', label: 'MTB & Boards', description: 'MTB boards, bike flaps & Correx boards', icon: 'Bike' },
   { href: '/print', label: 'Print', description: 'Business cards, flyers, posters & sleeves', icon: 'Printer' },
   { href: '/stamps', label: 'Stamps', description: 'Self-inking, pre-inked & traditional stamps', icon: 'Stamp' },
@@ -73,41 +73,43 @@ export const MAX_CSV_ROWS = 5000
 
 // --- V2 Additions ---
 
-export const WHATSAPP_NUMBER = '27110271811'
+export const WHATSAPP_NUMBER = '27660725745'
 export const WHATSAPP_URL = `https://wa.me/${WHATSAPP_NUMBER}`
 export const FREE_DELIVERY_THRESHOLD = 500 // R500
 export const FLAT_SHIPPING_RATE = 85 // R85
+export const OVERNIGHT_SHIPPING_RATE = 250 // R250 — next business day SA
+export const INTERNATIONAL_SHIPPING_ESTIMATE = 1500 // R1,500 starting estimate — confirmed after order
 export const MAX_CART_QUANTITY = 10000
 
 // V2 Sticker/Label Divisions
 export const V2_DIVISIONS = [
-  { key: 'labels' as const, name: 'Labels & Stickers', description: 'Custom labels, stickers, vinyl decals, and wristbands', icon: 'Tag', color: '#E30613' },
+  { key: 'labels' as const, name: 'Labels & Stickers', description: 'Custom labels, stickers, and vinyl decals', icon: 'Tag', color: '#E30613' },
   { key: 'print' as const, name: 'Print & Stationery', description: 'Flyers, business cards, coffee sleeves, and more', icon: 'Printer', color: '#1E293B' },
-  { key: 'race-numbers' as const, name: 'Race & Event', description: 'Race numbers, event tags, and timing bibs', icon: 'Hash', color: '#14B8A6' },
+  { key: 'race-numbers' as const, name: 'Race & Event', description: 'Race numbers, event tags, wristbands, and timing bibs', icon: 'Hash', color: '#14B8A6' },
   { key: 'mtb-boards' as const, name: 'MTB & Boards', description: 'MTB number boards, bike flaps, and Correx boards', icon: 'Bike', color: '#8B5CF6' },
   { key: 'stamps' as const, name: 'Stamps', description: 'Self-inking stamps and custom rubber stamps', icon: 'Stamp', color: '#EC4899' },
   { key: 'laser' as const, name: 'Laser & NFC', description: 'Laser-cut acrylic signs, engraved gifts, and NFC stands', icon: 'Diamond', color: '#0EA5E9' },
   { key: 'trophies' as const, name: 'Trophies', description: 'Custom trophies, medals, and awards', icon: 'Award', color: '#D97706' },
 ]
 
-// Product Families — grouped navigation for the homepage
+// Product Families - grouped navigation for the homepage
 export const PRODUCT_FAMILIES = [
   {
     key: 'labels-stickers',
     name: 'Labels & Stickers',
-    description: 'Custom labels, stickers, wristbands, and car magnets for any surface or application.',
+    description: 'Custom labels, stickers, and car magnets for any surface or application.',
     imageUrl: '/images/products/custom-labels.png',
     icon: 'Tag',
-    products: ['Custom Labels', 'Vinyl Stickers', 'Wristbands', 'Car Magnets'],
+    products: ['Custom Labels', 'Vinyl Stickers', 'Car Magnets'],
     divisionKey: 'labels',
   },
   {
     key: 'event-products',
     name: 'Race & Event',
-    description: 'Race numbers, event tags, and MTB boards built for performance days.',
+    description: 'Race numbers, event tags, wristbands, and MTB boards built for performance days.',
     imageUrl: '/images/products/race-bibs.png',
     icon: 'Hash',
-    products: ['Race Numbers', 'Event Tags'],
+    products: ['Race Numbers', 'Event Tags', 'Wristbands'],
     divisionKey: 'race-numbers',
   },
   {
