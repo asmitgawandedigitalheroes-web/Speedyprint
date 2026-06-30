@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useEffect, useRef, useState } from 'react'
 import { usePathname } from 'next/navigation'
@@ -37,8 +37,12 @@ export function NavigationLoader() {
         const href = anchor.getAttribute('href')!
         if (href === pathname) return
         startProgress()
-      } else if (button && (button.type === 'submit' || button.getAttribute('data-nav') === 'true')) {
-        startProgress()
+      } else if (button) {
+        if (button.getAttribute('data-nav') === 'true') {
+          startProgress()
+        } else if (button.type === 'submit' && button.closest('form')) {
+          startProgress()
+        }
       }
     }
 
@@ -112,7 +116,7 @@ export function NavigationLoader() {
         />
       </div>
 
-      {/* Subtle page overlay — dims content slightly during navigation */}
+      {/* Subtle page overlay - dims content slightly during navigation */}
       <div
         className="fixed inset-0 z-[9998] pointer-events-none bg-white"
         style={{
