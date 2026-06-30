@@ -108,9 +108,10 @@ export default async function ProductPage({ params, searchParams: searchParamsPr
 
   const division = DIVISIONS.find((d) => d.key === typedProduct.division)
 
-  // Build feature bullets from description
+  // Build feature bullets from description — split only on ". " or "! " followed by a capital letter
+  // to avoid splitting decimal values like "0.9mm" or abbreviations.
   const descriptionBullets = typedProduct.description
-    ? typedProduct.description.split(/[.!]/).map(s => s.trim()).filter(s => s.length > 10).slice(0, 4)
+    ? typedProduct.description.split(/[.!]\s+(?=[A-Z])/).map(s => s.trim()).filter(s => s.length > 10).slice(0, 4)
     : []
 
   // Gallery images per product (real client work samples)

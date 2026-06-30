@@ -126,16 +126,6 @@ export function PriceCalculator({
         </span>
       </div>
 
-      {price!.minimumApplied && (
-        <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2">
-          <p className="text-xs text-amber-800">
-            A minimum order of{' '}
-            <span className="font-semibold">{formatCurrency(price!.minimumValue!)}</span>{' '}
-            applies - increase your size or quantity to proceed.
-          </p>
-        </div>
-      )}
-
       <p className="text-xs text-brand-text-muted">Excl. VAT. Shipping calculated at checkout.</p>
     </div>
   )

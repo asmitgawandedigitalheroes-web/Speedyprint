@@ -1,6 +1,6 @@
 'use client'
 
-import { use, useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import {
   ArrowLeft,
@@ -18,7 +18,7 @@ import {
 import { createClient } from '@/lib/supabase/client'
 import type { ProductTemplate, TemplateParameter } from '@/types'
 import { useCart } from '@/hooks/useCart'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter, useSearchParams, useParams } from 'next/navigation'
 import { MAX_CSV_ROWS } from '@/lib/utils/constants'
 
 type Step = 'upload' | 'preview' | 'mapping' | 'processing' | 'complete'
@@ -38,13 +38,9 @@ interface CsvJobResult {
   completed_at: string | null
 }
 
-interface DesignerCsvPageProps {
-  params: Promise<{ templateId: string }>
-}
-
-
-export default function DesignerCsvPage({ params }: DesignerCsvPageProps) {
-  const { templateId } = use(params)
+export default function DesignerCsvPage() {
+  const params = useParams<{ templateId: string }>()
+  const templateId = params.templateId
   const searchParams = useSearchParams()
   const router = useRouter()
   const designIdParam = searchParams.get('design')

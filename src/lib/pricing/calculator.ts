@@ -243,8 +243,20 @@ export function calculatePrice(
     amount: realSubtotal,
   })
 
-  // Setup fee - one-time charge per order line, not multiplied by quantity
+  // Flat per-order add-ons (conditional — matched like option_addon, charged once like setup_fee)
+  // Used for: safety pins boxes, tare-off strips, any flat per-order conditional add-on.
   let setupFee = 0
+  const flatOrderAddonRules = activeRules.filter((r) => r.rule_type === 'flat_order_addon')
+  for (const rule of flatOrderAddonRules) {
+    const cond = rule.conditions as Record<string, string>
+    const condKey = Object.keys(cond).find((k) => k !== 'description')
+    if (condKey && params[condKey] === cond[condKey]) {
+      setupFee += rule.price_value
+      breakdown.push({ label: cond[condKey], amount: rule.price_value })
+    }
+  }
+
+  // Setup fee - one-time charge per order line, not multiplied by quantity
   const setupFeeRules = activeRules.filter((r) => r.rule_type === 'setup_fee')
   for (const rule of setupFeeRules) {
     setupFee += rule.price_value
