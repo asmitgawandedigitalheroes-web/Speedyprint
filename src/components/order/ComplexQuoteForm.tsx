@@ -5,7 +5,6 @@ import { ArrowRight, Loader2, Send, ShieldCheck, CheckCircle2, Palette } from 'l
 import { toast } from 'sonner'
 import { ArtworkUpload } from '@/components/order/ArtworkUpload'
 
-const FINISH_OPTIONS = ['Gloss Lamination', 'Matt Lamination', 'Uncoated', 'Not Sure']
 const PRODUCT_TYPES = [
   'Labels',
   'Race Numbers',
@@ -71,7 +70,6 @@ export function ComplexQuoteForm({ defaultProductType }: ComplexQuoteFormProps) 
     quantity: '',
     dimensions: '',
     material: '',
-    finish: '',
     special_instructions: '',
     referral: '',
   })
@@ -133,7 +131,7 @@ export function ComplexQuoteForm({ defaultProductType }: ComplexQuoteFormProps) 
           onClick={() => {
             setSubmitted(false)
             setArtworkFile(null)
-            setForm({ full_name: '', company: '', email: '', phone: '', event_name: '', event_date: '', delivery_date: '', product_type: defaultProductType ?? '', quantity: '', dimensions: '', material: '', finish: '', special_instructions: '', referral: '' })
+            setForm({ full_name: '', company: '', email: '', phone: '', event_name: '', event_date: '', delivery_date: '', product_type: defaultProductType ?? '', quantity: '', dimensions: '', material: '', special_instructions: '', referral: '' })
           }}
           className="mt-6 inline-flex items-center gap-2 rounded-md bg-brand-primary px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-primary-dark"
         >
@@ -223,13 +221,6 @@ export function ComplexQuoteForm({ defaultProductType }: ComplexQuoteFormProps) 
             ) : (
               <input type="text" placeholder="e.g. Acrylic, Timber" value={form.material} onChange={(e) => set('material', e.target.value)} disabled={loading} className="w-full rounded-md border border-gray-200 px-4 py-2.5 text-sm focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary disabled:opacity-50" />
             )}
-          </div>
-          <div className="sm:col-span-2">
-            <label className="mb-1.5 block text-sm font-medium text-brand-text">Finish</label>
-            <select value={form.finish} onChange={(e) => set('finish', e.target.value)} disabled={loading} className="w-full rounded-md border border-gray-200 bg-white px-4 py-2.5 text-sm focus:border-brand-primary focus:outline-none focus:ring-1 focus:ring-brand-primary disabled:opacity-50">
-              <option value="">Select finish (optional)</option>
-              {FINISH_OPTIONS.map((f) => <option key={f} value={f}>{f}</option>)}
-            </select>
           </div>
         </div>
       </div>

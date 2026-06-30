@@ -19,8 +19,8 @@ const QUICK_LINKS = [
 ]
 
 const PRODUCT_LINKS = [
-  { href: '/labels', label: 'Labels, Stickers & Wristbands' },
-  { href: '/race-numbers', label: 'Race Numbers & Event Tags' },
+  { href: '/labels', label: 'Labels & Stickers' },
+  { href: '/race-numbers', label: 'Race Numbers, Event Tags & Wristbands' },
   { href: '/mtb-boards', label: 'MTB Boards & Correx' },
   { href: '/stamps', label: 'Stamps' },
   { href: '/laser', label: 'Laser & NFC Stands' },
@@ -194,6 +194,15 @@ export function Footer() {
               </Link>
             </div>
           </div>
+          <p className="mt-4 text-center text-xs text-white/40">
+            Created with love by{' '}
+            <a
+              href="https://digitalheroesco.com"
+              className="transition-colors hover:text-white/70"
+            >
+              Digital Heroes
+            </a>
+          </p>
         </div>
       </div>
     </footer>

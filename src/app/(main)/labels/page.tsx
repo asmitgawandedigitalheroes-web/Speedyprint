@@ -26,9 +26,9 @@ const getLabelProducts = unstable_cache(
 )
 
 export const metadata: Metadata = {
-  title: 'Labels, Stickers & Wristbands',
+  title: 'Labels & Stickers',
   description:
-    'Custom labels, stickers, wristbands and product packaging — 300+ materials, waterproof options, fast 3–5 day turnaround. Digital proof included.',
+    'Custom labels, stickers and product packaging — 300+ materials, waterproof options, fast 3–5 day turnaround. Digital proof included.',
 }
 
 const TRUST_POINTS = [
