@@ -48,6 +48,17 @@ export function getArtboardScale(): number {
   return canvasDimensions ? canvasDimensions.dpi / 72 : 1
 }
 
+/**
+ * Clamp a canvas-pixel size so a newly added element never exceeds `fraction` of the
+ * artboard's smaller dimension. Prevents elements from spawning outside the artboard
+ * on small labels (e.g. 10×10mm @ 300 DPI = only ~118px canvas pixels).
+ */
+function clampToArtboard(size: number, fraction = 0.5): number {
+  const { artboardWidth, artboardHeight } = useEditorStore.getState()
+  const maxDim = Math.min(artboardWidth, artboardHeight) * fraction
+  return Math.min(size, Math.max(maxDim, 4)) // floor of 4px so elements are always visible
+}
+
 /* ──────────────────────── Text ──────────────────────── */
 
 export function addText(
@@ -65,16 +76,23 @@ export function addText(
 ) {
   const center = getArtboardCenter()
   const s = getArtboardScale()
-  // Scale pt/px values to the artboard's print DPI so text appears at the correct physical size
-  const fontSize = Math.round((options?.fontSize ?? 24) * s)
+  const { artboardWidth, artboardHeight, canvasDimensions } = useEditorStore.getState()
+  // Constrain text to safe zone (blue dotted box). Fall back to 90% of artboard if no safe zone.
+  const safeInset = canvasDimensions?.safeZonePx ?? Math.round(Math.min(artboardWidth, artboardHeight) * 0.05)
+  const safeWidth = artboardWidth - safeInset * 2
+  const safeHeight = artboardHeight - safeInset * 2
+  // Scale font size by DPI, then clamp so text never exceeds 25% of the safe zone height.
+  const scaledFontSize = Math.round((options?.fontSize ?? 24) * s)
+  const fontSize = Math.min(scaledFontSize, Math.max(Math.round(safeHeight * 0.25), 4))
   const strokeWidth = options?.strokeWidth ? options.strokeWidth * s : 0
-  // No fixed width — let Fabric auto-size to the text content.
-  // Users can drag the handle to widen and enable word-wrap.
+  // Initial width = 90% of safe zone so text wraps inside the blue dotted boundary.
+  const textboxWidth = safeWidth * 0.9
   const text = new Textbox(options?.text ?? 'Double-click to edit', {
     left: center.x,
     top: center.y,
     originX: 'center',
     originY: 'center',
+    width: textboxWidth,
     fontSize,
     fill: options?.fill ?? '#000000',
     fontFamily: options?.fontFamily ?? 'Inter, sans-serif',
@@ -185,7 +203,7 @@ export async function addSVGToCanvas(canvas: FabricCanvas, svgString: string, ma
 export function addRect(canvas: FabricCanvas) {
   const center = getArtboardCenter()
   const s = getArtboardScale()
-  const size = Math.round(100 * s)
+  const size = clampToArtboard(Math.round(100 * s), 0.5)
   const half = Math.round(size / 2)
   const rect = new Rect({
     left: center.x - half,
@@ -195,8 +213,8 @@ export function addRect(canvas: FabricCanvas) {
     fill: '#4F46E5',
     stroke: '#3730A3',
     strokeWidth: Math.max(1, Math.round(s)),
-    rx: Math.round(4 * s),
-    ry: Math.round(4 * s),
+    rx: Math.round(clampToArtboard(4 * s, 0.05)),
+    ry: Math.round(clampToArtboard(4 * s, 0.05)),
     originX: 'left',
     originY: 'top',
   })
@@ -209,7 +227,7 @@ export function addRect(canvas: FabricCanvas) {
 export function addCircle(canvas: FabricCanvas) {
   const center = getArtboardCenter()
   const s = getArtboardScale()
-  const radius = Math.round(40 * s)
+  const radius = clampToArtboard(Math.round(40 * s), 0.25)
   const circle = new Circle({
     left: center.x - radius,
     top: center.y - radius,
@@ -229,7 +247,7 @@ export function addCircle(canvas: FabricCanvas) {
 export function addTriangle(canvas: FabricCanvas) {
   const center = getArtboardCenter()
   const s = getArtboardScale()
-  const size = Math.round(80 * s)
+  const size = clampToArtboard(Math.round(80 * s), 0.5)
   const half = Math.round(size / 2)
   const tri = new Triangle({
     left: center.x - half,
@@ -251,7 +269,7 @@ export function addTriangle(canvas: FabricCanvas) {
 export function addLine(canvas: FabricCanvas) {
   const center = getArtboardCenter()
   const s = getArtboardScale()
-  const half = Math.round(60 * s)
+  const half = clampToArtboard(Math.round(60 * s), 0.4)
   const line = new Line(
     [center.x - half, center.y, center.x + half, center.y],
     {
@@ -268,7 +286,7 @@ export function addLine(canvas: FabricCanvas) {
 export function addStar(canvas: FabricCanvas) {
   const center = getArtboardCenter()
   const s = getArtboardScale()
-  const cx = 0, cy = 0, outerR = Math.round(40 * s), innerR = Math.round(18 * s), points = 5
+  const cx = 0, cy = 0, outerR = clampToArtboard(Math.round(40 * s), 0.25), innerR = Math.round(outerR * 0.45), points = 5
   const starPoints: { x: number; y: number }[] = []
   for (let i = 0; i < points * 2; i++) {
     const r = i % 2 === 0 ? outerR : innerR

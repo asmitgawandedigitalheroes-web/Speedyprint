@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useAuth } from '@/hooks/useAuth'
 import { createClient } from '@/lib/supabase/client'
 import { formatDate } from '@/lib/utils/format'
@@ -185,10 +186,13 @@ export default function SavedDesignsPage() {
                   {/* Thumbnail */}
                   <div className="relative aspect-square overflow-hidden bg-[#F5F6F7]">
                     {design.thumbnail_url ? (
-                      <img
+                      <Image
                         src={design.thumbnail_url}
                         alt={design.name}
-                        className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                        fill
+                        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                        className="object-cover transition duration-300 group-hover:scale-105"
+                        loading="lazy"
                       />
                     ) : (
                       <div className="flex h-full items-center justify-center">

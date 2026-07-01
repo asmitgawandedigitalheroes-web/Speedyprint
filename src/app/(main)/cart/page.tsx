@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { useCart } from '@/hooks/useCart'
 import { formatCurrency } from '@/lib/utils/format'
 import { livePricing } from '@/hooks/useSiteSettings'
@@ -100,9 +101,9 @@ export default function CartPage() {
                 </button>
 
                 <div className="flex flex-1 gap-4">
-                  <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-md border border-gray-100 bg-brand-bg overflow-hidden">
+                  <div className="relative flex h-20 w-20 shrink-0 items-center justify-center rounded-md border border-gray-100 bg-brand-bg overflow-hidden">
                     {item.thumbnail_url ? (
-                      <img src={item.thumbnail_url} alt={item.product_name} className="h-full w-full object-cover" />
+                      <Image src={item.thumbnail_url} alt={item.product_name} fill sizes="80px" className="object-cover" loading="lazy" />
                     ) : (
                       <span className="text-xs text-brand-text-muted">Preview</span>
                     )}

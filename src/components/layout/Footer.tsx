@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { Facebook, Instagram, Linkedin, Mail, Phone, MapPin, Clock } from 'lucide-react'
+import { Facebook, Instagram, Mail, Phone, MapPin, Clock } from 'lucide-react'
 import { SITE_NAME, WHATSAPP_URL } from '@/lib/utils/constants'
 import { useSiteSettings } from '@/hooks/useSiteSettings'
 
@@ -40,14 +40,12 @@ export function Footer() {
     ? `https://wa.me/${whatsappNumber.replace(/[^0-9]/g, '')}`
     : WHATSAPP_URL
   const facebookUrl = settings.social_facebook || 'https://facebook.com/speedyprint'
-  const instagramUrl = settings.social_instagram || 'https://instagram.com/speedyprint'
-  const linkedinUrl = settings.social_twitter || 'https://linkedin.com/company/speedyprint'
+  const instagramUrl = settings.social_instagram || 'https://www.instagram.com/speedylabels/'
   const siteName = settings.site_name || SITE_NAME
 
   const SOCIAL_LINKS = [
     { href: facebookUrl, icon: Facebook, label: 'Facebook' },
     { href: instagramUrl, icon: Instagram, label: 'Instagram' },
-    { href: linkedinUrl, icon: Linkedin, label: 'LinkedIn' },
   ]
 
   return (

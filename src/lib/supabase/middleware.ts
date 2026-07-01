@@ -8,21 +8,28 @@ export async function updateSession(request: NextRequest) {
   const ip = request.ip ?? request.headers.get('x-forwarded-for')?.split(',')[0] ?? '127.0.0.1'
 
   // BUG-013/028 FIX: Rate limit auth pages to prevent brute-force and DDoS
-  if (pathname === '/login' || pathname === '/register' || pathname === '/reset-password') {
+  const isAuthPage = pathname === '/login' || pathname === '/register' || pathname === '/reset-password'
+  if (isAuthPage) {
     const isAllowed = await rateLimit(`auth_page:${ip}`, 30, 60 * 1000) // 30 per minute
     if (!isAllowed) {
       return new NextResponse('Too Many Requests', { status: 429 })
     }
   }
 
-  let supabaseResponse = NextResponse.next({ request })
+  // Routes that require auth checks (redirect logic, role verification)
+  const requiresAuth =
+    pathname.startsWith('/admin') ||
+    pathname.startsWith('/account') ||
+    pathname.startsWith('/designer')
 
   // Guard: if Supabase env vars are missing, skip auth checks
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   if (!supabaseUrl || !supabaseAnonKey) {
-    return supabaseResponse
+    return NextResponse.next({ request })
   }
+
+  let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(
     supabaseUrl,
@@ -45,9 +52,13 @@ export async function updateSession(request: NextRequest) {
     }
   )
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  // Only call getUser() for routes that actually need auth state.
+  // Public pages (/, /products, /contact, etc.) skip this ~50–80ms round-trip.
+  let user = null
+  if (requiresAuth || isAuthPage) {
+    const { data } = await supabase.auth.getUser()
+    user = data.user
+  }
 
   // pathname is already defined at the top
 

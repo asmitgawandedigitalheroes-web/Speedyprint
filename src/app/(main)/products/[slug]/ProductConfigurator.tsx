@@ -465,11 +465,7 @@ export function ProductConfigurator({
               disabled={navigatingState !== null}
               className="flex-1 bg-brand-primary text-white hover:bg-brand-primary-dark h-16 sm:h-12 text-sm font-bold"
             >
-              {navigatingState === 'design' ? (
-                <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Preparing Editor...</>
-              ) : (
-                'Add to Cart / Start Design'
-              )}
+              Add to Cart / Start Design
             </Button>
             <Button
               variant="outline"
