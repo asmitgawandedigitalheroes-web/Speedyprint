@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { Plus, Pencil, Trash2, Package } from 'lucide-react'
 import { toast } from 'sonner'
@@ -123,11 +124,16 @@ export default function AdminProductsPage() {
                     <td className="px-5 py-3.5">
                       <div className="flex items-center gap-3">
                         {(product.image_url || (product.images && product.images.length > 0)) ? (
-                          <img
-                            src={product.image_url || product.images?.[0] || ''}
-                            alt={product.name}
-                            className="h-10 w-10 rounded-lg border border-gray-100 object-cover"
-                          />
+                          <div className="relative h-10 w-10 shrink-0 rounded-lg border border-gray-100 overflow-hidden">
+                            <Image
+                              src={product.image_url || product.images?.[0] || ''}
+                              alt={product.name}
+                              fill
+                              sizes="40px"
+                              className="object-cover"
+                              loading="lazy"
+                            />
+                          </div>
                         ) : (
                           <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-gray-100 bg-gray-50 text-[10px] font-medium text-gray-400">
                             IMG

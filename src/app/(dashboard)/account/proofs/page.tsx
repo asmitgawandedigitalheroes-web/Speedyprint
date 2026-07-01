@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useAuth } from '@/hooks/useAuth'
 import { createClient } from '@/lib/supabase/client'
 import { formatDate } from '@/lib/utils/format'
@@ -219,16 +220,13 @@ export default function ProofsPage() {
                 {/* Thumbnail */}
                 <div className="relative h-36 bg-[#F5F6F7]">
                   {proof.proof_thumbnail_url ? (
-                    <img
+                    <Image
                       src={proof.proof_thumbnail_url}
                       alt=""
-                      className="h-full w-full object-contain p-3"
-                      onError={(e) => {
-                        const target = e.currentTarget
-                        target.style.display = 'none'
-                        const fallback = target.nextElementSibling as HTMLElement | null
-                        if (fallback) fallback.style.display = 'flex'
-                      }}
+                      fill
+                      sizes="288px"
+                      className="object-contain p-3"
+                      loading="lazy"
                     />
                   ) : null}
                   <div

@@ -72,10 +72,10 @@ export function ProductDetailClient({
     <div className="grid grid-cols-1 gap-0 lg:grid-cols-[1fr_480px] xl:grid-cols-[1fr_520px]">
 
       {/* ── LEFT: Image panel ─────────────────────────────────────────── */}
-      <div className="flex flex-col items-center">
+      <div className="flex flex-col items-start">
 
         {/* Main image */}
-        <div className="relative w-full max-w-lg aspect-square overflow-hidden rounded-2xl bg-gray-50 ring-1 ring-gray-200">
+        <div className="relative w-full max-w-sm aspect-square overflow-hidden rounded-2xl bg-gray-50 ring-1 ring-gray-200">
           {activeImage ? (
             <Image
               src={activeImage.url}
@@ -143,7 +143,7 @@ export function ProductDetailClient({
 
         {/* Thumbnail grid */}
         {allImages.length > 1 && (
-          <div className="mt-3 w-full max-w-lg grid grid-cols-4 gap-2">
+          <div className="mt-3 w-full max-w-sm grid grid-cols-4 gap-2">
             {allImages.map((img, i) => (
               <button
                 key={img.url}

@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { unstable_cache } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { DIVISIONS, SITE_URL, SITE_NAME } from '@/lib/utils/constants'
@@ -131,11 +132,7 @@ export default async function ProductPage({ params, searchParams: searchParamsPr
       { src: '/images/products/gallery/custom-labels/joye-serum.jpg',          alt: 'Joye hair serum label' },
       { src: '/images/products/gallery/custom-labels/pure-bloom-body-oil.jpg', alt: 'Pure Bloom Body Oil label' },
     ],
-    'coffee-cup-sleeves': [
-      { src: '/images/products/gallery/coffee-cup-sleeves/tigris-wealth.jpg',        alt: 'Tigris Wealth coffee sleeve' },
-      { src: '/images/products/gallery/coffee-cup-sleeves/prego-plates.jpg',         alt: 'Prego & Plates coffee sleeve' },
-      { src: '/images/products/gallery/coffee-cup-sleeves/carmella-sir-gaspard.jpg', alt: 'Carmella by Sir Gaspard coffee sleeve' },
-    ],
+    'coffee-cup-sleeves': [],
     'race-numbers': [
       { src: '/images/products/gallery/race-numbers/cbz-marathon.jpg', alt: 'CBZ Marathon race number' },
     ],
@@ -322,10 +319,13 @@ export default async function ProductPage({ params, searchParams: searchParamsPr
               {galleryImages.map((img, i) => (
                 <div key={i} className="group overflow-hidden rounded-xl bg-gray-50 ring-1 ring-gray-100 transition-all hover:ring-brand-primary/30 hover:shadow-md">
                   <div className="aspect-[4/3] overflow-hidden">
-                    <img
+                    <Image
                       src={img.src}
                       alt={img.alt}
-                      className="h-full w-full object-cover object-center transition-transform duration-500 group-hover:scale-105"
+                      fill
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                      className="object-cover object-center transition-transform duration-500 group-hover:scale-105"
+                      loading="lazy"
                     />
                   </div>
                 </div>
@@ -357,7 +357,7 @@ export default async function ProductPage({ params, searchParams: searchParamsPr
                 >
                   {r.image_url ? (
                     <div className="relative mb-3 aspect-square overflow-hidden rounded-lg bg-white">
-                      <img src={r.image_url} alt={r.name} className="h-full w-full object-cover object-center" />
+                      <Image src={r.image_url} alt={r.name} fill sizes="(max-width: 640px) 50vw, 25vw" className="object-cover object-center" loading="lazy" />
                     </div>
                   ) : (
                     <div className="mb-3 flex aspect-square items-center justify-center rounded-lg bg-white text-3xl font-bold text-gray-100">

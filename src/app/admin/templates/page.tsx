@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import {
   Plus, Pencil, Trash2, FileText, LayoutGrid, List,
   Search, X, SlidersHorizontal, CheckCircle2, CircleDashed,
@@ -342,10 +343,13 @@ export default function AdminTemplatesPage() {
               {/* Thumbnail */}
               <div className="relative h-44 bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden">
                 {t.image_url ? (
-                  <img
+                  <Image
                     src={t.image_url}
                     alt={t.name}
-                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    fill
+                    sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                    className="object-cover transition-transform duration-300 group-hover:scale-105"
+                    loading="lazy"
                   />
                 ) : (
                   <div className="flex h-full w-full flex-col items-center justify-center gap-2 text-gray-300">
@@ -450,11 +454,16 @@ export default function AdminTemplatesPage() {
                   <td className="px-5 py-3.5">
                     <div className="flex items-center gap-3">
                       {t.image_url ? (
-                        <img
-                          src={t.image_url}
-                          alt={t.name}
-                          className="h-11 w-11 rounded-lg border object-cover shadow-sm"
-                        />
+                        <div className="relative h-11 w-11 shrink-0 rounded-lg border overflow-hidden shadow-sm">
+                          <Image
+                            src={t.image_url}
+                            alt={t.name}
+                            fill
+                            sizes="44px"
+                            className="object-cover"
+                            loading="lazy"
+                          />
+                        </div>
                       ) : (
                         <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border bg-gradient-to-br from-gray-50 to-gray-100">
                           <FileText className="h-5 w-5 text-gray-300" />

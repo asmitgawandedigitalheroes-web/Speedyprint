@@ -221,7 +221,7 @@ export default async function HomePage() {
 
                   {/* Coffee Sleeves */}
                   <Link
-                    href="/products?division=print"
+                    href="/products/coffee-cup-sleeves"
                     className="group relative block aspect-[4/5] overflow-hidden rounded-2xl bg-white shadow-xl ring-1 ring-black/5 transition-transform duration-300 hover:-translate-y-1 hover:shadow-2xl"
                   >
                     <Image
