@@ -79,25 +79,36 @@ function SkeletonBox({ className, style }: { className?: string; style?: React.C
 function EditorSkeleton() {
   return (
     <div className="h-screen flex flex-col bg-ed-bg overflow-hidden">
-      {/* Toolbar — breadcrumb left, title centre, icon buttons + Save/Export/AddToCart right */}
+      {/* Toolbar */}
       <div className="h-11 border-b border-ed-border bg-ed-surface flex items-center gap-2 px-3 shrink-0">
-        <SkeletonBox className="w-28 h-5 rounded" />
-        <SkeletonBox className="w-px h-5 rounded-none" />
-        <SkeletonBox className="w-36 h-5 rounded" />
-        <div className="flex-1" />
-        <SkeletonBox className="w-7 h-7 rounded" />
-        <SkeletonBox className="w-7 h-7 rounded" />
-        <SkeletonBox className="w-7 h-7 rounded" />
-        <SkeletonBox className="w-7 h-7 rounded" />
-        <SkeletonBox className="w-px h-5 rounded-none mx-1" />
-        <SkeletonBox className="w-16 h-7 rounded-md" />
-        <SkeletonBox className="w-20 h-7 rounded-md" />
-        <SkeletonBox className="w-24 h-7 rounded-md" />
+        {/* Mobile toolbar: back arrow + title + one action button */}
+        <div className="flex items-center gap-2 md:hidden w-full">
+          <SkeletonBox className="w-7 h-7 rounded" />
+          <SkeletonBox className="w-32 h-5 rounded" />
+          <div className="flex-1" />
+          <SkeletonBox className="w-7 h-7 rounded" />
+          <SkeletonBox className="w-20 h-7 rounded-md" />
+        </div>
+        {/* Desktop toolbar */}
+        <div className="hidden md:flex items-center gap-2 w-full">
+          <SkeletonBox className="w-28 h-5 rounded" />
+          <SkeletonBox className="w-px h-5 rounded-none" />
+          <SkeletonBox className="w-36 h-5 rounded" />
+          <div className="flex-1" />
+          <SkeletonBox className="w-7 h-7 rounded" />
+          <SkeletonBox className="w-7 h-7 rounded" />
+          <SkeletonBox className="w-7 h-7 rounded" />
+          <SkeletonBox className="w-7 h-7 rounded" />
+          <SkeletonBox className="w-px h-5 rounded-none mx-1" />
+          <SkeletonBox className="w-16 h-7 rounded-md" />
+          <SkeletonBox className="w-20 h-7 rounded-md" />
+          <SkeletonBox className="w-24 h-7 rounded-md" />
+        </div>
       </div>
 
       <div className="flex-1 flex overflow-hidden">
-        {/* Left icon rail — narrow, icon + label for each tool */}
-        <div className="w-14 border-r border-ed-border bg-ed-surface flex flex-col items-center gap-0 py-2 shrink-0">
+        {/* Desktop: left icon rail */}
+        <div className="hidden md:flex w-14 border-r border-ed-border bg-ed-surface flex-col items-center gap-0 py-2 shrink-0">
           {[...Array(9)].map((_, i) => (
             <div key={i} className="flex flex-col items-center gap-1 py-2 w-full px-1">
               <SkeletonBox className="w-5 h-5 rounded" />
@@ -106,27 +117,25 @@ function EditorSkeleton() {
           ))}
         </div>
 
-        {/* Canvas — checkered background matching actual editor */}
+        {/* Canvas — full width on mobile */}
         <div
           className="flex-1 flex items-center justify-center"
           style={{
-            backgroundImage:
-              'repeating-conic-gradient(#b0b0b0 0% 25%, #c8c8c8 0% 50%)',
+            backgroundImage: 'repeating-conic-gradient(#b0b0b0 0% 25%, #c8c8c8 0% 50%)',
             backgroundSize: '20px 20px',
           }}
         >
-          {/* Artboard placeholder */}
-          <div className="bg-white shadow-2xl" style={{ width: '42%', aspectRatio: '1 / 1' }} />
+          {/* Artboard placeholder — taller on mobile to reflect portrait canvas */}
+          <div className="bg-white shadow-2xl md:hidden" style={{ width: '70%', aspectRatio: '3 / 4' }} />
+          <div className="bg-white shadow-2xl hidden md:block" style={{ width: '42%', aspectRatio: '1 / 1' }} />
         </div>
 
-        {/* Right sidebar — PREVIEW / BACKGROUND / CMYK COLOURS sections */}
-        <div className="w-64 border-l border-ed-border bg-ed-surface flex flex-col gap-0 shrink-0 overflow-hidden">
-          {/* PREVIEW section */}
+        {/* Desktop: right sidebar */}
+        <div className="hidden md:flex w-64 border-l border-ed-border bg-ed-surface flex-col gap-0 shrink-0 overflow-hidden">
           <div className="p-3 border-b border-ed-border">
             <SkeletonBox className="w-16 h-3 rounded mb-3" />
             <SkeletonBox className="w-full rounded" style={{ aspectRatio: '1 / 1' }} />
           </div>
-          {/* BACKGROUND section */}
           <div className="p-3 border-b border-ed-border">
             <SkeletonBox className="w-24 h-3 rounded mb-3" />
             <div className="flex items-center gap-2">
@@ -134,7 +143,6 @@ function EditorSkeleton() {
               <SkeletonBox className="flex-1 h-8 rounded" />
             </div>
           </div>
-          {/* CMYK COLOURS section */}
           <div className="p-3">
             <SkeletonBox className="w-28 h-3 rounded mb-3" />
             <div className="grid grid-cols-6 gap-1">
@@ -146,13 +154,23 @@ function EditorSkeleton() {
         </div>
       </div>
 
-      {/* Status bar — object count + coords left, zoom right */}
-      <div className="h-7 border-t border-ed-border bg-ed-surface flex items-center gap-3 px-3 shrink-0">
+      {/* Desktop: status bar */}
+      <div className="hidden md:flex h-7 border-t border-ed-border bg-ed-surface items-center gap-3 px-3 shrink-0">
         <SkeletonBox className="w-16 h-3 rounded" />
         <SkeletonBox className="w-24 h-3 rounded" />
         <div className="flex-1" />
         <SkeletonBox className="w-10 h-3 rounded" />
         <SkeletonBox className="w-10 h-3 rounded" />
+      </div>
+
+      {/* Mobile: bottom bar — 3 buttons matching MobileBottomBar */}
+      <div className="md:hidden h-16 border-t border-ed-border bg-white flex items-center shrink-0">
+        {[['Edit'], ['Layers'], ['Properties']].map(([label]) => (
+          <div key={label} className="flex flex-col items-center justify-center flex-1 gap-1.5">
+            <SkeletonBox className="w-6 h-6 rounded" />
+            <SkeletonBox className="w-12 h-2 rounded" />
+          </div>
+        ))}
       </div>
     </div>
   )
@@ -465,13 +483,13 @@ export default function EditorShell({ templateId, designId, mode }: EditorShellP
             </Sheet>
 
             <Sheet open={rightSheetOpen} onOpenChange={setRightSheetOpen}>
-              <SheetContent side="bottom" className="p-0 h-[80vh] rounded-t-2xl">
+              <SheetContent side="right" className="p-0 w-[90%] max-w-[360px] border-l-0">
                 <SheetHeader className="sr-only">
                   <SheetTitle>Object Properties</SheetTitle>
                   <SheetDescription>Modify the properties of the selected object.</SheetDescription>
                 </SheetHeader>
                 <div className="h-full pt-10">
-                   <Sidebar />
+                   <Sidebar onClose={() => setRightSheetOpen(false)} />
                 </div>
               </SheetContent>
             </Sheet>

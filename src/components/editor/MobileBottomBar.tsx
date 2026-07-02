@@ -49,11 +49,8 @@ export function MobileBottomBar({ onOpenPanel, isObjectSelected }: MobileBottomB
         </button>
 
         <button
-          onClick={() => isObjectSelected && onOpenPanel('right')}
-          disabled={!isObjectSelected}
-          className={`flex flex-col items-center justify-center flex-1 gap-1 h-full transition-colors ${
-            !isObjectSelected ? 'opacity-30' : 'text-ed-text-dim hover:text-ed-text-muted'
-          }`}
+          onClick={() => onOpenPanel('right')}
+          className="flex flex-col items-center justify-center flex-1 gap-1 h-full transition-colors text-ed-text-dim hover:text-ed-text-muted"
         >
           <div className="p-1.5">
             <Settings2 size={20} />

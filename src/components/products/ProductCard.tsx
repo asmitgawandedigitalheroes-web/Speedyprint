@@ -26,13 +26,14 @@ export function ProductCard({ product }: ProductCardProps) {
         {/* Product image */}
         <div className="relative flex aspect-square w-full items-center justify-center overflow-hidden bg-gray-50/50">
           {product.image_url ? (
-            <div className="absolute inset-x-0 top-0 bottom-[-15%]">
+            <div className="absolute inset-0">
               <Image
                 src={product.image_url}
                 alt={product.name}
                 fill
                 sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                className="object-cover object-top transition-transform duration-700 ease-out group-hover:scale-105"
+                className="p-4 transition-transform duration-700 ease-out group-hover:scale-105"
+                style={{ objectFit: 'contain', objectPosition: 'center' }}
                 priority={false}
               />
             </div>

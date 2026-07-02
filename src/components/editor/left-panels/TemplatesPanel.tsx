@@ -211,6 +211,46 @@ export default function TemplatesPanel() {
     [canvas, setTemplate, currentTemplate, savedTemplateOverrides, saveTemplateOverride]
   )
 
+  // When a template is already selected, show a locked read-only summary — no template switching
+  if (currentTemplate) {
+    const color = getGroupColor(currentTemplate.product_group_id ?? 'default')
+    return (
+      <div className="flex flex-col h-full">
+        <div className="px-3 pt-3 pb-2">
+          <h2 className="text-sm font-semibold text-ed-text mb-1">Selected Template</h2>
+          <p className="text-[10px] text-ed-text-dim mb-3">Size is locked for this order.</p>
+        </div>
+        <div className="px-3">
+          <div className="rounded-lg border border-ed-accent/40 bg-ed-bg overflow-hidden">
+            <div
+              className="w-full h-24 flex items-center justify-center"
+              style={{ backgroundColor: color.bg }}
+            >
+              {currentTemplate.image_url ? (
+                <img
+                  src={currentTemplate.image_url}
+                  alt={currentTemplate.name}
+                  className="w-full h-full object-contain p-2"
+                />
+              ) : (
+                <div
+                  className="w-[70%] h-[70%] flex items-center justify-center"
+                  dangerouslySetInnerHTML={{ __html: generatePreviewSvg(currentTemplate, color) }}
+                />
+              )}
+            </div>
+            <div className="px-3 py-2">
+              <p className="text-xs font-semibold text-ed-text">{currentTemplate.name}</p>
+              <p className="text-[10px] text-ed-text-dim mt-0.5">
+                {currentTemplate.print_width_mm} × {currentTemplate.print_height_mm} mm · {currentTemplate.dpi} DPI
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="flex flex-col h-full">
       <div className="px-3 pt-3 pb-2">
