@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react'
 import {
-  Copy,
   Trash2,
   Lock,
   ChevronRight,
@@ -17,8 +16,6 @@ import {
   AlignStartVertical as AlignTop,
   AlignCenterVertical as AlignMiddle,
   AlignEndVertical as AlignBottom,
-  Clipboard,
-  Paintbrush,
   CopyPlus,
   Type,
   FlipHorizontal,
@@ -37,10 +34,6 @@ import {
   bringToFront,
   sendToBack,
   toggleLock,
-  copyToClipboard,
-  pasteFromClipboard,
-  copyStyle,
-  pasteStyle,
   alignLeft,
   alignRight,
   alignTop,
@@ -207,30 +200,6 @@ export default function FloatingToolbar() {
               <div className="h-px bg-gray-100/80 my-1.5 mx-2" />
             </>
           )}
-
-          <button onClick={() => copyToClipboard(canvas)} className={itemClass}>
-            <span className="flex items-center gap-3 font-medium">
-              <Copy size={16} className={iconClass} />
-              Copy
-            </span>
-            <span className={shortcutClass}>Ctrl+C</span>
-          </button>
-
-          <button onClick={() => copyStyle(canvas)} className={itemClass}>
-            <span className="flex items-center gap-3 font-medium">
-              <Paintbrush size={16} className={iconClass} />
-              Copy style
-            </span>
-            <span className={shortcutClass}>Ctrl+Alt+C</span>
-          </button>
-
-          <button onClick={() => pasteFromClipboard(canvas)} className={itemClass}>
-            <span className="flex items-center gap-3 font-medium">
-              <Clipboard size={16} className={iconClass} />
-              Paste
-            </span>
-            <span className={shortcutClass}>Ctrl+V</span>
-          </button>
 
           <button onClick={() => { duplicateSelected(canvas); refreshObjects() }} className={itemClass}>
             <span className="flex items-center gap-3 font-medium">

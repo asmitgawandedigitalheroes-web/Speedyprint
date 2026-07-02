@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback, useEffect } from 'react'
-import { Search, Loader2 } from 'lucide-react'
+import { Search, Loader2, ArrowLeft } from 'lucide-react'
 import { useEditorStore, computeCanvasDimensions } from '@/lib/editor/useEditorStore'
 import type { ProductTemplate, ProductGroup } from '@/types'
 
@@ -97,6 +97,7 @@ export default function TemplatesPanel() {
   const [loading, setLoading] = useState(true)
   const [fetchError, setFetchError] = useState(false)
   const [retryCount, setRetryCount] = useState(0)
+  const [changingSize, setChangingSize] = useState(false)
 
   const canvas = useEditorStore((s) => s.canvas)
   const setTemplate = useEditorStore((s) => s.setTemplate)
@@ -207,18 +208,30 @@ export default function TemplatesPanel() {
         useEditorStore.getState().setZoom(zoom)
         canvas.renderAll()
       }
+
+      // Return to locked summary view after applying a new size
+      setChangingSize(false)
     },
     [canvas, setTemplate, currentTemplate, savedTemplateOverrides, saveTemplateOverride]
   )
 
   // When a template is already selected, show a locked read-only summary — no template switching
-  if (currentTemplate) {
+  // unless the user explicitly clicks "Change Size"
+  if (currentTemplate && !changingSize) {
     const color = getGroupColor(currentTemplate.product_group_id ?? 'default')
     return (
       <div className="flex flex-col h-full">
-        <div className="px-3 pt-3 pb-2">
-          <h2 className="text-sm font-semibold text-ed-text mb-1">Selected Template</h2>
-          <p className="text-[10px] text-ed-text-dim mb-3">Size is locked for this order.</p>
+        <div className="px-3 pt-3 pb-2 flex items-start justify-between">
+          <div>
+            <h2 className="text-sm font-semibold text-ed-text mb-1">Selected Template</h2>
+            <p className="text-[10px] text-ed-text-dim">Current size for this order.</p>
+          </div>
+          <button
+            onClick={() => setChangingSize(true)}
+            className="text-[10px] font-semibold text-ed-accent hover:underline whitespace-nowrap mt-0.5"
+          >
+            Change Size
+          </button>
         </div>
         <div className="px-3">
           <div className="rounded-lg border border-ed-accent/40 bg-ed-bg overflow-hidden">
@@ -254,7 +267,18 @@ export default function TemplatesPanel() {
   return (
     <div className="flex flex-col h-full">
       <div className="px-3 pt-3 pb-2">
-        <h2 className="text-sm font-semibold text-ed-text mb-3">Product Templates</h2>
+        {changingSize && (
+          <button
+            onClick={() => setChangingSize(false)}
+            className="flex items-center gap-1 text-[11px] text-ed-text-dim hover:text-ed-text mb-2 -ml-0.5"
+          >
+            <ArrowLeft size={12} />
+            Back to selected
+          </button>
+        )}
+        <h2 className="text-sm font-semibold text-ed-text mb-3">
+          {changingSize ? 'Choose a Different Size' : 'Product Templates'}
+        </h2>
 
         <div className="relative mb-3">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-ed-text-dim" />
