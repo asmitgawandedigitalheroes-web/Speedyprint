@@ -522,6 +522,16 @@ export default function Toolbar() {
   const handleOpenCartModal = useCallback(async () => {
     if (!canvas) return
     if (!user) {
+      // Save canvas before redirecting so it can be restored after login
+      try {
+        const canvasJson = exportJSON(canvas)
+        localStorage.setItem('sp_pending_design', JSON.stringify({
+          name: designName || 'Untitled Design',
+          canvas_json: JSON.parse(canvasJson),
+          product_template_id: template?.id ?? null,
+          timestamp: Date.now(),
+        }))
+      } catch { /* ignore */ }
       const returnUrl = encodeURIComponent(window.location.pathname + window.location.search)
       router.push(`/login?redirect=${returnUrl}`)
       return
@@ -1031,7 +1041,7 @@ export default function Toolbar() {
                       setSaveStatus('saved')
                     }
                     setShowLoginPrompt(false)
-                    window.location.href = `/login?redirect=${encodeURIComponent(window.location.pathname)}`
+                    window.location.href = `/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`
                   }}
                   className="w-full px-4 py-2.5 bg-brand-primary text-white text-sm font-bold rounded-lg hover:bg-brand-primary-dark transition-colors"
                 >
@@ -1050,7 +1060,7 @@ export default function Toolbar() {
                       setSaveStatus('saved')
                     }
                     setShowLoginPrompt(false)
-                    window.location.href = `/register?redirect=${encodeURIComponent(window.location.pathname)}`
+                    window.location.href = `/register?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`
                   }}
                   className="w-full px-4 py-2.5 border border-gray-200 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors"
                 >
