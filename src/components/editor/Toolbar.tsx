@@ -24,8 +24,14 @@ import {
   RotateCcw,
   MessageCircle,
   Link2,
+  Mail,
+  Phone,
 } from 'lucide-react'
 import { WHATSAPP_URL } from '@/lib/utils/constants'
+
+const HELP_EMAIL = 'info@speedyprint.co.za'
+const HELP_PHONE = '011 027 1811'
+const HELP_MESSAGE = encodeURIComponent('Hi, I need help with my design on Speedy Print.')
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -894,14 +900,21 @@ export default function Toolbar() {
                 <span>Link a Canva Design</span>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <a
-                  href={`${WHATSAPP_URL}?text=${encodeURIComponent('Hi, I need help with my design on Speedy Print.')}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  data-testid="whatsapp-help-btn-mobile"
-                >
+                <a href={`${WHATSAPP_URL}?text=${HELP_MESSAGE}`} target="_blank" rel="noopener noreferrer" data-testid="whatsapp-help-btn-mobile">
                   <MessageCircle className="mr-2 h-4 w-4 text-green-600" />
-                  <span>Help Me (WhatsApp)</span>
+                  <span>WhatsApp</span>
+                </a>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <a href={`mailto:${HELP_EMAIL}`}>
+                  <Mail className="mr-2 h-4 w-4 text-blue-500" />
+                  <span>{HELP_EMAIL}</span>
+                </a>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <a href={`tel:${HELP_PHONE.replace(/\s/g, '')}`}>
+                  <Phone className="mr-2 h-4 w-4 text-gray-500" />
+                  <span>{HELP_PHONE}</span>
                 </a>
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -922,18 +935,39 @@ export default function Toolbar() {
           {linkedCanvaUrl ? 'Canva linked ✓' : 'Link a Canva design'}
         </button>
 
-        {/* WhatsApp Help Me */}
-        <a
-          href={`${WHATSAPP_URL}?text=${encodeURIComponent('Hi, I need help with my design on Speedy Print.')}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          title="Help Me via WhatsApp"
-          data-testid="whatsapp-help-btn"
-          className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 border border-green-200 text-green-700 text-xs font-medium rounded-md hover:bg-green-50 hover:border-green-300 transition-colors"
-        >
-          <MessageCircle size={14} />
-          Help Me
-        </a>
+        {/* Help Me dropdown */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              data-testid="whatsapp-help-btn"
+              className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 border border-green-200 text-green-700 text-xs font-medium rounded-md hover:bg-green-50 hover:border-green-300 transition-colors"
+            >
+              <MessageCircle size={14} />
+              Help Me
+              <ChevronDown size={12} />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-52">
+            <DropdownMenuItem asChild>
+              <a href={`${WHATSAPP_URL}?text=${HELP_MESSAGE}`} target="_blank" rel="noopener noreferrer">
+                <MessageCircle className="mr-2 h-4 w-4 text-green-600" />
+                <span>WhatsApp</span>
+              </a>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <a href={`mailto:${HELP_EMAIL}`}>
+                <Mail className="mr-2 h-4 w-4 text-blue-500" />
+                <span>{HELP_EMAIL}</span>
+              </a>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <a href={`tel:${HELP_PHONE.replace(/\s/g, '')}`}>
+                <Phone className="mr-2 h-4 w-4 text-gray-500" />
+                <span>{HELP_PHONE}</span>
+              </a>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
 
         {/* Primary CTA - compact text on mobile */}
         <button

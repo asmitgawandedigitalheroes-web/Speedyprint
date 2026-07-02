@@ -82,7 +82,8 @@ export function ProductDetailClient({
               alt={activeImage.label}
               fill
               sizes="(max-width: 1024px) 100vw, 55vw"
-              className="object-contain object-center p-6"
+              className="p-6"
+              style={{ objectFit: 'contain', objectPosition: 'center' }}
               priority
             />
           ) : (
@@ -156,7 +157,7 @@ export function ProductDetailClient({
                     : 'border-gray-200 hover:border-gray-400'
                 )}
               >
-                <Image src={img.url} alt={img.label} fill sizes="80px" className="object-contain p-1" />
+                <Image src={img.url} alt={img.label} fill sizes="80px" className="p-1" style={{ objectFit: 'contain', objectPosition: 'center' }} />
               </button>
             ))}
           </div>

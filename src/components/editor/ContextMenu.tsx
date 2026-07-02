@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react'
 import {
-  Copy,
   Trash2,
   Lock,
   ChevronRight,
@@ -20,8 +19,6 @@ import {
   FlipHorizontal,
   FlipVertical,
   MoreHorizontal,
-  Clipboard,
-  Paintbrush,
   CopyPlus,
   Unlock,
   Boxes,
@@ -36,10 +33,6 @@ import {
   bringToFront,
   sendToBack,
   toggleLock,
-  copyToClipboard,
-  pasteFromClipboard,
-  copyStyle,
-  pasteStyle,
   alignLeft,
   alignRight,
   alignTop,
@@ -163,30 +156,6 @@ export default function ContextMenu() {
       className="fixed z-[100] bg-white border border-gray-200 rounded-xl shadow-2xl py-1.5 px-1.5 min-w-[230px] animate-in fade-in zoom-in duration-150"
       style={{ left: pos.x, top: pos.y }}
     >
-      <button onClick={() => doAction(() => copyToClipboard(canvas))} className={itemClass}>
-        <span className="flex items-center gap-3 font-medium">
-          <Copy size={16} className={iconClass} />
-          Copy
-        </span>
-        <span className={shortcutClass}>Ctrl+C</span>
-      </button>
-
-      <button onClick={() => doAction(() => copyStyle(canvas))} className={itemClass}>
-        <span className="flex items-center gap-3 font-medium">
-          <Paintbrush size={16} className={iconClass} />
-          Copy style
-        </span>
-        <span className={shortcutClass}>Ctrl+Alt+C</span>
-      </button>
-
-      <button onClick={() => doAction(() => pasteFromClipboard(canvas))} className={itemClass}>
-        <span className="flex items-center gap-3 font-medium">
-          <Clipboard size={16} className={iconClass} />
-          Paste
-        </span>
-        <span className={shortcutClass}>Ctrl+V</span>
-      </button>
-
       <button onClick={() => doAction(() => { duplicateSelected(canvas); refreshObjects() })} className={itemClass}>
         <span className="flex items-center gap-3 font-medium">
           <CopyPlus size={16} className={iconClass} />

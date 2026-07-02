@@ -143,7 +143,7 @@ function IconBtn({
   )
 }
 
-export default function Sidebar() {
+export default function Sidebar({ onClose }: { onClose?: () => void }) {
   const canvas = useEditorStore((s) => s.canvas)
   const activeObject = useEditorStore((s) => s.activeObject)
   const isMobile = useIsMobile()
@@ -474,8 +474,9 @@ export default function Sidebar() {
           <span className="text-sm font-bold uppercase tracking-widest text-ed-text-dim">
             Properties
           </span>
-          <button 
+          <button
             onClick={() => {
+              onClose?.()
               if (canvas) {
                 canvas.discardActiveObject()
                 canvas.requestRenderAll()
